@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workers — Nexus Operations OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .worker-toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  .toolbar-search{ display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-pill); padding:10px 14px; min-width:220px; flex:1; }
+  .toolbar-search input{ border:none; outline:none; background:none; font-size:13px; font-family:inherit; color:var(--ink); width:100%; }
+  .toolbar-search i{ color:var(--ink-faint); }
+  select.pill-select{
+    appearance:none; -webkit-appearance:none; border:1px solid var(--border); cursor:pointer; background:var(--card);
+    border-radius:var(--radius-pill); padding:10px 30px 10px 14px; font-size:12.5px; font-weight:700; color:var(--ink); font-family:inherit;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 10px center; background-size:10px 10px;
+  }
+
+  #workerGrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .worker-card{ position:relative; background:var(--card); border-radius:var(--radius-card); box-shadow:var(--shadow); padding:18px; cursor:pointer; transition: transform .18s var(--ease), box-shadow .18s var(--ease); }
+  .worker-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+  .worker-rank-badge{ position:absolute; top:14px; right:14px; font-size:20px; }
+  .worker-card-top{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .worker-card-name{ font-size:14px; font-weight:800; }
+  .worker-card-role{ font-size:11.5px; color:var(--ink-faint); font-weight:600; margin-top:2px; }
+  .worker-card-stats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .worker-card-stats small{ font-size:10.5px; color:var(--ink-faint); font-weight:600; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:2px; }
+  .worker-card-stats b{ font-size:13px; }
+  .worker-skills{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+  .skill-chip{ background:var(--grad-soft); color:var(--primary-3); font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:20px; }
+  .skill-chip.more{ background:var(--border); color:var(--ink-faint); }
+  .worker-card-foot{ display:flex; align-items:center; justify-content:space-between; }
+
+  .empty-state{ grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; color:var(--ink-faint); text-align:center; }
+  .empty-state i{ font-size:38px; margin-bottom:10px; }
+  .empty-state b{ font-size:14px; color:var(--ink); margin-bottom:4px; }
+  .empty-state span{ font-size:12.5px; }
+
+  /* drawer */
+  .wd-head-row{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+  .wd-meta-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
+  .wd-meta-grid div{ display:flex; flex-direction:column; gap:2px; }
+  .wd-meta-grid small{ font-size:10.5px; color:var(--ink-faint); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .wd-meta-grid b{ font-size:13px; }
+
+  .wd-tabs{ display:flex; gap:4px; background:var(--grad-soft); padding:4px; border-radius:12px; margin-bottom:16px; overflow-x:auto; }
+  .wd-tab{ flex-shrink:0; text-align:center; padding:8px 12px; border-radius:9px; font-size:11.5px; font-weight:700; color:var(--ink-soft); white-space:nowrap; }
+  .wd-tab.active{ background:var(--card); color:var(--primary-3); box-shadow:var(--shadow-sm); }
+  .wd-tabpanel{ display:none; }
+  .wd-tabpanel.active{ display:block; }
+
+  .subhead{ font-size:12.5px; font-weight:800; margin:16px 0 10px; }
+  .subhead:first-child{ margin-top:0; }
+  .achieve-row{ display:flex; align-items:center; gap:10px; padding:9px 0; font-size:12.5px; font-weight:600; }
+  .achieve-row i{ color:var(--warning); font-size:17px; }
+  .warning-row{ display:flex; gap:10px; padding:9px 0; font-size:12.5px; }
+  .warning-row i{ color:var(--danger); font-size:17px; margin-top:1px; }
+  .warning-row small{ display:block; color:var(--ink-faint); font-weight:600; margin-top:2px; }
+  .muted-note{ font-size:12px; color:var(--ink-faint); }
+
+  .att-strip{ display:grid; grid-template-columns:repeat(15,1fr); gap:4px; margin-bottom:14px; }
+  .att-cell{ width:100%; aspect-ratio:1; border-radius:4px; }
+  .att-present{ background:var(--success); }
+  .att-late{ background:var(--warning); }
+  .att-absent{ background:var(--danger); }
+  .att-summary{ display:flex; gap:18px; font-size:12px; font-weight:700; }
+  .att-summary div{ display:flex; align-items:center; gap:6px; }
+  .att-dot{ width:8px; height:8px; border-radius:2px; display:inline-block; }
+
+  .payslip-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); font-size:12.5px; }
+  .payslip-row:last-child{ border-bottom:none; }
+  .payslip-row small{ display:block; color:var(--ink-faint); font-weight:600; margin-top:2px; }
+  .payslip-amt{ margin-left:auto; font-weight:800; font-family:'Inter Tight'; }
+
+  .doc-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); font-size:12.5px; }
+  .doc-row:last-child{ border-bottom:none; }
+  .doc-row small{ display:block; color:var(--ink-faint); font-weight:600; margin-top:2px; }
+  .doc-icon{ width:36px; height:36px; border-radius:10px; background:var(--grad-soft); color:var(--primary-3); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+
+  @media (max-width:1200px){ #workerGrid{ grid-template-columns:repeat(3,1fr); } }
+  @media (max-width:900px){ #workerGrid{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:560px){ #workerGrid{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">N</div>
+      <div class="brand-text"><span class="brand-name">Nexus</span><span class="brand-sub">OPERATIONS OS</span></div>
+      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
+    </div>
+    <nav class="sidebar-scroll" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="dropdown-wrap">
+        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
+          <div class="user-avatar" id="userChipAvatar">AK</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
+        </div>
+        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
+          <div class="dd-divider"></div>
+          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Nexus</span><i class="ri-arrow-right-s-line"></i><span>People</span><i class="ri-arrow-right-s-line"></i><b>Workers</b></div>
+      </div>
+      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
+        <div class="dropdown-wrap">
+          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
+          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:280px;">
+            <div class="dd-item"><i class="ri-alert-line"></i>2 workers flagged low attendance</div>
+            <div class="dd-item"><i class="ri-medal-line"></i>Grace Achieng hit a new output record</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openNewWorkerModal()"><i class="ri-user-add-line"></i>Add Worker</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section-head fade-up">
+        <div><div class="section-title">Workers</div><div class="section-sub" id="workerCount">Loading…</div></div>
+      </div>
+
+      <div class="worker-toolbar fade-up">
+        <div class="toolbar-search"><i class="ri-search-line"></i><input id="workerSearch" placeholder="Search workers by name…"></div>
+        <select class="pill-select" id="workerRoleFilter">
+          <option value="all">All roles</option>
+          <option>Unboxing</option><option>Software Install</option><option>Quality Check</option><option>Resealing</option><option>Packaging</option>
+        </select>
+        <select class="pill-select" id="workerStatusFilter">
+          <option value="all">All status</option><option>Active</option><option>Warning</option><option>Inactive</option>
+        </select>
+        <select class="pill-select" id="workerSort">
+          <option value="output-desc">Highest output</option>
+          <option value="attendance-desc">Best attendance</option>
+          <option value="name-asc">Name A–Z</option>
+        </select>
+      </div>
+
+      <div id="workerGrid" class="fade-up"></div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW WORKER MODAL -->
+<div class="overlay" id="overlay-modal-newworker" onclick="NexusApp.closeModal('modal-newworker')"></div>
+<div class="modal" id="modal-newworker">
+  <div class="modal-head"><h3>Add worker</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-newworker')"><i class="ri-close-line"></i></button></div>
+  <form onsubmit="submitNewWorker(event)">
+    <div class="field"><label>Full name</label><input type="text" id="nw-name" placeholder="e.g. James Mwangi" required></div>
+    <div class="field"><label>Assigned role</label>
+      <select id="nw-role"><option>Unboxing</option><option>Software Install</option><option>Quality Check</option><option>Resealing</option><option>Packaging</option></select>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-newworker')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Add worker</button>
+    </div>
+  </form>
+</div>
+
+<!-- WORKER PROFILE DRAWER -->
+<div class="overlay" id="drawer-overlay" onclick="NexusApp.closeDrawer('workerDrawer')"></div>
+<div class="drawer" id="workerDrawer">
+  <div class="drawer-head">
+    <div class="wd-head-row" style="margin-bottom:0;">
+      <div class="avatar" id="wdAvatar" style="width:48px;height:48px;font-size:15px;"></div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="wdName" style="font-family:'Inter Tight';font-size:16px;font-weight:800;"></span>
+          <span class="badge" id="wdStatus"></span>
+        </div>
+        <div id="wdRole" style="font-size:12px;color:var(--ink-faint);font-weight:600;margin-top:2px;"></div>
+      </div>
+    </div>
+    <button class="modal-close" onclick="NexusApp.closeDrawer('workerDrawer')"><i class="ri-close-line"></i></button>
+  </div>
+  <div class="drawer-body">
+    <div style="display:flex; gap:8px; margin-bottom:18px;">
+      <button class="btn btn-secondary btn-sm"><i class="ri-edit-line"></i>Edit</button>
+      <button class="btn btn-secondary btn-sm" onclick="issueWarning()"><i class="ri-alert-line"></i>Issue Warning</button>
+      <button class="btn btn-primary btn-sm"><i class="ri-message-3-line"></i>Message</button>
+    </div>
+
+    <div class="wd-meta-grid" id="wdMeta"></div>
+
+    <div class="wd-tabs">
+      <div class="wd-tab active" data-tab="overview">Overview</div>
+      <div class="wd-tab" data-tab="performance">Performance</div>
+      <div class="wd-tab" data-tab="attendance">Attendance</div>
+      <div class="wd-tab" data-tab="payroll">Payroll</div>
+      <div class="wd-tab" data-tab="documents">Documents</div>
+    </div>
+
+    <div class="wd-tabpanel active" data-panel="overview">
+      <div class="subhead">Skills</div>
+      <div class="worker-skills" id="wdSkills"></div>
+      <div class="subhead">Achievements</div>
+      <div id="wdAchievements"></div>
+      <div class="subhead">Warnings</div>
+      <div id="wdWarnings"></div>
+    </div>
+
+    <div class="wd-tabpanel" data-panel="performance">
+      <div class="subhead">Production history — last 7 days</div>
+      <div style="height:200px;"><canvas id="wdPerfChart"></canvas></div>
+    </div>
+
+    <div class="wd-tabpanel" data-panel="attendance">
+      <div class="subhead">Last 30 days</div>
+      <div class="att-strip" id="wdAttendanceStrip"></div>
+      <div class="att-summary" id="wdAttendanceSummary"></div>
+    </div>
+
+    <div class="wd-tabpanel" data-panel="payroll">
+      <div class="subhead">Recent payslips</div>
+      <div id="wdPayslips"></div>
+    </div>
+
+    <div class="wd-tabpanel" data-panel="documents">
+      <div class="subhead">Documents on file</div>
+      <div id="wdDocuments"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/workers.js"></script>
+</body>
+</html>

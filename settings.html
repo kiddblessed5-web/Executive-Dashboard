@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — Nexus Operations OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .settings-shell{ display:grid; grid-template-columns:230px 1fr; gap:18px; align-items:start; }
+  .settings-nav{ display:flex; flex-direction:column; gap:2px; position:sticky; top:96px; }
+  .settings-nav-item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; }
+  .settings-nav-item i{ font-size:17px; }
+  .settings-nav-item:hover{ background:var(--grad-soft); }
+  .settings-nav-item.active{ background:var(--grad); color:#fff; }
+
+  .settings-panel{ display:none; }
+  .settings-panel.active{ display:block; }
+  .settings-panel-title{ font-size:16px; font-weight:800; margin-bottom:4px; }
+  .settings-panel-sub{ font-size:12.5px; color:var(--ink-faint); font-weight:500; margin-bottom:20px; }
+
+  .form-2col{ display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+
+  /* appearance */
+  .appearance-row{ display:flex; align-items:center; justify-content:space-between; padding:16px 0; border-bottom:1px solid var(--border); }
+  .appearance-row:last-child{ border-bottom:none; }
+  .appearance-row-text b{ font-size:13.5px; display:block; }
+  .appearance-row-text span{ font-size:11.5px; color:var(--ink-faint); }
+  .pill-toggle-group{ display:flex; gap:4px; background:var(--grad-soft); padding:4px; border-radius:12px; }
+  .pill-toggle{ padding:8px 16px; border-radius:9px; font-size:12px; font-weight:700; color:var(--ink-soft); }
+  .pill-toggle.active{ background:var(--card); color:var(--primary-3); box-shadow:var(--shadow-sm); }
+  .accent-swatches{ display:flex; gap:8px; }
+  .accent-swatch{ width:28px; height:28px; border-radius:9px; }
+
+  /* notifications */
+  .toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:13px 2px; border-bottom:1px solid var(--border); }
+  .toggle-row:last-child{ border-bottom:none; }
+  .toggle-text b{ font-size:13.5px; display:block; }
+  .toggle-text span{ font-size:11.5px; color:var(--ink-faint); }
+  .switch{ width:42px; height:24px; border-radius:20px; background:#dfe4dd; position:relative; cursor:pointer; flex-shrink:0; transition:.2s ease; }
+  .switch.on{ background: var(--success); }
+  .switch::after{ content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:.2s ease; }
+  .switch.on::after{ left:21px; }
+  body.dark .switch{ background: rgba(255,255,255,0.14); }
+
+  /* roles */
+  .roles-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  .role-card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; }
+  .role-card-top{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .role-dot{ width:10px; height:10px; border-radius:50%; }
+  .role-card p{ font-size:12px; color:var(--ink-faint); line-height:1.5; margin-bottom:14px; }
+  .role-card-foot{ display:flex; align-items:center; justify-content:space-between; font-size:11.5px; color:var(--ink-faint); font-weight:700; }
+
+  /* permissions */
+  .perm-table-wrap{ overflow-x:auto; }
+  .perm-checkbox{ width:16px; height:16px; accent-color:var(--primary); cursor:pointer; }
+  .perm-col-highlight{ background:var(--grad-soft); }
+
+  /* security */
+  .session-row{ display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .session-row:last-child{ border-bottom:none; }
+  .session-icon{ width:38px; height:38px; border-radius:11px; background:var(--grad-soft); color:var(--primary-3); display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+  .session-meta{ flex:1; font-size:12.5px; }
+  .session-meta small{ display:block; color:var(--ink-faint); font-weight:600; margin-top:2px; }
+
+  /* integrations */
+  .integrations-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  .integration-card{ display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:14px; }
+  .integration-icon{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+  .integration-meta{ flex:1; min-width:0; }
+  .integration-meta b{ font-size:13px; display:block; }
+  .integration-meta span{ font-size:11px; color:var(--ink-faint); }
+
+  /* api keys */
+  .api-key-code{ background:var(--grad-soft); padding:4px 8px; border-radius:6px; font-size:11.5px; font-family:monospace; }
+  .key-reveal-box{ background:var(--grad-soft); border-radius:12px; padding:16px; font-family:monospace; font-size:13px; word-break:break-all; text-align:center; margin:14px 0; color:var(--primary-3); font-weight:700; }
+
+  /* audit */
+  .activity-row{ display:flex; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
+  .activity-row:last-child{ border-bottom:none; }
+  .activity-icon{ width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .activity-text{ display:flex; flex-direction:column; gap:2px; font-size:13px; line-height:1.4; }
+  .activity-text small{ color:var(--ink-faint); font-size:11.5px; font-weight:600; }
+  .toolbar-search{ display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-pill); padding:10px 14px; margin-bottom:16px; }
+  .toolbar-search input{ border:none; outline:none; background:none; font-size:13px; font-family:inherit; color:var(--ink); width:100%; }
+  .toolbar-search i{ color:var(--ink-faint); }
+  .muted-note{ font-size:12px; color:var(--ink-faint); }
+
+  @media (max-width:1080px){ .settings-shell{ grid-template-columns:1fr; } .settings-nav{ position:static; flex-direction:row; overflow-x:auto; } .roles-grid, .integrations-grid, .form-2col{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">N</div>
+      <div class="brand-text"><span class="brand-name">Nexus</span><span class="brand-sub">OPERATIONS OS</span></div>
+      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
+    </div>
+    <nav class="sidebar-scroll" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="dropdown-wrap">
+        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
+          <div class="user-avatar" id="userChipAvatar">AK</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
+        </div>
+        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
+          <div class="dd-divider"></div>
+          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Nexus</span><i class="ri-arrow-right-s-line"></i><b>Settings</b></div>
+      </div>
+      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme(); updateAppearanceThemeUI();"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
+        <div class="dropdown-wrap">
+          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
+          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:260px;">
+            <div class="dd-item"><i class="ri-information-line"></i>No new notifications</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section-head fade-up">
+        <div><div class="section-title">Settings</div><div class="section-sub">Configure your company, security, and workspace preferences.</div></div>
+      </div>
+
+      <div class="settings-shell fade-up">
+        <div class="settings-nav">
+          <div class="settings-nav-item active" data-tab="company"><i class="ri-building-4-line"></i>Company</div>
+          <div class="settings-nav-item" data-tab="appearance"><i class="ri-palette-line"></i>Appearance</div>
+          <div class="settings-nav-item" data-tab="notifications"><i class="ri-notification-3-line"></i>Notifications</div>
+          <div class="settings-nav-item" data-tab="roles"><i class="ri-user-star-line"></i>Roles</div>
+          <div class="settings-nav-item" data-tab="permissions"><i class="ri-lock-2-line"></i>Permissions</div>
+          <div class="settings-nav-item" data-tab="security"><i class="ri-shield-keyhole-line"></i>Security</div>
+          <div class="settings-nav-item" data-tab="integrations"><i class="ri-plug-line"></i>Integrations</div>
+          <div class="settings-nav-item" data-tab="apikeys"><i class="ri-key-2-line"></i>API Keys</div>
+          <div class="settings-nav-item" data-tab="audit"><i class="ri-file-list-3-line"></i>Audit Logs</div>
+        </div>
+
+        <div class="card">
+
+          <!-- COMPANY -->
+          <div class="settings-panel active" data-panel="company">
+            <div class="settings-panel-title">Company</div>
+            <div class="settings-panel-sub">Basic information about your organization.</div>
+            <div class="form-2col">
+              <div class="field"><label>Company name</label><input type="text" id="cmp-name"></div>
+              <div class="field"><label>Industry</label><input type="text" id="cmp-industry"></div>
+            </div>
+            <div class="field"><label>Address</label><input type="text" id="cmp-address"></div>
+            <div class="form-2col">
+              <div class="field"><label>Timezone</label><input type="text" id="cmp-timezone"></div>
+              <div class="field"><label>Currency</label><input type="text" id="cmp-currency"></div>
+            </div>
+            <div class="field" style="max-width:220px;"><label>Standard daily wage (KES)</label><input type="number" id="cmp-wage"></div>
+            <button class="btn btn-primary" onclick="saveCompany()"><i class="ri-save-line"></i>Save changes</button>
+          </div>
+
+          <!-- APPEARANCE -->
+          <div class="settings-panel" data-panel="appearance">
+            <div class="settings-panel-title">Appearance</div>
+            <div class="settings-panel-sub">Personalize how Nexus looks for you.</div>
+
+            <div class="appearance-row">
+              <div class="appearance-row-text"><b>Theme</b><span>Switch between light and dark mode</span></div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span id="appearanceThemeLabel" style="font-size:12.5px;font-weight:700;">Light</span>
+                <div class="switch" id="appearanceThemeSwitch" onclick="toggleAppearanceTheme()"></div>
+              </div>
+            </div>
+
+            <div class="appearance-row">
+              <div class="appearance-row-text"><b>Layout density</b><span>Compact reduces padding across tables and cards</span></div>
+              <div class="pill-toggle-group">
+                <div class="pill-toggle density-pill active" data-density="comfortable" onclick="setDensity('comfortable')">Comfortable</div>
+                <div class="pill-toggle density-pill" data-density="compact" onclick="setDensity('compact')">Compact</div>
+              </div>
+            </div>
+
+            <div class="appearance-row">
+              <div class="appearance-row-text"><b>Default sidebar state</b><span>How the sidebar starts when you sign in</span></div>
+              <div class="pill-toggle-group">
+                <div class="pill-toggle sidebar-default-pill active" data-state="expanded" onclick="setSidebarDefault('expanded')">Expanded</div>
+                <div class="pill-toggle sidebar-default-pill" data-state="collapsed" onclick="setSidebarDefault('collapsed')">Collapsed</div>
+              </div>
+            </div>
+
+            <div class="appearance-row">
+              <div class="appearance-row-text"><b>Accent</b><span>Nexus purple → blue gradient system</span></div>
+              <div class="accent-swatches">
+                <div class="accent-swatch" style="background:#6D5DF6;"></div>
+                <div class="accent-swatch" style="background:#4F46E5;"></div>
+                <div class="accent-swatch" style="background:#3B82F6;"></div>
+                <div class="accent-swatch" style="background:#7C3AED;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- NOTIFICATIONS -->
+          <div class="settings-panel" data-panel="notifications">
+            <div class="settings-panel-title">Notifications</div>
+            <div class="settings-panel-sub">Choose what you want to be notified about.</div>
+            <div class="toggle-row"><div class="toggle-text"><b>Email notifications</b><span>Batch, payroll and worker updates</span></div><div class="switch notif-switch" data-key="email" onclick="toggleNotif('email',this)"></div></div>
+            <div class="toggle-row"><div class="toggle-text"><b>Push notifications</b><span>Real-time alerts on your device</span></div><div class="switch notif-switch" data-key="push" onclick="toggleNotif('push',this)"></div></div>
+            <div class="toggle-row"><div class="toggle-text"><b>SMS alerts</b><span>Critical alerts sent via SMS</span></div><div class="switch notif-switch" data-key="sms" onclick="toggleNotif('sms',this)"></div></div>
+            <div class="toggle-row"><div class="toggle-text"><b>Weekly digest</b><span>Summary every Monday morning</span></div><div class="switch notif-switch" data-key="digest" onclick="toggleNotif('digest',this)"></div></div>
+            <div class="toggle-row"><div class="toggle-text"><b>Batch delay alerts</b><span>When a batch falls behind schedule</span></div><div class="switch notif-switch" data-key="batchDelay" onclick="toggleNotif('batchDelay',this)"></div></div>
+            <div class="toggle-row"><div class="toggle-text"><b>Attendance alerts</b><span>Late check-ins and absences</span></div><div class="switch notif-switch" data-key="attendance" onclick="toggleNotif('attendance',this)"></div></div>
+            <div class="toggle-row"><div class="toggle-text"><b>Payroll processed</b><span>Confirmation when a payroll run completes</span></div><div class="switch notif-switch" data-key="payroll" onclick="toggleNotif('payroll',this)"></div></div>
+            <div class="toggle-row"><div class="toggle-text"><b>Quality control alerts</b><span>Failed inspections needing approval</span></div><div class="switch notif-switch" data-key="quality" onclick="toggleNotif('quality',this)"></div></div>
+          </div>
+
+          <!-- ROLES -->
+          <div class="settings-panel" data-panel="roles">
+            <div class="settings-panel-title">Roles</div>
+            <div class="settings-panel-sub">Every role available in your workspace.</div>
+            <div class="roles-grid" id="rolesGrid"></div>
+          </div>
+
+          <!-- PERMISSIONS -->
+          <div class="settings-panel" data-panel="permissions">
+            <div class="settings-panel-title">Permissions</div>
+            <div class="settings-panel-sub">Fine-tune what each role can access. Super Admin always has full access.</div>
+            <div class="perm-table-wrap">
+              <table>
+                <thead id="permMatrixHead"></thead>
+                <tbody id="permMatrixBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SECURITY -->
+          <div class="settings-panel" data-panel="security">
+            <div class="settings-panel-title">Security</div>
+            <div class="settings-panel-sub">Manage your password, two-factor authentication and active sessions.</div>
+
+            <form onsubmit="submitPasswordChange(event)">
+              <div class="field"><label>Current password</label><input type="password" id="sec-current"></div>
+              <div class="form-2col">
+                <div class="field"><label>New password</label><input type="password" id="sec-new"></div>
+                <div class="field"><label>Confirm new password</label><input type="password" id="sec-confirm"></div>
+              </div>
+              <button type="submit" class="btn btn-primary"><i class="ri-lock-2-line"></i>Update password</button>
+            </form>
+
+            <div class="appearance-row" style="margin-top:26px;">
+              <div class="appearance-row-text"><b>Two-factor authentication</b><span>Require a verification code at sign in</span></div>
+              <div class="switch" id="twoFaSwitch" onclick="toggle2FA(this)"></div>
+            </div>
+
+            <div class="appearance-row">
+              <div class="appearance-row-text"><b>Session timeout</b><span>Automatically sign out after inactivity</span></div>
+              <select id="sec-timeout" style="border:none; background:var(--grad-soft); padding:9px 14px; border-radius:12px; font-size:12px; font-weight:700; color:var(--ink); font-family:inherit;">
+                <option>15 minutes</option><option selected>30 minutes</option><option>1 hour</option><option>4 hours</option>
+              </select>
+            </div>
+
+            <div class="subhead" style="font-size:13px;font-weight:800;margin:22px 0 6px;">Active sessions</div>
+            <div id="sessionsList"></div>
+          </div>
+
+          <!-- INTEGRATIONS -->
+          <div class="settings-panel" data-panel="integrations">
+            <div class="settings-panel-title">Integrations</div>
+            <div class="settings-panel-sub">Connect Nexus with the tools your team already uses.</div>
+            <div class="integrations-grid" id="integrationsGrid"></div>
+          </div>
+
+          <!-- API KEYS -->
+          <div class="settings-panel" data-panel="apikeys">
+            <div class="section-head" style="margin-bottom:6px;">
+              <div><div class="settings-panel-title" style="margin-bottom:2px;">API Keys</div><div class="settings-panel-sub" style="margin-bottom:0;">Manage programmatic access to Nexus.</div></div>
+              <button class="btn btn-primary btn-sm" onclick="NexusApp.openModal('modal-newkey')"><i class="ri-add-line"></i>Generate key</button>
+            </div>
+            <div style="overflow-x:auto; margin-top:16px;">
+              <table>
+                <thead><tr><th>Name</th><th>Key</th><th>Created</th><th>Last used</th><th>Status</th><th></th></tr></thead>
+                <tbody id="apiKeysBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- AUDIT LOGS -->
+          <div class="settings-panel" data-panel="audit">
+            <div class="settings-panel-title">Audit Logs</div>
+            <div class="settings-panel-sub">Recent account and system activity.</div>
+            <div class="toolbar-search"><i class="ri-search-line"></i><input id="auditSearch" placeholder="Search audit log…"></div>
+            <div id="auditList"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW API KEY MODAL -->
+<div class="overlay" id="overlay-modal-newkey" onclick="NexusApp.closeModal('modal-newkey')"></div>
+<div class="modal" id="modal-newkey">
+  <div class="modal-head"><h3>Generate API key</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-newkey')"><i class="ri-close-line"></i></button></div>
+  <form onsubmit="submitNewApiKey(event)">
+    <div class="field"><label>Key name</label><input type="text" id="nk-name" placeholder="e.g. Reporting integration" required></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-newkey')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Generate</button>
+    </div>
+  </form>
+</div>
+
+<!-- KEY REVEAL MODAL -->
+<div class="overlay" id="overlay-modal-keyreveal" onclick="NexusApp.closeModal('modal-keyreveal')"></div>
+<div class="modal" id="modal-keyreveal">
+  <div class="modal-head"><h3>Your new API key</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-keyreveal')"><i class="ri-close-line"></i></button></div>
+  <p style="font-size:12.5px; color:var(--ink-faint);">Copy this key now — you won't be able to see it again.</p>
+  <div class="key-reveal-box" id="revealedKey"></div>
+  <div class="modal-actions">
+    <button class="btn btn-secondary btn-block" onclick="copyRevealedKey()"><i class="ri-file-copy-line"></i>Copy key</button>
+    <button class="btn btn-primary btn-block" onclick="NexusApp.closeModal('modal-keyreveal')">Done</button>
+  </div>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/settings.js"></script>
+</body>
+</html>

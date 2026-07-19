@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messages — Nexus Operations OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .msg-shell{ display:grid; grid-template-columns:290px 1fr 280px; height:calc(100vh - 140px); min-height:560px; background:var(--card); border-radius:var(--radius-card); box-shadow:var(--shadow); overflow:hidden; }
+  .msg-shell.info-hidden{ grid-template-columns:290px 1fr; }
+  .msg-shell.info-hidden .info-panel{ display:none; }
+
+  /* ---------- left: conversation list ---------- */
+  .conv-panel{ border-right:1px solid var(--border); display:flex; flex-direction:column; min-width:0; min-height:0; }
+  .conv-panel-head{ padding:18px 16px 4px; }
+  .conv-panel-title-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .conv-panel-title-row .section-title{ margin-bottom:0; }
+  .conv-panel-head .section-title{ font-size:16px; }
+  .conv-search{ display:flex; align-items:center; gap:8px; background:var(--grad-soft); border-radius:var(--radius-pill); padding:9px 13px; margin-bottom:16px; }
+  .conv-search input{ border:none; outline:none; background:none; font-size:12.5px; font-family:inherit; color:var(--ink); width:100%; }
+  .conv-search i{ color:var(--ink-faint); }
+
+  .online-now-block{ padding:0 16px 14px; border-bottom:1px solid var(--border); }
+  .online-now-label{ font-size:11px; font-weight:700; color:var(--ink-faint); margin-bottom:10px; text-transform:uppercase; letter-spacing:.03em; }
+  .online-now-row{ display:flex; gap:12px; overflow-x:auto; padding-bottom:2px; }
+  .online-avatar{ position:relative; flex-shrink:0; cursor:pointer; }
+  .online-avatar:hover .avatar{ transform:translateY(-2px); }
+  .online-avatar .avatar{ transition:transform .15s var(--ease); }
+
+  .conv-scroll{ flex:1; min-height:0; overflow-y:auto; padding:10px 8px 12px; }
+  .conv-section-label{ display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; padding:8px 10px 6px; }
+  .conv-section-label i{ font-size:13px; }
+
+  .conv-item{ display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:12px; cursor:pointer; }
+  .conv-item:hover{ background:var(--grad-soft); }
+  .conv-item.active{ background:var(--grad-soft); }
+  .conv-avatar-wrap{ position:relative; flex-shrink:0; }
+  .conv-icon-avatar{ font-size:15px; }
+  .status-dot{ position:absolute; bottom:-1px; right:-1px; width:10px; height:10px; border-radius:50%; border:2px solid var(--card); }
+  .status-dot.online{ background:var(--success); }
+  .status-dot.offline{ background:var(--ink-faint); }
+  .conv-meta{ flex:1; min-width:0; }
+  .conv-row-top{ display:flex; justify-content:space-between; align-items:center; gap:6px; }
+  .conv-name{ font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .conv-time{ font-size:10.5px; color:var(--ink-faint); font-weight:600; flex-shrink:0; }
+  .conv-row-bottom{ display:flex; justify-content:space-between; align-items:center; gap:6px; margin-top:2px; }
+  .conv-last{ font-size:11.5px; color:var(--ink-faint); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .unread-badge{ background:var(--primary); color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; border-radius:20px; display:flex; align-items:center; justify-content:center; padding:0 5px; flex-shrink:0; }
+  .read-tick{ color:var(--info); font-size:13px; flex-shrink:0; }
+
+  /* ---------- middle: chat area ---------- */
+  .chat-area{ display:flex; flex-direction:column; min-width:0; min-height:0; position:relative; }
+  .chat-header{ display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid var(--border); }
+  .status-dot-inline{ width:8px; height:8px; border-radius:50%; margin-right:5px; display:inline-block; }
+  .status-dot-inline.online{ background:var(--success); }
+  .status-dot-inline.offline{ background:var(--ink-faint); }
+  .chat-header-meta{ line-height:1.3; }
+  .chat-header-meta b{ font-size:14px; }
+  .chat-header-meta div{ font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+  .chat-header-actions{ margin-left:auto; display:flex; gap:8px; }
+
+  .pinned-banner{ display:none; align-items:center; gap:10px; padding:9px 20px; background:var(--grad-soft); border-bottom:1px solid var(--border); font-size:12px; }
+  .pinned-banner i{ color:var(--primary-3); font-size:16px; flex-shrink:0; }
+  .pinned-banner b{ font-weight:700; margin-right:4px; }
+  .pinned-banner span:first-of-type{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pinned-count{ color:var(--ink-faint); font-weight:700; font-size:11px; flex-shrink:0; }
+
+  .msg-list{ flex:1; min-height:0; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:2px; }
+
+  .day-divider{ display:flex; align-items:center; justify-content:center; margin:14px 0; }
+  .day-divider span{ background:var(--grad-soft); color:var(--ink-faint); font-size:11px; font-weight:700; padding:5px 14px; border-radius:20px; }
+
+  .msg-row{ display:flex; gap:10px; padding:5px 0; position:relative; }
+  .msg-row.grouped{ padding-top:1px; }
+  .avatar-spacer{ width:32px; flex-shrink:0; }
+  .msg-bubble-col{ max-width:64%; position:relative; }
+  .msg-row.me{ flex-direction:row-reverse; }
+  .msg-row.me .msg-bubble-col{ align-items:flex-end; display:flex; flex-direction:column; }
+  .msg-head{ display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .msg-row.me .msg-head{ flex-direction:row-reverse; }
+  .msg-sender{ font-size:12px; font-weight:700; }
+  .msg-time{ font-size:10.5px; color:var(--ink-faint); font-weight:600; }
+  .msg-pin-flag{ font-size:11px; color:var(--warning); }
+  .msg-bubble{ background:var(--grad-soft); padding:10px 14px; border-radius:16px; border-top-left-radius:4px; font-size:13px; line-height:1.5; color:var(--ink); }
+  .msg-row.me .msg-bubble{ background:var(--grad); color:#fff; border-top-left-radius:16px; border-top-right-radius:4px; }
+  .msg-bubble.has-poll{ background:var(--card); border:1px solid var(--border); padding:14px; min-width:260px; }
+  .mention-chip{ background:rgba(59,130,246,0.16); color:var(--info); font-weight:700; padding:1px 5px; border-radius:6px; }
+  .msg-row.me .mention-chip{ background:rgba(255,255,255,0.22); color:#fff; }
+
+  .read-receipt{ margin-top:3px; color:var(--info); font-size:13px; }
+
+  .msg-reactions{ display:flex; gap:5px; margin-top:5px; flex-wrap:wrap; }
+  .reaction-chip{ background:var(--card); border:1px solid var(--border); border-radius:20px; padding:2px 8px; font-size:11.5px; font-weight:700; cursor:pointer; }
+  .reaction-chip:hover{ border-color:var(--primary); }
+
+  .msg-hover-actions{ position:absolute; top:-14px; right:0; display:none; gap:4px; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:3px; box-shadow:var(--shadow-sm); }
+  .msg-row.me .msg-hover-actions{ right:auto; left:0; }
+  .msg-row:hover .msg-hover-actions{ display:flex; }
+  .msg-hover-actions button{ width:26px; height:26px; border-radius:7px; border:none; background:none; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; }
+  .msg-hover-actions button:hover{ background:var(--grad-soft); color:var(--primary-3); }
+
+  .att-image{ display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.06); border-radius:12px; padding:20px; font-size:12px; font-weight:700; flex-direction:column; min-width:140px; }
+  .att-image i{ font-size:26px; }
+  .att-file{ display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px; min-width:200px; }
+  .msg-row.me .att-file{ background:rgba(255,255,255,0.14); border-color:transparent; }
+  .att-file-icon{ width:34px; height:34px; border-radius:9px; background:var(--grad-soft); color:var(--primary-3); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .att-file b{ font-size:11.5px; display:block; }
+  .att-file small{ font-size:10.5px; color:var(--ink-faint); }
+  .att-file-dl{ margin-left:auto; cursor:pointer; }
+  .att-voice{ display:flex; align-items:center; gap:10px; min-width:200px; cursor:pointer; }
+  .att-voice-icon{ width:30px; height:30px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .att-voice-wave{ display:flex; align-items:center; gap:2px; height:24px; flex:1; }
+  .att-voice-wave span{ width:3px; background:var(--primary); border-radius:2px; opacity:.55; }
+  .att-voice.playing .att-voice-wave span{ opacity:1; }
+  .att-voice-dur{ font-size:11px; font-weight:700; color:var(--ink-faint); flex-shrink:0; }
+
+  /* poll */
+  .poll-widget{ min-width:240px; }
+  .poll-question{ font-size:13px; font-weight:700; margin-bottom:12px; }
+  .poll-option{ position:relative; background:var(--grad-soft); border-radius:12px; padding:9px 12px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; overflow:hidden; font-size:12.5px; font-weight:700; }
+  .poll-option-fill{ position:absolute; inset:0; background:linear-gradient(90deg, rgba(109,93,246,0.22), rgba(109,93,246,0.1)); border-radius:12px; transition:width .5s var(--ease); z-index:0; }
+  .poll-option-label, .poll-option-pct{ position:relative; z-index:1; }
+  .poll-option.voted{ outline:2px solid var(--primary); }
+  .poll-option.voted .poll-option-label i{ color:var(--primary); }
+  .poll-footer{ font-size:11px; color:var(--ink-faint); font-weight:600; margin-top:4px; }
+
+  .typing-indicator{ display:none; align-items:center; gap:8px; padding:0 20px 10px; font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+  .typing-dots{ display:flex; gap:3px; }
+  .typing-dots span{ width:5px; height:5px; border-radius:50%; background:var(--ink-faint); animation:typingBounce 1.2s infinite; }
+  .typing-dots span:nth-child(2){ animation-delay:.15s; }
+  .typing-dots span:nth-child(3){ animation-delay:.3s; }
+  @keyframes typingBounce{ 0%,60%,100%{ transform:translateY(0); opacity:.4; } 30%{ transform:translateY(-4px); opacity:1; } }
+
+  .composer{ border-top:1px solid var(--border); padding:12px 16px; position:relative; }
+  .composer-inner{ display:flex; align-items:flex-end; gap:8px; background:var(--grad-soft); border-radius:16px; padding:8px 8px 8px 14px; }
+  .composer-inner textarea{ flex:1; border:none; outline:none; background:none; resize:none; font-family:inherit; font-size:13px; color:var(--ink); max-height:120px; padding:6px 0; line-height:1.4; }
+  .composer-btn{ width:34px; height:34px; border-radius:10px; border:none; background:none; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .composer-btn:hover{ background:var(--card); color:var(--primary-3); }
+  .composer-send{ width:36px; height:36px; border-radius:11px; background:var(--grad); color:#fff; border:none; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .composer-send:hover{ transform:scale(1.05); }
+
+  .popover{ position:absolute; background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-lg); padding:8px; z-index:60; opacity:0; visibility:hidden; transform:translateY(6px); transition:.15s var(--ease); }
+  .popover.open{ opacity:1; visibility:visible; transform:translateY(0); }
+  #reactPopover{ display:flex; gap:4px; }
+  #reactPopover span{ font-size:18px; cursor:pointer; padding:4px; border-radius:8px; }
+  #reactPopover span:hover{ background:var(--grad-soft); }
+  #emojiPopover{ bottom:56px; left:16px; display:grid; grid-template-columns:repeat(8,1fr); gap:2px; width:220px; }
+  #emojiPopover span{ font-size:18px; cursor:pointer; padding:5px; border-radius:8px; text-align:center; }
+  #emojiPopover span:hover{ background:var(--grad-soft); }
+  #attachMenu{ bottom:56px; left:60px; min-width:170px; }
+  .attach-opt{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; font-size:12.5px; font-weight:600; cursor:pointer; }
+  .attach-opt:hover{ background:var(--grad-soft); }
+  .attach-opt i{ color:var(--primary-3); font-size:16px; }
+  #mentionPopover{ bottom:56px; left:16px; min-width:200px; max-height:180px; overflow-y:auto; }
+  .mention-opt{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; font-size:12.5px; font-weight:600; cursor:pointer; }
+  .mention-opt:hover{ background:var(--grad-soft); }
+  .mention-opt span{ width:24px; height:24px; border-radius:50%; background:var(--grad); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+
+  /* ---------- right: group info panel ---------- */
+  .info-panel{ border-left:1px solid var(--border); min-height:0; overflow-y:auto; padding:20px 18px; }
+  .info-panel-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .info-panel-head .section-title{ font-size:14px; }
+  .info-profile{ text-align:center; margin-bottom:20px; }
+  .info-profile .avatar{ width:72px; height:72px; font-size:24px; margin:0 auto 12px; }
+  .info-profile b{ font-size:15px; display:block; }
+  .info-profile span{ font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+  .info-block{ margin-bottom:20px; }
+  .info-block-label{ display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px; }
+  .info-desc-text{ font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
+  .info-tag{ display:inline-flex; align-items:center; gap:5px; background:var(--grad-soft); color:var(--primary-3); font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; margin-top:8px; }
+  .info-toggle-row{ display:flex; align-items:center; justify-content:space-between; }
+  .info-toggle-row span{ font-size:12.5px; font-weight:700; }
+  .info-media-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .info-media-thumb{ aspect-ratio:1; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; }
+  .info-see-all{ font-size:11px; font-weight:700; color:var(--primary-3); cursor:pointer; }
+  .info-file-row{ display:flex; align-items:center; gap:10px; padding:8px 0; }
+  .info-file-row b{ font-size:11.5px; display:block; }
+  .info-file-row small{ font-size:10px; color:var(--ink-faint); }
+
+  .muted-note{ font-size:12px; color:var(--ink-faint); text-align:center; }
+
+  /* compose modal */
+  .compose-search{ display:flex; align-items:center; gap:8px; background:var(--grad-soft); border-radius:var(--radius-pill); padding:10px 14px; margin-bottom:14px; }
+  .compose-search input{ border:none; outline:none; background:none; font-size:13px; font-family:inherit; color:var(--ink); width:100%; }
+  .compose-search i{ color:var(--ink-faint); }
+  .compose-list{ max-height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:2px; }
+  .compose-opt{ display:flex; align-items:center; gap:12px; padding:10px 8px; border-radius:12px; cursor:pointer; }
+  .compose-opt:hover{ background:var(--grad-soft); }
+  .compose-opt-meta{ flex:1; min-width:0; }
+  .compose-opt-meta b{ font-size:13px; display:block; }
+  .compose-opt-meta small{ font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+  .compose-new{ font-size:10.5px; font-weight:700; color:var(--primary-3); background:var(--grad-soft); padding:4px 10px; border-radius:20px; flex-shrink:0; }
+  .compose-existing{ font-size:10.5px; font-weight:700; color:var(--ink-faint); flex-shrink:0; }
+
+  @media (max-width:1200px){ .msg-shell{ grid-template-columns:280px 1fr; } .info-panel{ display:none; } }
+  @media (max-width:900px){ .msg-shell{ grid-template-columns:1fr; } .conv-panel{ display:none; } }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">N</div>
+      <div class="brand-text"><span class="brand-name">Nexus</span><span class="brand-sub">OPERATIONS OS</span></div>
+      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
+    </div>
+    <nav class="sidebar-scroll" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="dropdown-wrap">
+        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
+          <div class="user-avatar" id="userChipAvatar">AK</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
+        </div>
+        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
+          <div class="dd-divider"></div>
+          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Nexus</span><i class="ri-arrow-right-s-line"></i><span>Communication</span><i class="ri-arrow-right-s-line"></i><b>Messages</b></div>
+      </div>
+      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
+        <div class="dropdown-wrap">
+          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
+          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:280px;">
+            <div class="dd-item"><i class="ri-chat-3-line"></i>3 unread conversations</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section-head fade-up">
+        <div><div class="section-title">Messages</div><div class="section-sub">Channels, groups, and direct messages across the floor.</div></div>
+      </div>
+
+      <div class="msg-shell fade-up" id="msgShell">
+        <!-- LEFT: conversation list -->
+        <div class="conv-panel">
+          <div class="conv-panel-head">
+            <div class="conv-panel-title-row">
+              <div class="section-title">Messages</div>
+              <button class="icon-btn" style="width:32px;height:32px;" data-tip="New message" onclick="openComposeModal()"><i class="ri-quill-pen-line"></i></button>
+            </div>
+            <div class="conv-search"><i class="ri-search-line"></i><input id="convSearch" placeholder="Search conversations…"></div>
+          </div>
+
+          <div class="online-now-block">
+            <div class="online-now-label">Online Now</div>
+            <div class="online-now-row" id="onlineNowRow"></div>
+          </div>
+
+          <div class="conv-scroll">
+            <div id="pinnedSection">
+              <div class="conv-section-label"><i class="ri-pushpin-2-fill"></i>Pinned</div>
+              <div id="pinnedList"></div>
+            </div>
+            <div class="conv-section-label" style="margin-top:10px;"><i class="ri-chat-3-line"></i>All Messages</div>
+            <div id="allList"></div>
+          </div>
+        </div>
+
+        <!-- MIDDLE: chat -->
+        <div class="chat-area" id="chatArea">
+          <div class="chat-header">
+            <div class="avatar" id="activeAvatar" style="width:38px;height:38px;font-size:13px;"></div>
+            <div class="chat-header-meta">
+              <b id="activeName">—</b>
+              <div><span class="status-dot-inline" id="activeStatusDot"></span><span id="activeSub"></span></div>
+            </div>
+            <div class="chat-header-actions">
+              <button class="icon-btn" style="width:34px;height:34px;" data-tip="Voice call" onclick="NexusApp.toast('Starting voice call (demo)','info')"><i class="ri-phone-line"></i></button>
+              <button class="icon-btn" style="width:34px;height:34px;" data-tip="Video call" onclick="NexusApp.toast('Starting video call (demo)','info')"><i class="ri-vidicon-line"></i></button>
+              <button class="icon-btn" style="width:34px;height:34px;" data-tip="Group info" onclick="toggleInfoPanel()"><i class="ri-information-line"></i></button>
+            </div>
+          </div>
+
+          <div class="pinned-banner" id="pinnedBanner">
+            <i class="ri-pushpin-2-fill"></i>
+            <span id="pinnedText"></span>
+            <span class="pinned-count" id="pinnedCount"></span>
+          </div>
+
+          <div class="msg-list" id="msgList"></div>
+
+          <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+            <span><b id="typingName"></b> is typing…</span>
+          </div>
+
+          <div class="composer">
+            <div class="composer-inner">
+              <button class="composer-btn" id="attachBtn" onclick="toggleAttachMenu()" data-tip="Attach"><i class="ri-attachment-2"></i></button>
+              <textarea id="msgInput" rows="1" placeholder="Type message" onkeydown="handleInputKey(event)" oninput="handleInputChange()"></textarea>
+              <button class="composer-btn" id="emojiBtn" onclick="toggleEmojiPicker()" data-tip="Emoji"><i class="ri-emotion-line"></i></button>
+              <button class="composer-send" onclick="sendMessage()" data-tip="Send"><i class="ri-send-plane-fill"></i></button>
+            </div>
+
+            <div class="popover" id="attachMenu">
+              <div class="attach-opt" onclick="attachMock('image')"><i class="ri-image-2-line"></i>Image</div>
+              <div class="attach-opt" onclick="attachMock('file')"><i class="ri-file-text-line"></i>File</div>
+              <div class="attach-opt" onclick="attachMock('voice')"><i class="ri-mic-line"></i>Voice note</div>
+            </div>
+            <div class="popover" id="emojiPopover"></div>
+            <div class="popover" id="mentionPopover"></div>
+          </div>
+
+          <div class="popover" id="reactPopover"></div>
+        </div>
+
+        <!-- RIGHT: group info -->
+        <div class="info-panel">
+          <div class="info-panel-head">
+            <div class="section-title">Group info</div>
+            <button class="modal-close" style="width:28px;height:28px;" onclick="toggleInfoPanel()"><i class="ri-close-line"></i></button>
+          </div>
+
+          <div class="info-profile">
+            <div class="avatar" id="infoAvatar"></div>
+            <b id="infoName">—</b>
+            <span id="infoSub"></span>
+          </div>
+
+          <div class="info-block" id="infoDescTitle">
+            <div class="info-block-label"><i class="ri-file-text-line"></i>Description</div>
+            <div class="info-desc-text" id="infoDescription"></div>
+            <span class="info-tag"><i class="ri-hashtag"></i>nexustech</span>
+          </div>
+
+          <div class="info-block">
+            <div class="info-toggle-row">
+              <span><i class="ri-notification-3-line"></i> Notification</span>
+              <div class="switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+
+          <div class="info-block">
+            <div class="info-block-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span><i class="ri-image-2-line"></i> Media (<span id="infoMediaCount">0</span>)</span>
+              <span class="info-see-all">See All</span>
+            </div>
+            <div class="info-media-grid">
+              <div class="info-media-thumb" style="background:linear-gradient(135deg,#6D5DF6,#4F46E5);"><i class="ri-image-2-line"></i></div>
+              <div class="info-media-thumb" style="background:linear-gradient(135deg,#3B82F6,#6D5DF6);"><i class="ri-image-2-line"></i></div>
+              <div class="info-media-thumb" style="background:linear-gradient(135deg,#7C3AED,#4F46E5);">+50</div>
+            </div>
+          </div>
+
+          <div class="info-block">
+            <div class="info-block-label" style="display:flex; justify-content:space-between; align-items:center;">
+              <span><i class="ri-folder-3-line"></i> Files</span>
+              <span class="info-see-all">See All</span>
+            </div>
+            <div id="infoFilesList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW MESSAGE MODAL -->
+<div class="overlay" id="overlay-modal-compose" onclick="NexusApp.closeModal('modal-compose')"></div>
+<div class="modal" id="modal-compose">
+  <div class="modal-head"><h3>New message</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-compose')"><i class="ri-close-line"></i></button></div>
+  <div class="compose-search"><i class="ri-search-line"></i><input id="composeSearch" placeholder="Search people by name or role…"></div>
+  <div class="compose-list" id="composeList"></div>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/messages.js"></script>
+</body>
+</html>

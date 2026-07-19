@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workflow — Nexus Operations OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .wf-stats-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:20px; }
+  .wf-stat-card{ display:flex; align-items:center; gap:14px; }
+  .wf-stat-icon{ width:44px; height:44px; border-radius:13px; background:var(--grad-soft); color:var(--primary-3); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .wf-stat-value{ font-family:'Inter Tight'; font-size:21px; font-weight:800; transition: color .2s ease; }
+  .wf-stat-value.flash{ color:var(--success); }
+  .wf-stat-label{ font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+
+  .live-banner{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .live-dot{ width:9px; height:9px; border-radius:50%; background:var(--success); animation:pulseDot 1.3s infinite; }
+  .live-banner span{ font-size:12px; font-weight:700; color:var(--success); }
+  .shift-timer{ margin-left:auto; font-family:'Inter Tight'; font-size:13px; font-weight:700; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
+
+  /* pipeline strip */
+  .pipeline-strip-wrap{ overflow-x:auto; padding-bottom:6px; }
+  .pipeline-strip{ display:flex; align-items:center; gap:4px; min-width:max-content; padding:6px 2px; }
+  .pipe-node{ display:flex; flex-direction:column; align-items:center; gap:6px; width:104px; cursor:pointer; padding:10px 6px; border-radius:16px; transition:.15s var(--ease); }
+  .pipe-node:hover{ background:var(--grad-soft); }
+  .pipe-node-icon{ width:42px; height:42px; border-radius:50%; background:var(--grad-soft); color:var(--primary-3); display:flex; align-items:center; justify-content:center; font-size:19px; }
+  .pipe-node.has-load .pipe-node-icon{ background:var(--grad); color:#fff; }
+  .pipe-node-count{ font-family:'Inter Tight'; font-size:16px; font-weight:800; margin-top:-2px; }
+  .pipe-node-label{ font-size:10.5px; font-weight:700; color:var(--ink-faint); text-align:center; line-height:1.3; }
+  .pipe-connector{ color:var(--ink-faint); font-size:20px; flex-shrink:0; }
+
+  /* board */
+  #wfBoard{ display:flex; gap:14px; overflow-x:auto; padding-bottom:10px; margin-top:6px; }
+  .wf-col{ background:var(--grad-soft); border-radius:18px; padding:12px; width:230px; flex-shrink:0; display:flex; flex-direction:column; scroll-snap-align:start; }
+  .wf-col-head{ display:flex; align-items:center; justify-content:space-between; font-size:12px; font-weight:800; margin-bottom:10px; padding:0 2px; }
+  .wf-col-head i{ margin-right:4px; color:var(--primary-3); }
+
+  .wf-worker-zone{ display:flex; flex-wrap:wrap; gap:6px; min-height:34px; padding:6px; background:var(--card); border-radius:12px; margin-bottom:10px; border:1.5px dashed var(--border); }
+  .worker-zone-hint{ font-size:10px; color:var(--ink-faint); font-weight:600; align-self:center; }
+  .worker-chip{ cursor:grab; }
+  .worker-chip:active{ cursor:grabbing; }
+  .worker-chip span{ width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:700; }
+  .worker-chip.lg{ display:flex; flex-direction:column; align-items:center; gap:4px; width:56px; }
+  .worker-chip.lg span{ width:36px; height:36px; font-size:12px; }
+  .worker-chip.lg small{ font-size:10px; font-weight:600; color:var(--ink-soft); text-align:center; }
+
+  .wf-dropzone{ display:flex; flex-direction:column; gap:8px; min-height:60px; flex:1; }
+  .wf-batch-chip{ background:var(--card); border-radius:12px; padding:10px; box-shadow:var(--shadow-sm); cursor:grab; }
+  .wf-batch-chip:active{ cursor:grabbing; }
+  .wf-batch-chip-top{ display:flex; align-items:center; justify-content:space-between; font-size:12px; }
+  .wf-timer{ font-family:'Inter Tight'; font-size:11px; font-weight:800; color:var(--primary-3); background:var(--grad-soft); padding:2px 7px; border-radius:20px; }
+  .wf-timer.slow{ color:var(--danger); background:var(--danger-soft); }
+  .wf-batch-chip-model{ font-size:10.5px; color:var(--ink-faint); font-weight:600; margin-top:4px; }
+  .kanban-ghost{ opacity:.4; }
+
+  .pool-card{ display:flex; flex-wrap:wrap; gap:10px; min-height:70px; }
+
+  @media (max-width:1080px){ .wf-stats-row{ grid-template-columns:repeat(2,1fr); } }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">N</div>
+      <div class="brand-text"><span class="brand-name">Nexus</span><span class="brand-sub">OPERATIONS OS</span></div>
+      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
+    </div>
+    <nav class="sidebar-scroll" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="dropdown-wrap">
+        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
+          <div class="user-avatar" id="userChipAvatar">AK</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
+        </div>
+        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
+          <div class="dd-divider"></div>
+          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Nexus</span><i class="ri-arrow-right-s-line"></i><span>Production</span><i class="ri-arrow-right-s-line"></i><b>Workflow</b></div>
+      </div>
+      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
+        <div class="dropdown-wrap">
+          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
+          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:280px;">
+            <div class="dd-item"><i class="ri-time-line"></i>Batch BX-1082 has been in Software for 34 min</div>
+            <div class="dd-item"><i class="ri-team-line"></i>2 workers unassigned this shift</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="wfResetDemo()"><i class="ri-refresh-line"></i>Reset demo</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section-head fade-up">
+        <div>
+          <div class="live-banner"><span class="live-dot"></span><span>LIVE PRODUCTION</span></div>
+          <div class="section-title">Workflow</div>
+          <div class="section-sub">Drag batches across stages, allocate workers, and track cycle time in real time.</div>
+        </div>
+        <div class="shift-timer"><i class="ri-timer-line"></i>Shift running <b id="shiftTimer">00:00:00</b></div>
+      </div>
+
+      <div class="wf-stats-row fade-up">
+        <div class="card wf-stat-card"><div class="wf-stat-icon"><i class="ri-flashlight-line"></i></div><div><div class="wf-stat-value" id="statUnits">0</div><div class="wf-stat-label">Units processed today</div></div></div>
+        <div class="card wf-stat-card"><div class="wf-stat-icon"><i class="ri-loader-4-line"></i></div><div><div class="wf-stat-value" id="statInProgress">0</div><div class="wf-stat-label">Units in progress</div></div></div>
+        <div class="card wf-stat-card"><div class="wf-stat-icon"><i class="ri-checkbox-circle-line"></i></div><div><div class="wf-stat-value" id="statCompleted">0</div><div class="wf-stat-label">Batches completed today</div></div></div>
+        <div class="card wf-stat-card"><div class="wf-stat-icon"><i class="ri-alert-line"></i></div><div><div class="wf-stat-value" id="statBottleneck">—</div><div class="wf-stat-label">Current bottleneck stage</div></div></div>
+      </div>
+
+      <div class="card fade-up" style="margin-bottom:18px;">
+        <div class="section-head"><div><div class="section-title">Visual Workflow</div><div class="section-sub">Click a stage to jump to it below</div></div></div>
+        <div class="pipeline-strip-wrap"><div class="pipeline-strip" id="pipelineStrip"></div></div>
+      </div>
+
+      <div class="card fade-up" style="margin-bottom:18px;">
+        <div class="section-head">
+          <div><div class="section-title">Live Production Board</div><div class="section-sub">Drag a batch card to move it to the next stage — timers reset automatically</div></div>
+        </div>
+        <div id="wfBoard"></div>
+      </div>
+
+      <div class="card fade-up">
+        <div class="section-head">
+          <div><div class="section-title">Worker Allocation Pool</div><div class="section-sub">Drag a worker onto any stage above to assign them for this shift</div></div>
+        </div>
+        <div class="pool-card" id="wfPool"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/workflow.js"></script>
+</body>
+</html>

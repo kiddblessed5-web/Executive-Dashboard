@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phone Batches — Nexus Operations OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .batch-toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  .toolbar-search{ display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-pill); padding:10px 14px; min-width:220px; flex:1; }
+  .toolbar-search input{ border:none; outline:none; background:none; font-size:13px; font-family:inherit; color:var(--ink); width:100%; }
+  .toolbar-search i{ color:var(--ink-faint); }
+  select.pill-select{
+    appearance:none; -webkit-appearance:none; border:1px solid var(--border); cursor:pointer; background:var(--card);
+    border-radius:var(--radius-pill); padding:10px 30px 10px 14px; font-size:12.5px; font-weight:700; color:var(--ink);
+    font-family:inherit;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 10px center; background-size:10px 10px;
+  }
+  .view-toggles{ display:flex; gap:4px; background:var(--grad-soft); padding:4px; border-radius:14px; }
+  .view-toggle-btn{ display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:10px; font-size:12.5px; font-weight:700; color:var(--ink-soft); background:none; border:none; }
+  .view-toggle-btn.active{ background:var(--card); color:var(--primary-3); box-shadow:var(--shadow-sm); }
+
+  /* grid */
+  #view-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .batch-card{ background:var(--card); border-radius:var(--radius-card); box-shadow:var(--shadow); padding:20px; cursor:pointer; transition: transform .18s var(--ease), box-shadow .18s var(--ease); }
+  .batch-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+  .batch-card-top{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+  .batch-id{ font-family:'Inter Tight'; font-size:15.5px; font-weight:800; }
+  .batch-model{ font-size:12px; color:var(--ink-faint); font-weight:600; margin-top:2px; }
+  .batch-meta-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; margin-bottom:16px; }
+  .batch-meta-grid div{ display:flex; flex-direction:column; gap:2px; }
+  .batch-meta-grid small{ font-size:10.5px; color:var(--ink-faint); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+  .batch-meta-grid b{ font-size:12.5px; font-weight:700; }
+  .batch-progress-label{ display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; margin-bottom:6px; color:var(--ink-soft); }
+  .progress-track{ height:9px; background:var(--grad-soft); border-radius:20px; overflow:hidden; }
+  .progress-fill{ height:100%; border-radius:20px; width:0; transition:width 1s var(--ease); }
+  .batch-card-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:16px; font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+  .batch-card-arrow{ width:26px; height:26px; border-radius:50%; background:var(--grad-soft); display:flex; align-items:center; justify-content:center; color:var(--primary-3); }
+
+  /* list */
+  #view-list .card{ padding:8px 12px; }
+
+  /* kanban */
+  #view-kanban{ display:none; gap:16px; overflow-x:auto; padding-bottom:10px; }
+  .kanban-col{ background:var(--grad-soft); border-radius:18px; padding:14px; width:270px; flex-shrink:0; display:flex; flex-direction:column; }
+  .kanban-col-head{ display:flex; align-items:center; justify-content:space-between; font-size:12.5px; font-weight:800; margin-bottom:12px; padding:0 4px; }
+  .kanban-count{ background:var(--card); border-radius:20px; padding:2px 9px; font-size:11px; }
+  .kanban-dropzone{ display:flex; flex-direction:column; gap:10px; min-height:80px; flex:1; }
+  .kanban-card{ background:var(--card); border-radius:14px; padding:13px; box-shadow:var(--shadow-sm); cursor:grab; }
+  .kanban-card:active{ cursor:grabbing; }
+  .kanban-card-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .kanban-card-model{ font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+  .kanban-card-foot{ display:flex; justify-content:space-between; font-size:11px; color:var(--ink-faint); font-weight:700; margin-top:8px; }
+  .kanban-ghost{ opacity:.4; }
+
+  .empty-state{ grid-column:1/-1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; color:var(--ink-faint); text-align:center; }
+  .empty-state i{ font-size:38px; margin-bottom:10px; }
+  .empty-state b{ font-size:14px; color:var(--ink); margin-bottom:4px; }
+  .empty-state span{ font-size:12.5px; }
+
+  .pagination{ display:flex; gap:6px; justify-content:center; margin-top:22px; }
+  .page-btn{ width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--card); font-size:12.5px; font-weight:700; color:var(--ink-soft); }
+  .page-btn.active{ background:var(--grad); color:#fff; border-color:transparent; }
+  .page-btn:disabled{ opacity:.4; }
+
+  /* drawer content */
+  .pipe-track{ display:flex; flex-wrap:wrap; gap:10px; }
+  .pipe-step{ display:flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700; color:var(--ink-faint); }
+  .pipe-dot{ width:26px; height:26px; border-radius:50%; background:var(--grad-soft); display:flex; align-items:center; justify-content:center; font-size:11px; }
+  .pipe-step.done{ color:var(--ink); }
+  .pipe-step.done .pipe-dot{ background:var(--grad); color:#fff; }
+
+  .drawer-meta-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:18px 0; }
+  .drawer-meta-grid div{ display:flex; flex-direction:column; gap:2px; }
+  .drawer-meta-grid small{ font-size:10.5px; color:var(--ink-faint); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .drawer-meta-grid b{ font-size:13px; }
+
+  .contrib-row{ display:flex; align-items:center; gap:12px; padding:8px 0; }
+  .contrib-name{ width:110px; font-size:12px; font-weight:700; flex-shrink:0; }
+  .contrib-val{ font-size:12px; font-weight:800; width:40px; text-align:right; }
+
+  .donut-wrap{ position:relative; width:140px; height:140px; margin:0 auto; }
+  .donut-label{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Inter Tight'; font-size:22px; font-weight:800; }
+
+  .drawer-tabs{ display:flex; gap:4px; background:var(--grad-soft); padding:4px; border-radius:12px; margin:18px 0 14px; }
+  .drawer-tab{ flex:1; text-align:center; padding:8px; border-radius:9px; font-size:12px; font-weight:700; color:var(--ink-soft); }
+  .drawer-tab.active{ background:var(--card); color:var(--primary-3); box-shadow:var(--shadow-sm); }
+  .drawer-tabpanel{ display:none; }
+  .drawer-tabpanel.active{ display:block; }
+
+  @media (max-width:1080px){ #view-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:720px){ #view-grid{ grid-template-columns:1fr; } .drawer-meta-grid{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">N</div>
+      <div class="brand-text"><span class="brand-name">Nexus</span><span class="brand-sub">OPERATIONS OS</span></div>
+      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
+    </div>
+    <nav class="sidebar-scroll" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="dropdown-wrap">
+        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
+          <div class="user-avatar" id="userChipAvatar">AK</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
+        </div>
+        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
+          <div class="dd-divider"></div>
+          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Nexus</span><i class="ri-arrow-right-s-line"></i><span>Production</span><i class="ri-arrow-right-s-line"></i><b>Phone Batches</b></div>
+      </div>
+      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
+        <div class="dropdown-wrap">
+          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
+          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:280px;">
+            <div class="dd-item"><i class="ri-checkbox-circle-line"></i>Batch #BX-1042 completed QC</div>
+            <div class="dd-item"><i class="ri-alert-line"></i>Batch #BX-1039 flagged delayed</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openNewBatchModal()"><i class="ri-add-line"></i>New Batch</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section-head fade-up">
+        <div><div class="section-title">Phone Batches</div><div class="section-sub" id="batchCount">Loading…</div></div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-secondary btn-sm" onclick="exportBatchesCSV()"><i class="ri-download-2-line"></i>Export</button>
+          <button class="btn btn-primary btn-sm" onclick="openNewBatchModal()"><i class="ri-add-line"></i>New Batch</button>
+        </div>
+      </div>
+
+      <div class="batch-toolbar fade-up">
+        <div class="toolbar-search"><i class="ri-search-line"></i><input id="searchInput" placeholder="Search batch ID or model…"></div>
+        <select class="pill-select" id="filterManager"><option value="all">All managers</option></select>
+        <select class="pill-select" id="filterStatus">
+          <option value="all">All status</option>
+          <option>On Track</option><option>At Risk</option><option>Delayed</option><option>Completed</option>
+        </select>
+        <select class="pill-select" id="sortSelect">
+          <option value="received-desc">Newest first</option>
+          <option value="received-asc">Oldest first</option>
+          <option value="progress-desc">Highest progress</option>
+          <option value="qty-desc">Largest quantity</option>
+        </select>
+        <div class="view-toggles">
+          <button class="view-toggle-btn" data-view="grid"><i class="ri-grid-fill"></i>Grid</button>
+          <button class="view-toggle-btn" data-view="list"><i class="ri-list-check-2"></i>List</button>
+          <button class="view-toggle-btn" data-view="kanban"><i class="ri-kanban-view"></i>Kanban</button>
+        </div>
+      </div>
+
+      <div id="view-grid" class="view-panel fade-up"></div>
+
+      <div id="view-list" class="view-panel fade-up">
+        <div class="card" style="overflow-x:auto;">
+          <table>
+            <thead><tr><th></th><th>Batch ID</th><th>Model</th><th>Qty</th><th>Salesman</th><th>Manager</th><th>Progress</th><th>Status</th><th>Due</th></tr></thead>
+            <tbody id="batchListBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="view-kanban" class="view-panel fade-up"></div>
+
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW BATCH MODAL -->
+<div class="overlay" id="overlay-modal-newbatch" onclick="NexusApp.closeModal('modal-newbatch')"></div>
+<div class="modal" id="modal-newbatch">
+  <div class="modal-head"><h3>Create new batch</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-newbatch')"><i class="ri-close-line"></i></button></div>
+  <form onsubmit="submitNewBatch(event)">
+    <div class="field"><label>Phone model</label>
+      <select id="nb-model" required>
+        <option value="">Select model…</option>
+        <option>Y18</option><option>Y28</option><option>V30</option><option>Y36</option><option>X100</option><option>Y17s</option>
+      </select>
+    </div>
+    <div class="field"><label>Quantity</label><input type="number" id="nb-qty" min="1" placeholder="e.g. 250" required></div>
+    <div class="field"><label>Salesman</label>
+      <select id="nb-salesman"><option>Brian Mwangi</option><option>Faith Kerubo</option><option>Dennis Otieno</option><option>Ann Wambui</option></select>
+    </div>
+    <div class="field"><label>Chinese Manager</label>
+      <select id="nb-manager"><option>Wei Zhang</option><option>Li Chen</option><option>Feng Yun</option><option>Chao Liu</option></select>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-newbatch')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Create batch</button>
+    </div>
+  </form>
+</div>
+
+<!-- BATCH DETAILS DRAWER -->
+<div class="overlay" id="drawer-overlay" onclick="NexusApp.closeDrawer('batchDrawer')"></div>
+<div class="drawer" id="batchDrawer">
+  <div class="drawer-head">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="drawerBatchId" style="font-family:'Inter Tight';font-size:17px;font-weight:800;"></span>
+        <span class="badge" id="drawerBatchStatus"></span>
+      </div>
+      <div id="drawerBatchModel" style="font-size:12.5px;color:var(--ink-faint);font-weight:600;margin-top:3px;"></div>
+    </div>
+    <button class="modal-close" onclick="NexusApp.closeDrawer('batchDrawer')"><i class="ri-close-line"></i></button>
+  </div>
+  <div class="drawer-body">
+    <div style="display:flex; gap:8px; margin-bottom:18px;">
+      <button class="btn btn-secondary btn-sm"><i class="ri-user-add-line"></i>Assign Workers</button>
+      <button class="btn btn-secondary btn-sm"><i class="ri-edit-line"></i>Edit</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportBatchesCSV()"><i class="ri-download-2-line"></i>Export</button>
+      <button class="btn btn-primary btn-sm" id="drawerCompleteBtn"><i class="ri-check-line"></i>Complete</button>
+    </div>
+
+    <div class="section-title" style="font-size:13.5px;">Production Pipeline</div>
+    <div class="pipe-track" id="drawerPipeline" style="margin-top:12px;"></div>
+
+    <div class="drawer-meta-grid" id="drawerMeta"></div>
+
+    <div class="drawer-tabs">
+      <div class="drawer-tab active" data-tab="overview">Overview</div>
+      <div class="drawer-tab" data-tab="activity">Activity</div>
+      <div class="drawer-tab" data-tab="notes">Notes</div>
+    </div>
+
+    <div class="drawer-tabpanel active" data-panel="overview">
+      <div class="section-title" style="font-size:13px;margin-bottom:10px;">Production Summary</div>
+      <div class="donut-wrap"><canvas id="drawerDonut"></canvas><div class="donut-label" id="drawerDonutLabel">0%</div></div>
+      <div class="section-title" style="font-size:13px;margin:20px 0 4px;">Worker Contributions</div>
+      <div id="drawerContrib"></div>
+    </div>
+
+    <div class="drawer-tabpanel" data-panel="activity">
+      <div id="drawerActivity"></div>
+    </div>
+
+    <div class="drawer-tabpanel" data-panel="notes">
+      <div class="field"><label>Internal notes</label><textarea id="drawerNotes" rows="6" placeholder="Add notes about this batch…"></textarea></div>
+      <button class="btn btn-primary btn-sm" onclick="saveDrawerNotes()"><i class="ri-save-line"></i>Save notes</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/batches.js"></script>
+<script>
+  // populate manager filter + wire drawer tabs after DOM ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const managerSelect = document.getElementById('filterManager');
+    MANAGERS.forEach(m => { const o=document.createElement('option'); o.textContent=m; managerSelect.appendChild(o); });
+
+    document.querySelectorAll('.drawer-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.drawer-tab').forEach(t=>t.classList.remove('active'));
+        document.querySelectorAll('.drawer-tabpanel').forEach(p=>p.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelector(`.drawer-tabpanel[data-panel="${tab.dataset.tab}"]`).classList.add('active');
+      });
+    });
+  });
+</script>
+</body>
+</html>
