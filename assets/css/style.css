@@ -29,9 +29,9 @@
   --info: #3B82F6;
   --info-soft: #EAF1FE;
 
-  --radius-card: 20px;
-  --radius-btn: 16px;
-  --radius-sm: 12px;
+  --radius-card: 10px;
+  --radius-btn: 10px;
+  --radius-sm: 10px;
   --radius-pill: 999px;
 
   --shadow-sm: 0 2px 8px -2px rgba(20,22,43,0.06);

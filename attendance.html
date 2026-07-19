@@ -1,184 +1,571 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Attendance — Nexus Operations OS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
-<style>
-  .date-nav{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .date-nav-btn{ width:36px; height:36px; border-radius:50%; background:var(--card); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--ink); }
-  .date-nav-btn:hover{ background:var(--grad-soft); }
-  .date-label{ font-size:13.5px; font-weight:700; min-width:200px; text-align:center; }
-  .date-picker-input{ border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-family:inherit; font-size:12.5px; background:var(--card); color:var(--ink); }
-  .sunday-note{ display:none; align-items:center; gap:6px; font-size:11.5px; font-weight:700; color:var(--info); background:var(--info-soft); padding:6px 12px; border-radius:20px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance — Nexus Operations OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <style>
+      .date-nav {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .date-nav-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--card);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--ink);
+      }
+      .date-nav-btn:hover {
+        background: var(--grad-soft);
+      }
+      .date-label {
+        font-size: 13.5px;
+        font-weight: 700;
+        min-width: 200px;
+        text-align: center;
+      }
+      .date-picker-input {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-family: inherit;
+        font-size: 12.5px;
+        background: var(--card);
+        color: var(--ink);
+      }
+      .sunday-note {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--info);
+        background: var(--info-soft);
+        padding: 6px 12px;
+        border-radius: 20px;
+      }
 
-  .kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin:18px 0; }
-  .kpi-card{ display:flex; align-items:center; gap:14px; }
-  .kpi-icon{ width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
-  .kpi-value{ font-family:'Inter Tight'; font-size:22px; font-weight:800; }
-  .kpi-label{ font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+        margin: 18px 0;
+      }
+      .kpi-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .kpi-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+      .kpi-value {
+        font-family: "Inter Tight";
+        font-size: 22px;
+        font-weight: 800;
+      }
+      .kpi-label {
+        font-size: 11.5px;
+        color: var(--ink-faint);
+        font-weight: 600;
+      }
 
-  .att-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px; }
+      .att-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
 
-  /* calendar */
-  .cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
-  .cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px; }
-  .cal-weekdays span{ font-size:10px; font-weight:700; color:var(--ink-faint); text-align:center; text-transform:uppercase; }
-  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
-  .cal-cell{ aspect-ratio:1; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; cursor:pointer; color:var(--ink); }
-  .cal-cell.empty{ visibility:hidden; cursor:default; }
-  .cal-empty{ background:var(--grad-soft); color:var(--ink-faint); }
-  .cal-off{ background:repeating-linear-gradient(45deg, var(--border), var(--border) 4px, transparent 4px, transparent 8px); color:var(--ink-faint); }
-  .cal-r1{ background:#FEE2E2; color:#991B1B; }
-  .cal-r2{ background:#FED7AA; color:#9A3412; }
-  .cal-r3{ background:#FEF08A; color:#854D0E; }
-  .cal-r4{ background:#BBF7D0; color:#166534; }
-  .cal-r5{ background:#16A34A; color:#fff; }
-  .cal-cell.selected{ outline:2.5px solid var(--primary); outline-offset:1px; }
-  .cal-legend{ display:flex; gap:12px; flex-wrap:wrap; margin-top:14px; font-size:10.5px; color:var(--ink-faint); font-weight:600; }
-  .cal-legend span{ display:flex; align-items:center; gap:5px; }
-  .cal-legend i{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+      /* calendar */
+      .cal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .cal-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .cal-weekdays span {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--ink-faint);
+        text-align: center;
+        text-transform: uppercase;
+      }
+      .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+      }
+      .cal-cell {
+        aspect-ratio: 1;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11.5px;
+        font-weight: 700;
+        cursor: pointer;
+        color: var(--ink);
+      }
+      .cal-cell.empty {
+        visibility: hidden;
+        cursor: default;
+      }
+      .cal-empty {
+        background: var(--grad-soft);
+        color: var(--ink-faint);
+      }
+      .cal-off {
+        background: repeating-linear-gradient(
+          45deg,
+          var(--border),
+          var(--border) 4px,
+          transparent 4px,
+          transparent 8px
+        );
+        color: var(--ink-faint);
+      }
+      .cal-r1 {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .cal-r2 {
+        background: #fed7aa;
+        color: #9a3412;
+      }
+      .cal-r3 {
+        background: #fef08a;
+        color: #854d0e;
+      }
+      .cal-r4 {
+        background: #bbf7d0;
+        color: #166534;
+      }
+      .cal-r5 {
+        background: #16a34a;
+        color: #fff;
+      }
+      .cal-cell.selected {
+        outline: 2.5px solid var(--primary);
+        outline-offset: 1px;
+      }
+      .cal-legend {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        font-size: 10.5px;
+        color: var(--ink-faint);
+        font-weight: 600;
+      }
+      .cal-legend span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .cal-legend i {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        display: inline-block;
+      }
 
-  .att-toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
-  .toolbar-search{ display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-pill); padding:10px 14px; min-width:200px; flex:1; }
-  .toolbar-search input{ border:none; outline:none; background:none; font-size:13px; font-family:inherit; color:var(--ink); width:100%; }
-  .toolbar-search i{ color:var(--ink-faint); }
-  select.pill-select{
-    appearance:none; -webkit-appearance:none; border:1px solid var(--border); cursor:pointer; background:var(--card);
-    border-radius:var(--radius-pill); padding:10px 30px 10px 14px; font-size:12.5px; font-weight:700; color:var(--ink); font-family:inherit;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-    background-repeat:no-repeat; background-position:right 10px center; background-size:10px 10px;
-  }
-  .region-cell{ display:flex; align-items:center; gap:10px; }
+      .att-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .toolbar-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        padding: 10px 14px;
+        min-width: 200px;
+        flex: 1;
+      }
+      .toolbar-search input {
+        border: none;
+        outline: none;
+        background: none;
+        font-size: 13px;
+        font-family: inherit;
+        color: var(--ink);
+        width: 100%;
+      }
+      .toolbar-search i {
+        color: var(--ink-faint);
+      }
+      select.pill-select {
+        appearance: none;
+        -webkit-appearance: none;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        background: var(--card);
+        border-radius: var(--radius-pill);
+        padding: 10px 30px 10px 14px;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--ink);
+        font-family: inherit;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 10px 10px;
+      }
+      .region-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
 
-  @media (max-width:1080px){ .kpi-row{ grid-template-columns:repeat(2,1fr); } .att-grid{ grid-template-columns:1fr; } }
-</style>
-</head>
-<body>
-
-<div class="app-shell">
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-mark">N</div>
-      <div class="brand-text"><span class="brand-name">Nexus</span><span class="brand-sub">OPERATIONS OS</span></div>
-      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
-    </div>
-    <nav class="sidebar-scroll" id="sidebarNav"></nav>
-    <div class="sidebar-footer">
-      <div class="dropdown-wrap">
-        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
-          <div class="user-avatar" id="userChipAvatar">AK</div>
-          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
-          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
-        </div>
-        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
-          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
-          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
-          <div class="dd-divider"></div>
-          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-left">
-        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
-        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Nexus</span><i class="ri-arrow-right-s-line"></i><span>People</span><i class="ri-arrow-right-s-line"></i><b>Attendance</b></div>
-      </div>
-      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
-      <div class="topbar-right">
-        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
-        <div class="dropdown-wrap">
-          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
-          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:280px;">
-            <div class="dd-item"><i class="ri-alert-line"></i>3 workers not yet checked in today</div>
+      @media (max-width: 1080px) {
+        .kpi-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .att-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-mark">N</div>
+          <div class="brand-text">
+            <span class="brand-name">Nexus</span
+            ><span class="brand-sub">OPERATIONS OS</span>
           </div>
+          <button
+            class="sidebar-collapse-btn"
+            data-tip="Collapse sidebar"
+            onclick="NexusApp.toggleSidebarCollapse()"
+          >
+            <i class="ri-arrow-left-s-line" id="collapseIcon"></i>
+          </button>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="exportAttendanceCSV()"><i class="ri-download-2-line"></i>Export</button>
-      </div>
-    </div>
-
-    <div class="content">
-      <div class="section-head fade-up">
-        <div><div class="section-title">Attendance</div><div class="section-sub">Track daily check-ins, review history, and export reports.</div></div>
-        <div class="date-nav">
-          <span class="sunday-note" id="sundayNote"><i class="ri-moon-clear-line"></i>Weekly off</span>
-          <button class="date-nav-btn" onclick="changeDate(-1)"><i class="ri-arrow-left-s-line"></i></button>
-          <span class="date-label" id="dateLabel">—</span>
-          <button class="date-nav-btn" onclick="changeDate(1)"><i class="ri-arrow-right-s-line"></i></button>
-          <input type="date" class="date-picker-input" id="datePicker">
-          <button class="btn btn-secondary btn-sm" onclick="jumpToday()">Today</button>
-        </div>
-      </div>
-
-      <div class="kpi-row fade-up">
-        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--success-soft); color:var(--success);"><i class="ri-checkbox-circle-line"></i></div><div><div class="kpi-value" id="kpiPresent">0</div><div class="kpi-label">Present</div></div></div>
-        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--warning-soft); color:var(--warning);"><i class="ri-time-line"></i></div><div><div class="kpi-value" id="kpiLate">0</div><div class="kpi-label">Late</div></div></div>
-        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--danger-soft); color:var(--danger);"><i class="ri-close-circle-line"></i></div><div><div class="kpi-value" id="kpiAbsent">0</div><div class="kpi-label">Absent</div></div></div>
-        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--grad-soft); color:var(--primary-3);"><i class="ri-percent-line"></i></div><div><div class="kpi-value" id="kpiRate">0%</div><div class="kpi-label" id="kpiUnmarked">Attendance rate</div></div></div>
-      </div>
-
-      <div class="att-grid fade-up">
-        <div class="card">
-          <div class="cal-head">
-            <div class="section-title" style="font-size:14px;">Calendar</div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <button class="date-nav-btn" onclick="calPrevMonth()"><i class="ri-arrow-left-s-line"></i></button>
-              <span style="font-size:12.5px;font-weight:700;min-width:120px;text-align:center;" id="calLabel">—</span>
-              <button class="date-nav-btn" onclick="calNextMonth()"><i class="ri-arrow-right-s-line"></i></button>
+        <nav class="sidebar-scroll" id="sidebarNav"></nav>
+        <div class="sidebar-footer">
+          <div class="dropdown-wrap">
+            <div
+              class="user-chip"
+              onclick="NexusApp.toggleDropdown('userMenu')"
+            >
+              <div class="user-avatar" id="userChipAvatar">AK</div>
+              <div class="user-meta">
+                <div class="user-name" id="userChipName">Alex Kimani</div>
+                <div class="user-role" id="userChipRole">
+                  Production Manager
+                </div>
+              </div>
+              <i class="ri-more-2-fill" style="color: var(--ink-faint)"></i>
+            </div>
+            <div
+              class="dropdown-panel"
+              id="userMenu"
+              style="bottom: 64px; left: 14px; width: 220px"
+            >
+              <div class="dd-item" onclick="location.href = 'settings.html'">
+                <i class="ri-user-line"></i>My profile
+              </div>
+              <div class="dd-item" onclick="location.href = 'settings.html'">
+                <i class="ri-settings-4-line"></i>Settings
+              </div>
+              <div class="dd-divider"></div>
+              <div class="dd-item danger" onclick="NexusApp.logout()">
+                <i class="ri-logout-box-line"></i>Log out
+              </div>
             </div>
           </div>
-          <div class="cal-weekdays"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
-          <div class="cal-grid" id="calGrid"></div>
-          <div class="cal-legend">
-            <span><i style="background:#16A34A;"></i>95%+</span>
-            <span><i style="background:#BBF7D0;"></i>85–94%</span>
-            <span><i style="background:#FEF08A;"></i>70–84%</span>
-            <span><i style="background:#FED7AA;"></i>50–69%</span>
-            <span><i style="background:#FEE2E2;"></i>&lt;50%</span>
-            <span><i style="background:repeating-linear-gradient(45deg,#EEF1F8,#EEF1F8 2px,transparent 2px,transparent 4px);"></i>Weekly off</span>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <div class="topbar-left">
+            <button class="menu-btn" onclick="NexusApp.toggleSidebar()">
+              <i class="ri-menu-line"></i>
+            </button>
+            <div class="breadcrumbs">
+              <i class="ri-home-5-line"></i><span>Nexus</span
+              ><i class="ri-arrow-right-s-line"></i><span>People</span
+              ><i class="ri-arrow-right-s-line"></i><b>Attendance</b>
+            </div>
+          </div>
+          <div class="topbar-search" onclick="NexusApp.openCmdk()">
+            <i class="ri-search-line"></i><span>Search or jump to…</span
+            ><span class="kbd">⌘K</span>
+          </div>
+          <div class="topbar-right">
+            <button
+              class="icon-btn"
+              data-tip="Toggle theme"
+              onclick="NexusApp.toggleTheme()"
+            >
+              <i id="themeToggleIcon" class="ri-moon-line"></i>
+            </button>
+            <div class="dropdown-wrap">
+              <button
+                class="icon-btn"
+                data-tip="Notifications"
+                onclick="NexusApp.toggleDropdown('notifPanel')"
+              >
+                <i class="ri-notification-3-line"></i
+                ><span class="icon-dot"></span>
+              </button>
+              <div
+                class="dropdown-panel"
+                id="notifPanel"
+                style="top: 50px; right: 0; width: 280px"
+              >
+                <div class="dd-item">
+                  <i class="ri-alert-line"></i>3 workers not yet checked in
+                  today
+                </div>
+              </div>
+            </div>
+            <button
+              class="btn btn-secondary btn-sm"
+              onclick="exportAttendanceCSV()"
+            >
+              <i class="ri-download-2-line"></i>Export
+            </button>
           </div>
         </div>
 
-        <div class="card">
-          <div class="section-title" style="font-size:14px;margin-bottom:14px;">Weekly Attendance Trend</div>
-          <div style="height:180px;"><canvas id="attTrendChart"></canvas></div>
-          <div class="section-title" style="font-size:14px;margin:20px 0 10px;">Today's Breakdown</div>
-          <div style="height:170px;"><canvas id="attDonutChart"></canvas></div>
-        </div>
-      </div>
+        <div class="content">
+          <div class="section-head fade-up">
+            <div>
+              <div class="section-title">Attendance</div>
+              <div class="section-sub">
+                Track daily check-ins, review history, and export reports.
+              </div>
+            </div>
+            <div class="date-nav">
+              <span class="sunday-note" id="sundayNote"
+                ><i class="ri-moon-clear-line"></i>Weekly off</span
+              >
+              <button class="date-nav-btn" onclick="changeDate(-1)">
+                <i class="ri-arrow-left-s-line"></i>
+              </button>
+              <span class="date-label" id="dateLabel">—</span>
+              <button class="date-nav-btn" onclick="changeDate(1)">
+                <i class="ri-arrow-right-s-line"></i>
+              </button>
+              <input type="date" class="date-picker-input" id="datePicker" />
+              <button class="btn btn-secondary btn-sm" onclick="jumpToday()">
+                Today
+              </button>
+            </div>
+          </div>
 
-      <div class="card fade-up">
-        <div class="section-head"><div><div class="section-title">Daily Attendance</div><div class="section-sub">Check workers in and out for the selected date</div></div></div>
-        <div class="att-toolbar">
-          <div class="toolbar-search"><i class="ri-search-line"></i><input id="attSearch" placeholder="Search workers…"></div>
-          <select class="pill-select" id="attStatusFilter">
-            <option value="all">All status</option>
-            <option value="present">Present</option>
-            <option value="late">Late</option>
-            <option value="absent">Absent</option>
-            <option value="unmarked">Unmarked</option>
-          </select>
-        </div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead><tr><th>Worker</th><th>Check In</th><th>Check Out</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="attTableBody"></tbody>
-          </table>
+          <div class="kpi-row fade-up">
+            <div class="card kpi-card">
+              <div
+                class="kpi-icon"
+                style="background: var(--success-soft); color: var(--success)"
+              >
+                <i class="ri-checkbox-circle-line"></i>
+              </div>
+              <div>
+                <div class="kpi-value" id="kpiPresent">0</div>
+                <div class="kpi-label">Present</div>
+              </div>
+            </div>
+            <div class="card kpi-card">
+              <div
+                class="kpi-icon"
+                style="background: var(--warning-soft); color: var(--warning)"
+              >
+                <i class="ri-time-line"></i>
+              </div>
+              <div>
+                <div class="kpi-value" id="kpiLate">0</div>
+                <div class="kpi-label">Late</div>
+              </div>
+            </div>
+            <div class="card kpi-card">
+              <div
+                class="kpi-icon"
+                style="background: var(--danger-soft); color: var(--danger)"
+              >
+                <i class="ri-close-circle-line"></i>
+              </div>
+              <div>
+                <div class="kpi-value" id="kpiAbsent">0</div>
+                <div class="kpi-label">Absent</div>
+              </div>
+            </div>
+            <div class="card kpi-card">
+              <div
+                class="kpi-icon"
+                style="background: var(--grad-soft); color: var(--primary-3)"
+              >
+                <i class="ri-percent-line"></i>
+              </div>
+              <div>
+                <div class="kpi-value" id="kpiRate">0%</div>
+                <div class="kpi-label" id="kpiUnmarked">Attendance rate</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="att-grid fade-up">
+            <div class="card">
+              <div class="cal-head">
+                <div class="section-title" style="font-size: 14px">
+                  Calendar
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px">
+                  <button class="date-nav-btn" onclick="calPrevMonth()">
+                    <i class="ri-arrow-left-s-line"></i>
+                  </button>
+                  <span
+                    style="
+                      font-size: 12.5px;
+                      font-weight: 700;
+                      min-width: 120px;
+                      text-align: center;
+                    "
+                    id="calLabel"
+                    >—</span
+                  >
+                  <button class="date-nav-btn" onclick="calNextMonth()">
+                    <i class="ri-arrow-right-s-line"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="cal-weekdays">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span
+                ><span>Fri</span><span>Sat</span><span>Sun</span>
+              </div>
+              <div class="cal-grid" id="calGrid"></div>
+              <div class="cal-legend">
+                <span><i style="background: #16a34a"></i>95%+</span>
+                <span><i style="background: #bbf7d0"></i>85–94%</span>
+                <span><i style="background: #fef08a"></i>70–84%</span>
+                <span><i style="background: #fed7aa"></i>50–69%</span>
+                <span><i style="background: #fee2e2"></i>&lt;50%</span>
+                <span
+                  ><i
+                    style="
+                      background: repeating-linear-gradient(
+                        45deg,
+                        #eef1f8,
+                        #eef1f8 2px,
+                        transparent 2px,
+                        transparent 4px
+                      );
+                    "
+                  ></i
+                  >Weekly off</span
+                >
+              </div>
+            </div>
+
+            <div class="card">
+              <div
+                class="section-title"
+                style="font-size: 14px; margin-bottom: 14px"
+              >
+                Weekly Attendance Trend
+              </div>
+              <div style="height: 180px">
+                <canvas id="attTrendChart"></canvas>
+              </div>
+              <div
+                class="section-title"
+                style="font-size: 14px; margin: 20px 0 10px"
+              >
+                Today's Breakdown
+              </div>
+              <div style="height: 170px">
+                <canvas id="attDonutChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card fade-up">
+            <div class="section-head">
+              <div>
+                <div class="section-title">Daily Attendance</div>
+                <div class="section-sub">
+                  Check workers in and out for the selected date
+                </div>
+              </div>
+            </div>
+            <div class="att-toolbar">
+              <div class="toolbar-search">
+                <i class="ri-search-line"></i
+                ><input id="attSearch" placeholder="Search workers…" />
+              </div>
+              <select class="pill-select" id="attStatusFilter">
+                <option value="all">All status</option>
+                <option value="present">Present</option>
+                <option value="late">Late</option>
+                <option value="absent">Absent</option>
+                <option value="unmarked">Unmarked</option>
+              </select>
+            </div>
+            <div style="overflow-x: auto">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Worker</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="attTableBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
-<script src="assets/js/app.js"></script>
-<script src="assets/js/attendance.js"></script>
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/attendance.js"></script>
+  </body>
 </html>
