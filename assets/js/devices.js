@@ -1,0 +1,321 @@
+/* ============================================================
+   NEXUS OPERATIONS OS — Phones / Device Inventory module
+   Barcode scan-in station (hardware scanner + optional camera),
+   saved scan sessions, Excel / CSV export via SheetJS
+============================================================ */
+
+const DEV_MODELS = ['Vivo Y18','Vivo Y28','Vivo V30','Vivo Y36','Vivo X100','Vivo Y17s'];
+
+/* ---------------- STATE ---------------- */
+let sessionScans = [];      // current working scan session (not yet saved)
+let SAVED_LISTS = [];       // saved / exported sessions
+let cameraStream = null;
+let cameraDetectLoop = null;
+
+function loadState(){
+  const savedSession = localStorage.getItem('nexus_scan_session');
+  const savedLists = localStorage.getItem('nexus_scan_lists');
+  sessionScans = savedSession ? JSON.parse(savedSession) : [];
+  SAVED_LISTS = savedLists ? JSON.parse(savedLists) : seedSavedLists();
+  if(!savedLists) persistLists();
+}
+function persistSession(){ localStorage.setItem('nexus_scan_session', JSON.stringify(sessionScans)); }
+function persistLists(){ localStorage.setItem('nexus_scan_lists', JSON.stringify(SAVED_LISTS)); }
+
+function seedSavedLists(){
+  const now = Date.now();
+  function mockItems(model, count, hoursAgo){
+    return Array.from({length:count}, (_,i) => ({
+      barcode: '86' + String(1000000000000 + Math.floor(Math.random()*8999999999999)).slice(0,13),
+      model, scannedAt: new Date(now - hoursAgo*3600000 - i*4000).toISOString()
+    }));
+  }
+  return [
+    { id:'list1', name:'BX-1042 intake — Vivo Y18', model:'Vivo Y18', batchRef:'BX-1042', createdAt: new Date(now-2*86400000).toISOString(), items: mockItems('Vivo Y18', 24, 50) },
+    { id:'list2', name:'BX-1051 intake — Vivo Y36', model:'Vivo Y36', batchRef:'BX-1051', createdAt: new Date(now-1*86400000).toISOString(), items: mockItems('Vivo Y36', 18, 26) },
+  ];
+}
+
+/* ---------------- HELPERS ---------------- */
+function fmtDateTime(iso){ return new Date(iso).toLocaleString('en-GB',{ day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }); }
+function fmtDate(iso){ return new Date(iso).toLocaleDateString('en-GB',{ day:'2-digit', month:'short', year:'numeric' }); }
+function isToday(iso){ return new Date(iso).toDateString() === new Date().toDateString(); }
+function totalScannedAllTime(){
+  return SAVED_LISTS.reduce((s,l)=>s+l.items.length,0) + sessionScans.length;
+}
+function totalScannedToday(){
+  const fromLists = SAVED_LISTS.reduce((s,l)=> s + l.items.filter(i=>isToday(i.scannedAt)).length, 0);
+  const fromSession = sessionScans.filter(i=>isToday(i.scannedAt)).length;
+  return fromLists + fromSession;
+}
+
+/* ---------------- KPIs ---------------- */
+function renderKPIs(){
+  document.getElementById('kpiTotal').textContent = totalScannedAllTime().toLocaleString();
+  document.getElementById('kpiToday').textContent = totalScannedToday();
+  document.getElementById('kpiModels').textContent = DEV_MODELS.length;
+  document.getElementById('kpiLists').textContent = SAVED_LISTS.length;
+}
+
+/* ---------------- SCAN INPUT (hardware scanner + manual entry) ---------------- */
+function addScan(barcode){
+  barcode = barcode.trim();
+  if(!barcode) return;
+
+  const dupeInSession = sessionScans.some(s => s.barcode === barcode);
+  const dupeInLists = SAVED_LISTS.some(l => l.items.some(i => i.barcode === barcode));
+  if(dupeInSession || dupeInLists){
+    NexusApp.toast('Barcode ' + barcode + ' has already been scanned', 'error');
+    flashScanInput(false);
+    return;
+  }
+
+  const model = document.getElementById('scanModel').value;
+  sessionScans.unshift({ barcode, model, scannedAt: new Date().toISOString() });
+  persistSession();
+  renderSessionTable();
+  renderKPIs();
+  flashScanInput(true);
+}
+function flashScanInput(success){
+  const el = document.getElementById('scanInput');
+  el.classList.remove('flash-success','flash-error');
+  void el.offsetWidth;
+  el.classList.add(success ? 'flash-success' : 'flash-error');
+}
+
+function wireScanInput(){
+  const input = document.getElementById('scanInput');
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      addScan(input.value);
+      input.value = '';
+    }
+  });
+  input.focus();
+  document.getElementById('addScanBtn').addEventListener('click', () => {
+    addScan(input.value);
+    input.value = '';
+    input.focus();
+  });
+}
+
+/* ---------------- CAMERA SCANNING (optional, BarcodeDetector where supported) ---------------- */
+function cameraSupported(){
+  return 'mediaDevices' in navigator && 'BarcodeDetector' in window;
+}
+async function startCameraScan(){
+  if(!cameraSupported()){
+    NexusApp.toast('Camera barcode scanning isn\u2019t supported in this browser — use the scan input below instead', 'error');
+    return;
+  }
+  try{
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } });
+    const video = document.getElementById('cameraPreview');
+    video.srcObject = cameraStream;
+    await video.play();
+    document.getElementById('cameraWrap').style.display = 'block';
+    document.getElementById('startCameraBtn').style.display = 'none';
+    document.getElementById('stopCameraBtn').style.display = 'inline-flex';
+
+    const detector = new window.BarcodeDetector({ formats:['ean_13','code_128','upc_a','qr_code'] });
+    cameraDetectLoop = setInterval(async () => {
+      try{
+        const codes = await detector.detect(video);
+        if(codes.length){
+          addScan(codes[0].rawValue);
+        }
+      }catch(err){ /* detection frame errors are expected intermittently, ignore */ }
+    }, 600);
+  }catch(err){
+    NexusApp.toast('Could not access camera — check permissions', 'error');
+  }
+}
+function stopCameraScan(){
+  if(cameraDetectLoop) clearInterval(cameraDetectLoop);
+  if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+  cameraStream = null;
+  document.getElementById('cameraWrap').style.display = 'none';
+  document.getElementById('startCameraBtn').style.display = 'inline-flex';
+  document.getElementById('stopCameraBtn').style.display = 'none';
+}
+
+/* ---------------- SESSION TABLE ---------------- */
+function renderSessionTable(){
+  document.getElementById('sessionCount').textContent = sessionScans.length + ' scanned this session';
+  const tbody = document.getElementById('sessionTableBody');
+  tbody.innerHTML = sessionScans.map((s,i) => `
+    <tr>
+      <td><code class="barcode-code">${s.barcode}</code></td>
+      <td>${s.model}</td>
+      <td>${fmtDateTime(s.scannedAt)}</td>
+      <td><button class="icon-btn" style="width:30px;height:30px;" data-tip="Remove" onclick="removeScan(${i})"><i class="ri-close-line"></i></button></td>
+    </tr>`).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--ink-faint);padding:22px;">No devices scanned yet — start scanning below.</td></tr>`;
+
+  document.getElementById('saveSessionBtn').disabled = sessionScans.length === 0;
+  document.getElementById('clearSessionBtn').disabled = sessionScans.length === 0;
+}
+function removeScan(index){
+  sessionScans.splice(index,1);
+  persistSession();
+  renderSessionTable();
+  renderKPIs();
+}
+function clearSession(){
+  if(sessionScans.length === 0) return;
+  sessionScans = [];
+  persistSession();
+  renderSessionTable();
+  renderKPIs();
+  NexusApp.toast('Session cleared', 'info');
+}
+
+/* ---------------- SAVE SESSION ---------------- */
+function openSaveModal(){
+  if(sessionScans.length === 0) return;
+  const model = document.getElementById('scanModel').value;
+  document.getElementById('sv-name').value = model + ' intake — ' + new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+  document.getElementById('sv-count').textContent = sessionScans.length + ' device' + (sessionScans.length===1?'':'s') + ' will be saved to this list';
+  NexusApp.openModal('modal-savesession');
+}
+function submitSaveSession(e){
+  e.preventDefault();
+  const name = document.getElementById('sv-name').value.trim();
+  const batchRef = document.getElementById('sv-batchref').value.trim();
+  if(!name){ NexusApp.toast('Give this list a name', 'error'); return; }
+
+  const list = {
+    id: 'list' + Date.now(),
+    name, batchRef: batchRef || null,
+    model: document.getElementById('scanModel').value,
+    createdAt: new Date().toISOString(),
+    items: [...sessionScans],
+  };
+  SAVED_LISTS.unshift(list);
+  persistLists();
+  sessionScans = [];
+  persistSession();
+
+  NexusApp.closeModal('modal-savesession');
+  renderSessionTable();
+  renderKPIs();
+  renderSavedLists();
+  NexusApp.toast(`Saved "${name}" with ${list.items.length} devices`, 'success');
+}
+
+/* ---------------- SAVED LISTS ---------------- */
+function renderSavedLists(){
+  const wrap = document.getElementById('savedListsWrap');
+  wrap.innerHTML = SAVED_LISTS.map(l => `
+    <div class="saved-list-card">
+      <div class="saved-list-icon"><i class="ri-folder-zip-line"></i></div>
+      <div class="saved-list-meta">
+        <b>${l.name}</b>
+        <span>${l.items.length} devices · ${l.model}${l.batchRef?' · '+l.batchRef:''} · Saved ${fmtDate(l.createdAt)}</span>
+      </div>
+      <div class="saved-list-actions">
+        <button class="btn btn-secondary btn-sm" onclick="viewList('${l.id}')"><i class="ri-eye-line"></i>View</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportListCSV('${l.id}')"><i class="ri-file-text-line"></i>CSV</button>
+        <button class="btn btn-primary btn-sm" onclick="exportListXLSX('${l.id}')"><i class="ri-file-excel-2-line"></i>Excel</button>
+        <button class="icon-btn" style="width:34px;height:34px;" data-tip="Delete list" onclick="deleteList('${l.id}')"><i class="ri-delete-bin-line"></i></button>
+      </div>
+    </div>`).join('') || `<div class="empty-state"><i class="ri-inbox-line"></i><b>No saved lists yet</b><span>Scan some devices above and save your first list.</span></div>`;
+}
+function deleteList(id){
+  SAVED_LISTS = SAVED_LISTS.filter(l => l.id !== id);
+  persistLists();
+  renderSavedLists();
+  renderKPIs();
+  NexusApp.toast('List deleted', 'info');
+}
+
+/* ---------------- VIEW LIST DRAWER ---------------- */
+function viewList(id){
+  const list = SAVED_LISTS.find(l=>l.id===id);
+  if(!list) return;
+  window.currentViewList = id;
+  document.getElementById('vlName').textContent = list.name;
+  document.getElementById('vlMeta').textContent = `${list.items.length} devices · ${list.model}${list.batchRef?' · '+list.batchRef:''} · Saved ${fmtDate(list.createdAt)}`;
+  document.getElementById('vlTableBody').innerHTML = list.items.map(i => `
+    <tr><td><code class="barcode-code">${i.barcode}</code></td><td>${i.model}</td><td>${fmtDateTime(i.scannedAt)}</td></tr>
+  `).join('');
+  NexusApp.openDrawer('viewListDrawer');
+}
+
+/* ---------------- EXPORT ---------------- */
+function exportListCSV(id){
+  const list = SAVED_LISTS.find(l=>l.id===id);
+  if(!list) return;
+  const rows = [['Barcode / IMEI','Model','Scanned At','List','Batch Ref']];
+  list.items.forEach(i => rows.push([i.barcode, i.model, fmtDateTime(i.scannedAt), list.name, list.batchRef||'']));
+  const csv = rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = sanitizeFilename(list.name) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  NexusApp.toast('Exported as CSV', 'success');
+}
+function exportListXLSX(id){
+  const list = SAVED_LISTS.find(l=>l.id===id);
+  if(!list) return;
+  if(typeof XLSX === 'undefined'){
+    NexusApp.toast('Excel export library failed to load — try CSV instead', 'error');
+    return;
+  }
+  const rows = list.items.map(i => ({
+    'Barcode / IMEI': i.barcode, 'Model': i.model, 'Scanned At': fmtDateTime(i.scannedAt),
+    'List': list.name, 'Batch Ref': list.batchRef || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:18},{wch:14},{wch:18},{wch:26},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Devices');
+  XLSX.writeFile(wb, sanitizeFilename(list.name) + '.xlsx');
+  NexusApp.toast('Exported as Excel workbook', 'success');
+}
+function sanitizeFilename(name){ return name.replace(/[^a-z0-9\-_ ]/gi,'').replace(/\s+/g,'_'); }
+
+function exportAllListsXLSX(){
+  if(typeof XLSX === 'undefined'){ NexusApp.toast('Excel export library failed to load', 'error'); return; }
+  if(SAVED_LISTS.length === 0){ NexusApp.toast('No saved lists to export', 'error'); return; }
+  const wb = XLSX.utils.book_new();
+  SAVED_LISTS.forEach(list => {
+    const rows = list.items.map(i => ({ 'Barcode / IMEI': i.barcode, 'Model': i.model, 'Scanned At': fmtDateTime(i.scannedAt) }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{wch:18},{wch:14},{wch:18}];
+    XLSX.utils.book_append_sheet(wb, ws, sanitizeFilename(list.name).slice(0,28) || 'List');
+  });
+  XLSX.writeFile(wb, 'nexus-device-inventory-all-lists.xlsx');
+  NexusApp.toast('Exported all lists as one workbook', 'success');
+}
+
+/* ---------------- SEARCH ---------------- */
+function wireSearch(){
+  document.getElementById('listSearch').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('.saved-list-card').forEach(card => {
+      card.style.display = card.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+    });
+  });
+}
+
+/* ---------------- INIT ---------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  const session = NexusApp.requireAuth();
+  if(!session) return;
+  NexusApp.initShell('devices.html', session);
+  loadState();
+  wireScanInput();
+  wireSearch();
+  if(!cameraSupported()){
+    document.getElementById('startCameraBtn').innerHTML = '<i class="ri-camera-off-line"></i>Camera scan not supported here';
+    document.getElementById('startCameraBtn').disabled = true;
+  }
+  renderKPIs();
+  renderSessionTable();
+  renderSavedLists();
+  window.addEventListener('beforeunload', stopCameraScan);
+});
