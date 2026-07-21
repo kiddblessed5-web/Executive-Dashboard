@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports — Nexus Operations OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .report-tabs{ display:flex; gap:6px; background:var(--grad-soft); padding:5px; border-radius:14px; overflow-x:auto; margin-bottom:18px; }
+  .report-tab{ display:flex; align-items:center; gap:7px; padding:10px 16px; border-radius:10px; font-size:12.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; white-space:nowrap; }
+  .report-tab i{ font-size:16px; }
+  .report-tab.active{ background:var(--card); color:var(--primary-3); box-shadow:var(--shadow-sm); }
+
+  .report-filters{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  .filter-group{ display:flex; align-items:center; gap:6px; }
+  .filter-group label{ font-size:11.5px; font-weight:700; color:var(--ink-faint); }
+  .filter-group input, .filter-group select{
+    border:1px solid var(--border); border-radius:10px; padding:8px 12px; font-size:12.5px; font-weight:600;
+    background:var(--card); color:var(--ink); font-family:inherit;
+  }
+  .report-filter-extra{ display:none; align-items:center; gap:6px; }
+  .export-actions{ margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; }
+
+  .kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:18px; }
+  .kpi-card{ display:flex; align-items:center; gap:14px; }
+  .kpi-icon{ width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .kpi-value{ font-family:'Inter Tight'; font-size:21px; font-weight:800; }
+  .kpi-label{ font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+
+  .report-chart-grid{ display:grid; grid-template-columns:1.4fr 1fr; gap:18px; margin-bottom:18px; }
+
+  .report-table-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+
+  /* print: only the report content prints */
+  @media print{
+    body *{ visibility:hidden; }
+    #printable, #printable *{ visibility:visible; }
+    #printable{ position:absolute; top:0; left:0; width:100%; }
+    .export-actions, .report-tabs, .menu-btn{ display:none !important; }
+  }
+
+  @media (max-width:1080px){ .kpi-row{ grid-template-columns:repeat(2,1fr); } .report-chart-grid{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">N</div>
+      <div class="brand-text"><span class="brand-name">Nexus</span><span class="brand-sub">OPERATIONS OS</span></div>
+      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
+    </div>
+    <nav class="sidebar-scroll" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="dropdown-wrap">
+        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
+          <div class="user-avatar" id="userChipAvatar">AK</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
+        </div>
+        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
+          <div class="dd-divider"></div>
+          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Nexus</span><i class="ri-arrow-right-s-line"></i><span>Analytics</span><i class="ri-arrow-right-s-line"></i><b>Reports</b></div>
+      </div>
+      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
+        <div class="dropdown-wrap">
+          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
+          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:260px;">
+            <div class="dd-item"><i class="ri-information-line"></i>Reports pull live data from every module</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" id="printable">
+      <div class="section-head fade-up">
+        <div><div class="section-title">Reports</div><div class="section-sub">Production, attendance, payroll, manager and worker analytics — pulled from live data across Nexus.</div></div>
+      </div>
+
+      <div class="report-tabs fade-up">
+        <div class="report-tab active" data-report="production"><i class="ri-smartphone-line"></i>Production</div>
+        <div class="report-tab" data-report="attendance"><i class="ri-calendar-check-line"></i>Attendance</div>
+        <div class="report-tab" data-report="payroll"><i class="ri-money-dollar-circle-line"></i>Payroll</div>
+        <div class="report-tab" data-report="managers"><i class="ri-user-star-line"></i>Managers</div>
+        <div class="report-tab" data-report="workers"><i class="ri-team-line"></i>Workers</div>
+      </div>
+
+      <div class="report-filters fade-up">
+        <div class="filter-group"><label>From</label><input type="date" id="dateFrom"></div>
+        <div class="filter-group"><label>To</label><input type="date" id="dateTo"></div>
+        <div class="filter-group report-filter-extra" id="extra-production" style="display:flex;">
+          <label>Model</label><select id="filterModel"></select>
+        </div>
+        <div class="export-actions">
+          <button class="btn btn-secondary btn-sm" onclick="exportReportCSV()"><i class="ri-file-text-line"></i>CSV</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportReportXLSX()"><i class="ri-file-excel-2-line"></i>Excel</button>
+          <button class="btn btn-primary btn-sm" onclick="exportReportPDF()"><i class="ri-file-pdf-2-line"></i>Export PDF</button>
+        </div>
+      </div>
+
+      <div class="kpi-row fade-up" id="reportKpiRow"></div>
+
+      <div class="report-chart-grid fade-up">
+        <div class="card">
+          <div class="section-head"><div><div class="section-title" style="font-size:14.5px;">Overview</div></div></div>
+          <div style="height:240px;"><canvas id="reportChart1"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="section-head"><div><div class="section-title" style="font-size:14.5px;">Breakdown</div></div></div>
+          <div style="height:240px;"><canvas id="reportChart2"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card fade-up">
+        <div class="report-table-head">
+          <div class="section-title" style="font-size:14.5px;">Detail</div>
+          <span class="section-sub" id="reportRowCount" style="margin:0;">0 rows</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead id="reportTableHead"></thead>
+            <tbody id="reportTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/reports.js"></script>
+</body>
+</html>

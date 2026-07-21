@@ -56,14 +56,17 @@
   .divider{ display:flex; align-items:center; gap:12px; margin:22px 0; color:var(--ink-faint); font-size:11.5px; font-weight:600; }
   .divider::before, .divider::after{ content:''; flex:1; height:1px; background:var(--border); }
 
-  .social-row{ display:flex; gap:10px; }
+  .social-row{ display:flex; flex-direction:column; gap:10px; }
   .social-btn{
-    flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:11px; border-radius:14px;
+    display:flex; align-items:center; justify-content:center; gap:10px; padding:11px; border-radius:14px;
     border:1px solid var(--border); background:var(--card); font-size:13px; font-weight:700; color:var(--ink-soft);
-    transition:.15s var(--ease);
+    transition:.15s var(--ease); width:100%;
   }
   .social-btn:hover{ border-color:var(--primary); color:var(--primary-3); transform:translateY(-2px); }
-  .social-btn i{ font-size:16px; }
+  .social-btn i{ font-size:17px; }
+  .social-btn.google i{ color:#4285F4; }
+  .social-btn.facebook i{ color:#1877F2; }
+  .demo-banner{ display:flex; align-items:center; gap:6px; justify-content:center; font-size:10.5px; font-weight:700; color:var(--ink-faint); background:var(--grad-soft); border-radius:20px; padding:5px 12px; margin:0 auto 18px; width:fit-content; }
 
   .switch-line{ text-align:center; margin-top:24px; font-size:13px; color:var(--ink-soft); }
 
@@ -90,6 +93,7 @@
     </div>
 
     <div class="auth-form">
+      <div class="demo-banner"><i class="ri-flask-line"></i>Prototype build — no real accounts are stored</div>
 
       <!-- LOGIN FORM -->
       <form id="loginForm" novalidate>
@@ -125,9 +129,8 @@
 
         <div class="divider">or continue with</div>
         <div class="social-row">
-          <button type="button" class="social-btn" onclick="socialLogin('Behance')"><i class="ri-behance-line"></i></button>
-          <button type="button" class="social-btn" onclick="socialLogin('Google')"><i class="ri-google-line"></i></button>
-          <button type="button" class="social-btn" onclick="socialLogin('Facebook')"><i class="ri-facebook-circle-line"></i></button>
+          <button type="button" class="social-btn google" id="googleBtn" onclick="startGoogleLogin()"><i class="ri-google-fill"></i>Continue with Google</button>
+          <button type="button" class="social-btn facebook" id="facebookBtn" onclick="startFacebookLogin()"><i class="ri-facebook-circle-fill"></i>Continue with Facebook</button>
         </div>
 
         <div class="switch-line">Don't have an account? <a href="#" class="link-accent" onclick="showSignup(); return false;">Sign up</a></div>
@@ -241,11 +244,116 @@
     setTimeout(()=> window.location.href = 'index.html', 600);
   });
 
-  function socialLogin(provider){
-    createSession('Alex Kimani', 'alex.kimani@nexustech.com');
-    NexusApp.toast('Signed in with ' + provider + ' (demo)','success');
-    setTimeout(()=> window.location.href = 'index.html', 600);
+  /* ============================================================
+     REAL OAUTH — Google & Facebook
+     These call the actual identity providers. No backend is
+     required for this flow (the browser talks to Google/Facebook
+     directly and gets the user's real profile back), but each
+     provider still requires YOU to register a free app and paste
+     your own ID below — that's true of any real OAuth integration,
+     with or without a backend.
+
+     Google:   https://console.cloud.google.com/apis/credentials
+               → Create OAuth client ID → Web application
+               → Add this exact origin under "Authorized JavaScript origins"
+     Facebook: https://developers.facebook.com/apps
+               → Create app → Add "Facebook Login" product
+               → Add this exact origin under "Valid OAuth Redirect URIs" /
+                 "App Domains"
+  ============================================================ */
+  const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  const FACEBOOK_APP_ID = 'YOUR_FACEBOOK_APP_ID';
+
+  const googleConfigured = !GOOGLE_CLIENT_ID.startsWith('YOUR_');
+  const facebookConfigured = !FACEBOOK_APP_ID.startsWith('YOUR_');
+
+  let googleTokenClient = null;
+  let fbSdkReady = false;
+
+  function loadScriptOnce(src){
+    return new Promise((resolve, reject) => {
+      if(document.querySelector(`script[src="${src}"]`)){ resolve(); return; }
+      const s = document.createElement('script');
+      s.src = src; s.async = true; s.defer = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Failed to load ' + src));
+      document.head.appendChild(s);
+    });
   }
+
+  async function startGoogleLogin(){
+    if(!googleConfigured){
+      NexusApp.toast('Google Sign-In isn\u2019t configured yet — add your OAuth Client ID in login.html', 'error');
+      return;
+    }
+    const btn = document.getElementById('googleBtn');
+    try{
+      await loadScriptOnce('https://accounts.google.com/gsi/client');
+      if(!googleTokenClient){
+        googleTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'openid email profile',
+          callback: async (resp) => {
+            if(resp.error){ NexusApp.toast('Google sign-in was cancelled or failed', 'error'); return; }
+            try{
+              const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: 'Bearer ' + resp.access_token }
+              });
+              const profile = await r.json();
+              createSession(profile.name || profile.email, profile.email);
+              NexusApp.toast('Signed in with Google — redirecting…', 'success');
+              setTimeout(() => window.location.href = 'index.html', 500);
+            }catch(err){
+              NexusApp.toast('Could not fetch your Google profile', 'error');
+            }
+          }
+        });
+      }
+      googleTokenClient.requestAccessToken();
+    }catch(err){
+      NexusApp.toast('Could not load Google Sign-In — check your connection', 'error');
+    }
+  }
+
+  async function startFacebookLogin(){
+    if(!facebookConfigured){
+      NexusApp.toast('Facebook Login isn\u2019t configured yet — add your App ID in login.html', 'error');
+      return;
+    }
+    try{
+      if(!fbSdkReady){
+        window.fbAsyncInit = function(){
+          FB.init({ appId: FACEBOOK_APP_ID, cookie:true, xfbml:false, version:'v19.0' });
+          fbSdkReady = true;
+          doFacebookLogin();
+        };
+        await loadScriptOnce('https://connect.facebook.net/en_US/sdk.js');
+      } else {
+        doFacebookLogin();
+      }
+    }catch(err){
+      NexusApp.toast('Could not load Facebook Login — check your connection', 'error');
+    }
+  }
+  function doFacebookLogin(){
+    FB.login((response) => {
+      if(response.status !== 'connected'){
+        NexusApp.toast('Facebook sign-in was cancelled or failed', 'error');
+        return;
+      }
+      FB.api('/me', { fields:'name,email' }, (profile) => {
+        createSession(profile.name, profile.email || (profile.name.replace(/\s+/g,'.').toLowerCase()+'@facebook.com'));
+        NexusApp.toast('Signed in with Facebook — redirecting…', 'success');
+        setTimeout(() => window.location.href = 'index.html', 500);
+      });
+    }, { scope: 'public_profile,email' });
+  }
+
+  // Reflect unconfigured state visibly rather than pretending these work
+  document.addEventListener('DOMContentLoaded', () => {
+    if(!googleConfigured) document.getElementById('googleBtn').style.opacity = '0.6';
+    if(!facebookConfigured) document.getElementById('facebookBtn').style.opacity = '0.6';
+  });
 </script>
 </body>
 </html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Help Center — Nexus Operations OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .help-hero{
+    position:relative; overflow:hidden; border-radius:28px; padding:44px 36px;
+    background: linear-gradient(160deg, #6D5DF6 0%, #4F46E5 48%, #3B82F6 100%);
+    color:#fff; text-align:center; margin-bottom:24px;
+  }
+  .help-hero::before, .help-hero::after{ content:''; position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; }
+  .help-hero::before{ width:280px; height:280px; background:#8B7CFB; top:-100px; right:-40px; }
+  .help-hero::after{ width:220px; height:220px; background:#3B82F6; bottom:-90px; left:8%; }
+  .help-hero-inner{ position:relative; z-index:2; }
+  .help-hero h1{ font-family:'Inter Tight'; font-size:26px; font-weight:800; margin-bottom:8px; }
+  .help-hero p{ font-size:13.5px; opacity:.85; margin-bottom:22px; }
+  .help-search{
+    display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.14); backdrop-filter:blur(6px);
+    border-radius:16px; padding:14px 18px; max-width:520px; margin:0 auto;
+  }
+  .help-search i{ font-size:19px; }
+  .help-search input{ border:none; outline:none; background:none; color:#fff; font-size:14px; font-family:inherit; width:100%; }
+  .help-search input::placeholder{ color:rgba(255,255,255,0.7); }
+
+  .topics-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+  .topic-card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px; cursor:pointer; transition:.15s var(--ease); text-align:left; }
+  .topic-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow); }
+  .topic-card.active{ border-color:var(--primary); background:var(--grad-soft); }
+  .topic-icon{ width:38px; height:38px; border-radius:11px; background:var(--grad-soft); color:var(--primary-3); display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:10px; }
+  .topic-card b{ font-size:13px; display:block; margin-bottom:3px; }
+  .topic-card span{ font-size:11.5px; color:var(--ink-faint); }
+
+  .help-grid{ display:grid; grid-template-columns:1.5fr 1fr; gap:18px; margin-bottom:18px; align-items:start; }
+
+  /* FAQ */
+  .faq-head-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .faq-item{ border-bottom:1px solid var(--border); padding:15px 2px; }
+  .faq-item:last-child{ border-bottom:none; }
+  .faq-q{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; cursor:pointer; font-size:13.5px; font-weight:700; }
+  .faq-cat-tag{ display:inline-block; font-size:9.5px; font-weight:700; color:var(--primary-3); background:var(--grad-soft); padding:2px 8px; border-radius:20px; margin-bottom:5px; text-transform:uppercase; letter-spacing:.03em; }
+  .faq-q i{ font-size:17px; color:var(--ink-faint); transition:transform .2s var(--ease); flex-shrink:0; margin-top:2px; }
+  .faq-item.open .faq-q i{ transform:rotate(180deg); }
+  .faq-a{ max-height:0; overflow:hidden; transition:max-height .25s var(--ease); font-size:12.5px; color:var(--ink-soft); line-height:1.6; }
+  .faq-item.open .faq-a{ max-height:220px; margin-top:10px; }
+
+  .empty-state{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; color:var(--ink-faint); text-align:center; }
+  .empty-state i{ font-size:32px; margin-bottom:10px; }
+  .empty-state b{ font-size:14px; color:var(--ink); margin-bottom:4px; }
+  .empty-state span{ font-size:12.5px; }
+
+  /* shortcuts */
+  .shortcut-row{ display:flex; align-items:center; gap:14px; padding:10px 0; border-bottom:1px solid var(--border); font-size:12.5px; }
+  .shortcut-row:last-child{ border-bottom:none; }
+  .shortcut-keys{ display:flex; align-items:center; gap:4px; flex-shrink:0; width:90px; }
+  .shortcut-keys kbd{ background:var(--grad-soft); color:var(--primary-3); font-family:'Inter Tight'; font-size:11px; font-weight:800; padding:4px 8px; border-radius:7px; }
+  .shortcut-keys .plus{ color:var(--ink-faint); font-size:11px; }
+
+  /* what's new */
+  .whats-new-row{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .whats-new-row:last-child{ border-bottom:none; }
+  .whats-new-dot{ width:9px; height:9px; border-radius:50%; background:var(--primary); margin-top:6px; flex-shrink:0; }
+  .whats-new-row small{ font-size:10.5px; color:var(--ink-faint); font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .whats-new-row b{ font-size:13px; display:block; margin-top:2px; }
+  .whats-new-row p{ font-size:12px; color:var(--ink-faint); margin-top:3px; line-height:1.5; }
+
+  /* contact + tickets */
+  .contact-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .ticket-row{ display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .ticket-row:last-child{ border-bottom:none; }
+  .ticket-meta{ flex:1; min-width:180px; }
+  .ticket-meta b{ font-size:13px; display:block; }
+  .ticket-meta small{ font-size:11px; color:var(--ink-faint); font-weight:600; }
+  .muted-note{ font-size:12px; color:var(--ink-faint); }
+
+  @media (max-width:1080px){ .topics-grid{ grid-template-columns:repeat(2,1fr); } .help-grid, .contact-grid{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">N</div>
+      <div class="brand-text"><span class="brand-name">Nexus</span><span class="brand-sub">OPERATIONS OS</span></div>
+      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
+    </div>
+    <nav class="sidebar-scroll" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="dropdown-wrap">
+        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
+          <div class="user-avatar" id="userChipAvatar">AK</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
+        </div>
+        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
+          <div class="dd-divider"></div>
+          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Nexus</span><i class="ri-arrow-right-s-line"></i><b>Help Center</b></div>
+      </div>
+      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
+        <div class="dropdown-wrap">
+          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
+          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:260px;">
+            <div class="dd-item"><i class="ri-information-line"></i>Your last ticket was resolved</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="help-hero fade-up">
+        <div class="help-hero-inner">
+          <h1>How can we help?</h1>
+          <p>Search articles across every part of Nexus Operations OS.</p>
+          <div class="help-search">
+            <i class="ri-search-line"></i>
+            <input id="helpSearch" placeholder="Search for topics, e.g. “payroll”, “barcode”, “dark mode”…">
+          </div>
+        </div>
+      </div>
+
+      <div class="topics-grid fade-up" id="topicsGrid"></div>
+
+      <div class="help-grid fade-up">
+        <div class="card" id="faqCard">
+          <div class="faq-head-row">
+            <div><div class="section-title" style="font-size:15px;">Frequently Asked Questions</div><div class="section-sub" id="faqCount">Loading…</div></div>
+            <button class="btn btn-ghost btn-sm" id="clearFilterBtn" onclick="clearFilter()" style="display:none;"><i class="ri-close-line"></i>Clear filter</button>
+          </div>
+          <div id="faqList"></div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:18px;">
+          <div class="card">
+            <div class="section-title" style="font-size:14px; margin-bottom:6px;">Keyboard Shortcuts</div>
+            <div id="shortcutsList"></div>
+          </div>
+          <div class="card">
+            <div class="section-title" style="font-size:14px; margin-bottom:6px;">What's New</div>
+            <div id="whatsNewList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-grid fade-up">
+        <div class="card">
+          <div class="section-title" style="font-size:15px; margin-bottom:14px;">Contact Support</div>
+          <form onsubmit="submitTicket(event)">
+            <div class="field"><label>Subject</label><input type="text" id="tk-subject" placeholder="Briefly describe the issue" required></div>
+            <div class="field"><label>Category</label>
+              <select id="tk-category">
+                <option>Production</option><option>People</option><option>Payroll</option><option>Messages</option>
+                <option>Quality Control</option><option>Inventory</option><option>Settings & Security</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field"><label>Message</label><textarea id="tk-message" rows="4" placeholder="What went wrong, and what were you trying to do?" required></textarea></div>
+            <button type="submit" class="btn btn-primary btn-block"><i class="ri-send-plane-line"></i>Submit ticket</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="section-title" style="font-size:15px; margin-bottom:14px;">My Tickets</div>
+          <div id="ticketsList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/help.js"></script>
+</body>
+</html>
