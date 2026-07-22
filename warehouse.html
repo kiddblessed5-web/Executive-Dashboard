@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warehouse — Nexus Operations OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .kpi-row{ display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:18px; }
+  .kpi-card{ display:flex; align-items:center; gap:12px; }
+  .kpi-icon{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+  .kpi-value{ font-family:'Inter Tight'; font-size:19px; font-weight:800; }
+  .kpi-label{ font-size:11px; color:var(--ink-faint); font-weight:600; }
+
+  .wh-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px; }
+  .progress-track{ height:8px; background:var(--grad-soft); border-radius:20px; overflow:hidden; }
+  .progress-fill{ height:100%; border-radius:20px; }
+
+  .ship-tabs{ display:flex; gap:4px; background:var(--grad-soft); padding:4px; border-radius:12px; }
+  .ship-tab{ padding:8px 16px; border-radius:9px; font-size:12.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; }
+  .ship-tab.active{ background:var(--card); color:var(--primary-3); box-shadow:var(--shadow-sm); }
+
+  @media (max-width:1200px){ .kpi-row{ grid-template-columns:repeat(3,1fr); } }
+  @media (max-width:1080px){ .wh-grid{ grid-template-columns:1fr; } }
+  @media (max-width:640px){ .kpi-row{ grid-template-columns:repeat(2,1fr); } }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">N</div>
+      <div class="brand-text"><span class="brand-name">Nexus</span><span class="brand-sub">OPERATIONS OS</span></div>
+      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
+    </div>
+    <nav class="sidebar-scroll" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="dropdown-wrap">
+        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
+          <div class="user-avatar" id="userChipAvatar">AK</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
+        </div>
+        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
+          <div class="dd-divider"></div>
+          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Nexus</span><i class="ri-arrow-right-s-line"></i><span>Inventory</span><i class="ri-arrow-right-s-line"></i><b>Warehouse</b></div>
+      </div>
+      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
+        <button class="btn btn-secondary btn-sm" onclick="exportStockXLSX()"><i class="ri-file-excel-2-line"></i>Export stock</button>
+        <button class="btn btn-primary btn-sm" onclick="openNewShipmentModal()"><i class="ri-add-line"></i>Log Shipment</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section-head fade-up">
+        <div><div class="section-title">Warehouse</div><div class="section-sub">Stock levels, incoming/outgoing shipments, and barcode-ready inventory.</div></div>
+      </div>
+
+      <div class="kpi-row fade-up">
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--grad-soft); color:var(--primary-3);"><i class="ri-archive-2-line"></i></div><div><div class="kpi-value" id="kpiTotalStock">0</div><div class="kpi-label">Total units in stock</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--success-soft); color:var(--success);"><i class="ri-download-2-line"></i></div><div><div class="kpi-value" id="kpiIncoming">0</div><div class="kpi-label">Incoming this week</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--warning-soft); color:var(--warning);"><i class="ri-upload-2-line"></i></div><div><div class="kpi-value" id="kpiOutgoing">0</div><div class="kpi-label">Outgoing this week</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--danger-soft); color:var(--danger);"><i class="ri-alert-line"></i></div><div><div class="kpi-value" id="kpiLowStock">0</div><div class="kpi-label">Models low on stock</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--info-soft); color:var(--info);"><i class="ri-qr-scan-2-line"></i></div><div><div class="kpi-value" id="kpiScanReady">0</div><div class="kpi-label">Barcode-ready units</div></div></div>
+      </div>
+
+      <div class="wh-grid fade-up">
+        <div class="card">
+          <div class="section-head"><div><div class="section-title" style="font-size:14.5px;">Stock Levels by Model</div><div class="section-sub">Dashed line marks the reorder threshold</div></div></div>
+          <div style="height:230px;"><canvas id="stockChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="section-head"><div><div class="section-title" style="font-size:14.5px;">Incoming vs Outgoing</div><div class="section-sub">Last 14 days</div></div></div>
+          <div style="height:230px;"><canvas id="flowChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card fade-up" style="margin-bottom:18px;">
+        <div class="section-head"><div><div class="section-title">Stock Levels</div><div class="section-sub">Reorder threshold: 80 units per model</div></div></div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Model</th><th>In Stock</th><th>Incoming</th><th>Outgoing</th><th>Level</th><th>Status</th></tr></thead>
+            <tbody id="stockTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card fade-up">
+        <div class="section-head">
+          <div><div class="section-title">Shipments</div><div class="section-sub">Incoming deliveries and outgoing orders</div></div>
+          <div class="ship-tabs">
+            <div class="ship-tab active" data-tab="all">All</div>
+            <div class="ship-tab" data-tab="incoming">Incoming</div>
+            <div class="ship-tab" data-tab="outgoing">Outgoing</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Type</th><th>Reference</th><th>Model</th><th>Qty</th><th>Date</th><th>Status</th><th></th></tr></thead>
+            <tbody id="shipmentsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW SHIPMENT MODAL -->
+<div class="overlay" id="overlay-modal-newshipment" onclick="NexusApp.closeModal('modal-newshipment')"></div>
+<div class="modal" id="modal-newshipment">
+  <div class="modal-head"><h3>Log shipment</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-newshipment')"><i class="ri-close-line"></i></button></div>
+  <form onsubmit="submitNewShipment(event)">
+    <div class="field"><label>Type</label>
+      <select id="ns-type"><option>Incoming</option><option>Outgoing</option></select>
+    </div>
+    <div class="field"><label>Model</label>
+      <select id="ns-model">
+        <option>Vivo Y18</option><option>Vivo Y28</option><option>Vivo V30</option><option>Vivo Y36</option><option>Vivo X100</option><option>Vivo Y17s</option>
+      </select>
+    </div>
+    <div class="field"><label>Quantity</label><input type="number" id="ns-qty" min="1" placeholder="e.g. 60" required></div>
+    <div class="field"><label>Reference (optional)</label><input type="text" id="ns-ref" placeholder="e.g. BX-1055 or ORD-7788"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-newshipment')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Log shipment</button>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/warehouse.js"></script>
+</body>
+</html>

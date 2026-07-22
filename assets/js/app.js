@@ -162,12 +162,7 @@ const NexusApp = (() => {
     ]},
     { group:'Inventory', items:[
       { label:'Devices', icon:'ri-cellphone-line', page:'devices.html' },
-      { label:'Accessories', icon:'ri-headphone-line', page:'accessories.html' },
       { label:'Warehouse', icon:'ri-building-4-line', page:'warehouse.html' },
-    ]},
-    { group:'Management', items:[
-      { label:'Managers', icon:'ri-user-star-line', page:'managers.html' },
-      { label:'Salesmen', icon:'ri-briefcase-4-line', page:'salesmen.html' },
     ]},
     { group:'', items:[
       { label:'Quality Control', icon:'ri-shield-check-line', page:'quality.html' },
@@ -259,9 +254,87 @@ const NexusApp = (() => {
     document.getElementById('cmdk')?.classList.remove('open');
   }
 
+  /* ---------------- TOOLTIPS (fixed-position, escapes scroll-clipped ancestors) ---------------- */
+  let tipEl = null, tipTarget = null;
+  function ensureTipEl(){
+    if(!tipEl){
+      tipEl = document.createElement('div');
+      tipEl.className = 'global-tooltip';
+      document.body.appendChild(tipEl);
+    }
+    return tipEl;
+  }
+  function showTooltip(target){
+    // Inside the sidebar, only show tooltips once it's collapsed to icons-only —
+    // when expanded the label is already visible, so a tooltip would be redundant.
+    if(target.closest('.nav-item') && !document.querySelector('.sidebar.collapsed')) return;
+    const text = target.getAttribute('data-tip');
+    if(!text) return;
+    tipTarget = target;
+    const tip = ensureTipEl();
+    tip.textContent = text;
+    const rect = target.getBoundingClientRect();
+    tip.style.left = (rect.left + rect.width / 2) + 'px';
+    if(rect.top < 44){
+      tip.style.top = (rect.bottom + 8) + 'px';
+      tip.style.transform = 'translate(-50%, 0)';
+    } else {
+      tip.style.top = (rect.top - 8) + 'px';
+      tip.style.transform = 'translate(-50%, -100%)';
+    }
+    tip.classList.add('visible');
+  }
+  function hideTooltip(){
+    tipTarget = null;
+    tipEl?.classList.remove('visible');
+  }
+  function initTooltips(){
+    document.addEventListener('mouseover', (e) => {
+      const target = e.target.closest?.('[data-tip]');
+      if(!target || target === tipTarget) return;
+      showTooltip(target);
+    });
+    document.addEventListener('mouseout', (e) => {
+      const target = e.target.closest?.('[data-tip]');
+      if(!target) return;
+      if(e.relatedTarget && target.contains(e.relatedTarget)) return;
+      hideTooltip();
+    });
+    document.addEventListener('scroll', hideTooltip, true);
+    document.addEventListener('click', hideTooltip);
+  }
+
   /* ---------------- MOBILE SIDEBAR ---------------- */
+  function ensureSidebarBackdrop(){
+    let bd = document.querySelector('.sidebar-backdrop');
+    if(!bd){
+      bd = document.createElement('div');
+      bd.className = 'sidebar-backdrop';
+      bd.addEventListener('click', () => closeSidebar());
+      document.body.appendChild(bd);
+    }
+    return bd;
+  }
+  function ensureSidebarMobileClose(){
+    const sidebar = document.querySelector('.sidebar');
+    if(!sidebar || sidebar.querySelector('.sidebar-mobile-close')) return;
+    const btn = document.createElement('button');
+    btn.className = 'sidebar-mobile-close';
+    btn.setAttribute('aria-label', 'Close menu');
+    btn.innerHTML = '<i class="ri-close-line"></i>';
+    btn.addEventListener('click', () => closeSidebar());
+    sidebar.appendChild(btn);
+  }
   function toggleSidebar(){
-    document.querySelector('.sidebar')?.classList.toggle('open');
+    const sidebar = document.querySelector('.sidebar');
+    if(!sidebar) return;
+    const willOpen = !sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', willOpen);
+    ensureSidebarBackdrop().classList.toggle('open', willOpen);
+  }
+  function closeSidebar(){
+    document.querySelector('.sidebar')?.classList.remove('open');
+    document.querySelector('.sidebar-backdrop')?.classList.remove('open');
   }
 
   /* ---------------- SIDEBAR COLLAPSE (icon rail) ---------------- */
@@ -307,8 +380,10 @@ const NexusApp = (() => {
     applyDensity();
     renderSidebar(activePage);
     applySidebarCollapsed();
+    ensureSidebarMobileClose();
     initRipple();
     initCommandPalette();
+    initTooltips();
     if(session){
       const nameEl = document.getElementById('userChipName');
       const roleEl = document.getElementById('userChipRole');
@@ -322,7 +397,7 @@ const NexusApp = (() => {
   return {
     requireAuth, logout, toggleTheme, toast, toggleDropdown,
     openModal, closeModal, openDrawer, closeDrawer,
-    toggleSidebar, toggleSidebarCollapse, openCmdk, closeCmdk, countUp, initShell, renderSidebar,
+    toggleSidebar, closeSidebar, toggleSidebarCollapse, openCmdk, closeCmdk, countUp, initShell, renderSidebar,
     setAccent, applyAccent, ACCENT_PRESETS
   };
 })();
