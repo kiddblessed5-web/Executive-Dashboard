@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Phone Batches module
+   SAGERO CREATIONS — Phone Batches module
 ============================================================ */
 
 const PIPELINE_STAGES = ['Received','Assigned','Unboxed','Software','Quality Check','Resealed','Packaging','Completed'];
@@ -351,7 +351,7 @@ function exportBatchesCSV(){
   const blob = new Blob([csv], { type:'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'nexus-phone-batches.csv';
+  a.href = url; a.download = 'sagero-phone-batches.csv';
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
   NexusApp.toast('Exported ' + getFilteredSorted().length + ' batches to CSV','success');

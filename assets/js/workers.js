@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Workers module
+   SAGERO CREATIONS — Workers module
 ============================================================ */
 
 const ROLES = ['Unboxing','Software Install','Quality Check','Resealing','Packaging'];
@@ -87,6 +87,7 @@ function renderWorkerGrid(){
     return `
     <div class="worker-card scale-in" onclick="openWorkerDrawer('${w.id}')">
       ${isTop3 ? `<div class="worker-rank-badge" style="color:${RANK_COLOR[rank]}"><i class="${RANK_MEDAL[rank]}"></i></div>` : ''}
+      <button class="worker-card-remove" data-tip="Remove worker" onclick="event.stopPropagation(); confirmRemoveWorker('${w.id}')"><i class="ri-close-line"></i></button>
       <div class="worker-card-top">
         <div class="avatar" style="width:52px;height:52px;font-size:16px;background:${w.color};">${initials(w.name)}</div>
         <div>
@@ -196,7 +197,7 @@ function openWorkerDrawer(id){
 }
 
 function downloadWorkerDoc(workerName, docName){
-  const blob = new Blob([`Nexus Operations OS\n\nWorker: ${workerName}\nDocument: ${docName}\nGenerated: ${new Date().toLocaleString()}\n\nThis is a demo export.`], { type:'text/plain' });
+  const blob = new Blob([`Sagero Creations\n\nWorker: ${workerName}\nDocument: ${docName}\nGenerated: ${new Date().toLocaleString()}\n\nThis is a demo export.`], { type:'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = docName.replace(/\s+/g,'_') + '.txt';
@@ -214,6 +215,28 @@ function issueWarning(){
   NexusApp.toast('Warning issued to ' + w.name, 'warning');
   openWorkerDrawer(w.id);
   renderWorkerGrid();
+}
+
+/* ---------------- REMOVE WORKER ---------------- */
+let pendingRemoveId = null;
+function confirmRemoveWorker(id){
+  const w = WORKERS.find(x=>x.id===id);
+  if(!w) return;
+  pendingRemoveId = id;
+  document.getElementById('removeWorkerName').textContent = w.name;
+  NexusApp.openModal('modal-removeworker');
+}
+function removeWorker(){
+  if(!pendingRemoveId) return;
+  const w = WORKERS.find(x=>x.id===pendingRemoveId);
+  if(!w) return;
+  WORKERS = WORKERS.filter(x=>x.id!==pendingRemoveId);
+  persistWorkers();
+  NexusApp.closeModal('modal-removeworker');
+  NexusApp.closeDrawer('workerDrawer');
+  renderWorkerGrid();
+  NexusApp.toast(w.name + ' removed from the roster', 'info');
+  pendingRemoveId = null;
 }
 
 /* ---------------- NEW WORKER MODAL ---------------- */

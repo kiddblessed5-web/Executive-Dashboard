@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Audit Logs module
+   SAGERO CREATIONS — Audit Logs module
 ============================================================ */
 
 const AUDIT_USERS = ['Alex Kimani','Wei Zhang','Li Chen','HR Desk','Kevin Otieno','Grace Achieng','System'];
@@ -125,7 +125,7 @@ function exportAuditCSV(){
   const blob = new Blob([csv], { type:'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'nexus-audit-log.csv';
+  a.href = url; a.download = 'sagero-audit-log.csv';
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
   NexusApp.toast('Audit log exported', 'success');
@@ -137,7 +137,7 @@ function exportAuditXLSX(){
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Audit Log');
-  XLSX.writeFile(wb, 'nexus-audit-log.xlsx');
+  XLSX.writeFile(wb, 'sagero-audit-log.xlsx');
   NexusApp.toast('Audit log exported as Excel workbook', 'success');
 }
 

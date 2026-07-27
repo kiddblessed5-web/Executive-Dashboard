@@ -1,10 +1,10 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Help Center module
+   SAGERO CREATIONS — Help Center module
 ============================================================ */
 
 const FAQ_DATA = [
   { category:'Getting Started', q:'How do I switch between light and dark mode?', a:'Click the moon/sun icon in the top-right of any page, or go to Settings → Appearance for the same toggle plus layout density options.' },
-  { category:'Getting Started', q:'How do I collapse the sidebar?', a:'Click the small chevron next to the Nexus logo at the top of the sidebar. It folds into an icon-only rail and remembers your preference across every page.' },
+  { category:'Getting Started', q:'How do I collapse the sidebar?', a:'Click the small chevron next to the Sagero logo at the top of the sidebar. It folds into an icon-only rail and remembers your preference across every page.' },
   { category:'Getting Started', q:'What is the Command Palette?', a:'Press ⌘K (or Ctrl+K on Windows) anywhere in the app to jump to any page or trigger quick actions like creating a batch or toggling dark mode, without touching your mouse.' },
 
   { category:'Production', q:'How do I create a new phone batch?', a:'Go to Phone Batches and click "New Batch" in the top right, or the same action is available from the Dashboard\u2019s Quick Actions and the Command Palette.' },
@@ -36,7 +36,7 @@ const FAQ_DATA = [
 ];
 
 const TOPICS = [
-  { id:'Getting Started', icon:'ri-rocket-2-line', desc:'Basics of navigating Nexus' },
+  { id:'Getting Started', icon:'ri-rocket-2-line', desc:'Basics of navigating Sagero' },
   { id:'Production', icon:'ri-smartphone-line', desc:'Batches, workflow & stages' },
   { id:'People', icon:'ri-team-line', desc:'Workers & attendance' },
   { id:'Payroll', icon:'ri-money-dollar-circle-line', desc:'Pay, payslips & runs' },

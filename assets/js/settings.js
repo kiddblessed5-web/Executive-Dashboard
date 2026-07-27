@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Settings module
+   SAGERO CREATIONS — Settings module
 ============================================================ */
 
 /* ---------------- TAB NAV ---------------- */
@@ -12,7 +12,7 @@ function setSettingsTab(tab){
 function loadCompany(){
   const saved = localStorage.getItem('nexus_settings_company');
   const c = saved ? JSON.parse(saved) : {
-    name:'Nexus Technologies', industry:'Electronics Processing & Refurbishment',
+    name:'Sagero Creations', industry:'Electronics Processing & Refurbishment',
     address:'Industrial Area, Nairobi, Kenya', timezone:'Africa/Nairobi (GMT+3)',
     currency:'KES', dailyWage:600
   };
@@ -188,7 +188,7 @@ function loadSessions(){
   const saved = localStorage.getItem('nexus_sessions_list');
   SESSIONS = saved ? JSON.parse(saved) : [
     { id:'s1', device:'Chrome on macOS', location:'Nairobi, Kenya', lastActive:'Active now', current:true },
-    { id:'s2', device:'Nexus mobile app · iPhone', location:'Nairobi, Kenya', lastActive:'2 hours ago', current:false },
+    { id:'s2', device:'Sagero mobile app · iPhone', location:'Nairobi, Kenya', lastActive:'2 hours ago', current:false },
     { id:'s3', device:'Chrome on Windows', location:'Mombasa, Kenya', lastActive:'3 days ago', current:false },
   ];
   renderSessions();

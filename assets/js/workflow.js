@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Workflow module
+   SAGERO CREATIONS — Workflow module
    Visual pipeline, live production board, worker allocation,
    real-time timers
 ============================================================ */

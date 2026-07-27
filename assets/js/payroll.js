@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Payroll module
+   SAGERO CREATIONS — Payroll module
    Pulls days-worked straight from attendance records and
    auto-calculates base pay, overtime, bonuses & deductions.
 ============================================================ */

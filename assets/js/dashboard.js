@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Dashboard page logic
+   SAGERO CREATIONS — Dashboard page logic
 ============================================================ */
 
 const DASH_DATA = {

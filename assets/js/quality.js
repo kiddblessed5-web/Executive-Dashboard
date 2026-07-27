@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Quality Control module
+   SAGERO CREATIONS — Quality Control module
 ============================================================ */
 
 const QC_INSPECTORS = ['Kevin Otieno', 'Mercy Njoki', 'Ruth Wanjiku', 'Collins Odhiambo'];

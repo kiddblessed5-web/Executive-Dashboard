@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Reports module
+   SAGERO CREATIONS — Reports module
    Pulls real data from other modules' localStorage where
    available (batches, attendance, payroll, workers, QC),
    with self-contained fallback seeding so this page also
@@ -399,7 +399,7 @@ function exportReportCSV(){
   const blob = new Blob([csv], { type:'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `nexus-${activeReport}-report.csv`;
+  a.href = url; a.download = `sagero-${activeReport}-report.csv`;
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
   NexusApp.toast('Report exported as CSV', 'success');
@@ -414,7 +414,7 @@ function exportReportXLSX(){
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, activeReport.slice(0,28));
-  XLSX.writeFile(wb, `nexus-${activeReport}-report.xlsx`);
+  XLSX.writeFile(wb, `sagero-${activeReport}-report.xlsx`);
   NexusApp.toast('Report exported as Excel workbook', 'success');
 }
 function exportReportPDF(){

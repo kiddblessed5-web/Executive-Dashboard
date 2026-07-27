@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Messages module (Border-style layout)
+   SAGERO CREATIONS — Messages module (Border-style layout)
 ============================================================ */
 
 const MSG_PEOPLE = {

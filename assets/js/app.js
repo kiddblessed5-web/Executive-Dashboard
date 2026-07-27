@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Shared App Shell
+   SAGERO CREATIONS — Shared App Shell
    Handles: auth guard, sidebar, topbar, theme, toasts,
    modals, dropdowns, command palette, ripple buttons
 ============================================================ */
@@ -156,6 +156,9 @@ const NexusApp = (() => {
     ]},
     { group:'Communication', items:[
       { label:'Messages', icon:'ri-chat-3-line', page:'messages.html', badge:3 },
+    ]},
+    { group:'CRM', items:[
+      { label:'Customers', icon:'ri-contacts-book-line', page:'crm.html' },
     ]},
     { group:'Analytics', items:[
       { label:'Reports', icon:'ri-bar-chart-2-line', page:'reports.html' },

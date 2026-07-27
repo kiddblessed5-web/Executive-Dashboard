@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Attendance module
+   SAGERO CREATIONS — Attendance module
 ============================================================ */
 
 const ATT_ROSTER = [

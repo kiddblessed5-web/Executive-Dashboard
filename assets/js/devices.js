@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Phones / Device Inventory module
+   SAGERO CREATIONS — Phones / Device Inventory module
    Barcode scan-in station (hardware scanner + optional camera),
    saved scan sessions, Excel / CSV export via SheetJS
 ============================================================ */
@@ -288,7 +288,7 @@ function exportAllListsXLSX(){
     ws['!cols'] = [{wch:18},{wch:14},{wch:18}];
     XLSX.utils.book_append_sheet(wb, ws, sanitizeFilename(list.name).slice(0,28) || 'List');
   });
-  XLSX.writeFile(wb, 'nexus-device-inventory-all-lists.xlsx');
+  XLSX.writeFile(wb, 'sagero-device-inventory-all-lists.xlsx');
   NexusApp.toast('Exported all lists as one workbook', 'success');
 }
 

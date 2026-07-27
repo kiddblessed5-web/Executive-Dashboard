@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — Warehouse module
+   SAGERO CREATIONS — Warehouse module
 ============================================================ */
 
 const WH_MODELS = ['Vivo Y18','Vivo Y28','Vivo V30','Vivo Y36','Vivo X100','Vivo Y17s'];
@@ -190,7 +190,7 @@ function exportStockXLSX(){
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Stock Levels');
-  XLSX.writeFile(wb, 'nexus-warehouse-stock.xlsx');
+  XLSX.writeFile(wb, 'sagero-warehouse-stock.xlsx');
   NexusApp.toast('Stock levels exported', 'success');
 }
 

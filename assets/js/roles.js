@@ -1,5 +1,5 @@
 /* ============================================================
-   NEXUS OPERATIONS OS — User Roles module
+   SAGERO CREATIONS — User Roles module
    User-to-role assignment directory. Complements Settings →
    Permissions, which defines what each role can do.
 ============================================================ */
@@ -19,20 +19,20 @@ function seedUsers(){
   if(saved){ USERS = JSON.parse(saved); return; }
 
   const base = [
-    { name:'Alex Kimani', role:'Super Admin', email:'alex.kimani@nexustech.com', status:'Active', lastActive:'Active now' },
-    { name:'Wei Zhang', role:'Chinese Manager', email:'wei.zhang@nexustech.com', status:'Active', lastActive:'2 hours ago' },
-    { name:'Li Chen', role:'Chinese Manager', email:'li.chen@nexustech.com', status:'Active', lastActive:'1 day ago' },
-    { name:'Feng Yun', role:'Chinese Manager', email:'feng.yun@nexustech.com', status:'Active', lastActive:'3 hours ago' },
-    { name:'Chao Liu', role:'Chinese Manager', email:'chao.liu@nexustech.com', status:'Active', lastActive:'5 hours ago' },
-    { name:'Grace Achieng', role:'Supervisor', email:'grace.achieng@nexustech.com', status:'Active', lastActive:'30 min ago' },
-    { name:'Kevin Otieno', role:'Worker', email:'kevin.otieno@nexustech.com', status:'Active', lastActive:'1 hour ago' },
-    { name:'Mercy Njoki', role:'Worker', email:'mercy.njoki@nexustech.com', status:'Active', lastActive:'45 min ago' },
-    { name:'HR Desk', role:'HR', email:'hr@nexustech.com', status:'Active', lastActive:'20 min ago' },
-    { name:'Ruth Wanjiku', role:'Payroll Officer', email:'ruth.wanjiku@nexustech.com', status:'Active', lastActive:'2 days ago' },
-    { name:'Brian Mwangi', role:'Viewer', email:'brian.mwangi@nexustech.com', status:'Active', lastActive:'4 days ago' },
-    { name:'Faith Kerubo', role:'Viewer', email:'faith.kerubo@nexustech.com', status:'Invited', lastActive:'Never signed in' },
-    { name:'Dennis Otieno', role:'Worker', email:'dennis.otieno@nexustech.com', status:'Invited', lastActive:'Never signed in' },
-    { name:'Samuel Kiprono', role:'Worker', email:'samuel.kiprono@nexustech.com', status:'Suspended', lastActive:'12 days ago' },
+    { name:'Alex Kimani', role:'Super Admin', email:'alex.kimani@sagerocreations.com', status:'Active', lastActive:'Active now' },
+    { name:'Wei Zhang', role:'Chinese Manager', email:'wei.zhang@sagerocreations.com', status:'Active', lastActive:'2 hours ago' },
+    { name:'Li Chen', role:'Chinese Manager', email:'li.chen@sagerocreations.com', status:'Active', lastActive:'1 day ago' },
+    { name:'Feng Yun', role:'Chinese Manager', email:'feng.yun@sagerocreations.com', status:'Active', lastActive:'3 hours ago' },
+    { name:'Chao Liu', role:'Chinese Manager', email:'chao.liu@sagerocreations.com', status:'Active', lastActive:'5 hours ago' },
+    { name:'Grace Achieng', role:'Supervisor', email:'grace.achieng@sagerocreations.com', status:'Active', lastActive:'30 min ago' },
+    { name:'Kevin Otieno', role:'Worker', email:'kevin.otieno@sagerocreations.com', status:'Active', lastActive:'1 hour ago' },
+    { name:'Mercy Njoki', role:'Worker', email:'mercy.njoki@sagerocreations.com', status:'Active', lastActive:'45 min ago' },
+    { name:'HR Desk', role:'HR', email:'hr@sagerocreations.com', status:'Active', lastActive:'20 min ago' },
+    { name:'Ruth Wanjiku', role:'Payroll Officer', email:'ruth.wanjiku@sagerocreations.com', status:'Active', lastActive:'2 days ago' },
+    { name:'Brian Mwangi', role:'Viewer', email:'brian.mwangi@sagerocreations.com', status:'Active', lastActive:'4 days ago' },
+    { name:'Faith Kerubo', role:'Viewer', email:'faith.kerubo@sagerocreations.com', status:'Invited', lastActive:'Never signed in' },
+    { name:'Dennis Otieno', role:'Worker', email:'dennis.otieno@sagerocreations.com', status:'Invited', lastActive:'Never signed in' },
+    { name:'Samuel Kiprono', role:'Worker', email:'samuel.kiprono@sagerocreations.com', status:'Suspended', lastActive:'12 days ago' },
   ];
   USERS = base.map((u,i) => ({ id:'U-'+(4001+i), ...u }));
   persistUsers();

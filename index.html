@@ -1,200 +1,584 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — Nexus Operations OS</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
-<style>
-  .kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:22px; }
-  .kpi-card{ position:relative; overflow:hidden; }
-  .kpi-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-  .kpi-icon{ width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:19px; }
-  .kpi-primary{ background:var(--grad-soft); color:var(--primary-3); }
-  .kpi-info{ background:var(--info-soft); color:var(--info); }
-  .kpi-success{ background:var(--success-soft); color:var(--success); }
-  .kpi-warning{ background:var(--warning-soft); color:var(--warning); }
-  .kpi-value{ font-family:'Inter Tight'; font-size:25px; font-weight:800; letter-spacing:-0.01em; }
-  .kpi-label{ font-size:12.5px; color:var(--ink-faint); font-weight:600; margin-top:4px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard — Sagero Creations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <style>
+      .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+        margin-bottom: 22px;
+      }
+      .kpi-card {
+        position: relative;
+        overflow: hidden;
+      }
+      .kpi-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .kpi-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+      }
+      .kpi-primary {
+        background: var(--grad-soft);
+        color: var(--primary-3);
+      }
+      .kpi-info {
+        background: var(--info-soft);
+        color: var(--info);
+      }
+      .kpi-success {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+      .kpi-warning {
+        background: var(--warning-soft);
+        color: var(--warning);
+      }
+      .kpi-value {
+        font-family: "Inter Tight";
+        font-size: 25px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .kpi-label {
+        font-size: 12.5px;
+        color: var(--ink-faint);
+        font-weight: 600;
+        margin-top: 4px;
+      }
 
-  .dash-grid{ display:grid; grid-template-columns:1.5fr 1fr; gap:18px; margin-bottom:18px; }
-  .dash-grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin-bottom:18px; }
-  .chart-tabs{ display:flex; gap:6px; background:var(--grad-soft); padding:4px; border-radius:12px; }
-  .chart-tab{ padding:6px 12px; font-size:11.5px; font-weight:700; border-radius:9px; color:var(--ink-soft); }
-  .chart-tab.active{ background:var(--card); color:var(--primary-3); box-shadow:var(--shadow-sm); }
+      .dash-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+      .dash-grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 18px;
+      }
+      .chart-tabs {
+        display: flex;
+        gap: 6px;
+        background: var(--grad-soft);
+        padding: 4px;
+        border-radius: 12px;
+      }
+      .chart-tab {
+        padding: 6px 12px;
+        font-size: 11.5px;
+        font-weight: 700;
+        border-radius: 9px;
+        color: var(--ink-soft);
+      }
+      .chart-tab.active {
+        background: var(--card);
+        color: var(--primary-3);
+        box-shadow: var(--shadow-sm);
+      }
 
-  .activity-row{ display:flex; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
-  .activity-row:last-child{ border-bottom:none; }
-  .activity-icon{ width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
-  .activity-text{ display:flex; flex-direction:column; gap:2px; font-size:13px; line-height:1.4; }
-  .activity-text small{ color:var(--ink-faint); font-size:11.5px; font-weight:600; }
+      .activity-row {
+        display: flex;
+        gap: 12px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .activity-row:last-child {
+        border-bottom: none;
+      }
+      .activity-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .activity-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      .activity-text small {
+        color: var(--ink-faint);
+        font-size: 11.5px;
+        font-weight: 600;
+      }
 
-  .deadline-row{ display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
-  .deadline-row:last-child{ border-bottom:none; }
-  .deadline-dot{ width:9px; height:9px; border-radius:50%; background:var(--info); margin-top:5px; flex-shrink:0; }
-  .deadline-dot.urgent{ background:var(--danger); animation:pulseDot 1.4s infinite; }
-  .deadline-text{ display:flex; flex-direction:column; font-size:12.5px; }
-  .deadline-text small{ color:var(--ink-faint); font-weight:600; margin-top:2px; }
+      .deadline-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .deadline-row:last-child {
+        border-bottom: none;
+      }
+      .deadline-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--info);
+        margin-top: 5px;
+        flex-shrink: 0;
+      }
+      .deadline-dot.urgent {
+        background: var(--danger);
+        animation: pulseDot 1.4s infinite;
+      }
+      .deadline-text {
+        display: flex;
+        flex-direction: column;
+        font-size: 12.5px;
+      }
+      .deadline-text small {
+        color: var(--ink-faint);
+        font-weight: 600;
+        margin-top: 2px;
+      }
 
-  .worker-rank-row{ display:flex; align-items:center; gap:12px; padding:10px 0; }
-  .worker-rank-meta{ display:flex; flex-direction:column; width:110px; flex-shrink:0; }
-  .worker-rank-meta b{ font-size:12.5px; }
-  .worker-rank-meta small{ color:var(--ink-faint); font-size:11px; }
-  .worker-rank-bar-wrap{ flex:1; height:8px; background:var(--grad-soft); border-radius:20px; overflow:hidden; }
-  .worker-rank-bar{ height:100%; border-radius:20px; width:0; transition:width 1s var(--ease); }
-  .worker-rank-val{ font-size:12px; font-weight:700; width:34px; text-align:right; }
+      .worker-rank-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+      }
+      .worker-rank-meta {
+        display: flex;
+        flex-direction: column;
+        width: 110px;
+        flex-shrink: 0;
+      }
+      .worker-rank-meta b {
+        font-size: 12.5px;
+      }
+      .worker-rank-meta small {
+        color: var(--ink-faint);
+        font-size: 11px;
+      }
+      .worker-rank-bar-wrap {
+        flex: 1;
+        height: 8px;
+        background: var(--grad-soft);
+        border-radius: 20px;
+        overflow: hidden;
+      }
+      .worker-rank-bar {
+        height: 100%;
+        border-radius: 20px;
+        width: 0;
+        transition: width 1s var(--ease);
+      }
+      .worker-rank-val {
+        font-size: 12px;
+        font-weight: 700;
+        width: 34px;
+        text-align: right;
+      }
 
-  .quick-actions{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
-  .quick-action{ display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 8px; border-radius:16px; background:var(--grad-soft); text-align:center; transition:.15s var(--ease); }
-  .quick-action:hover{ transform:translateY(-3px); box-shadow:var(--shadow-sm); }
-  .quick-action i{ font-size:22px; color:var(--primary-3); }
-  .quick-action span{ font-size:11.5px; font-weight:700; }
+      .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+      .quick-action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 8px;
+        border-radius: 16px;
+        background: var(--grad-soft);
+        text-align: center;
+        transition: 0.15s var(--ease);
+      }
+      .quick-action:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-sm);
+      }
+      .quick-action i {
+        font-size: 22px;
+        color: var(--primary-3);
+      }
+      .quick-action span {
+        font-size: 11.5px;
+        font-weight: 700;
+      }
 
-  .fab-wrap{ position:fixed; bottom:28px; right:28px; z-index:60; }
-  .fab{ width:56px; height:56px; border-radius:50%; background:var(--grad); color:#fff; font-size:24px; display:flex; align-items:center; justify-content:center; border:none; box-shadow:0 14px 30px -8px rgba(79,70,229,0.6); transition:.2s var(--ease); }
-  .fab:hover{ transform:scale(1.06) rotate(90deg); }
-  .fab-menu{ position:absolute; bottom:68px; right:0; display:flex; flex-direction:column; gap:8px; opacity:0; visibility:hidden; transform:translateY(8px); transition:.18s var(--ease); }
-  .fab-menu.open{ opacity:1; visibility:visible; transform:translateY(0); }
-  .fab-menu-item{ display:flex; align-items:center; gap:10px; background:var(--card); box-shadow:var(--shadow); border-radius:14px; padding:10px 16px; font-size:12.5px; font-weight:700; white-space:nowrap; }
-  .fab-menu-item i{ color:var(--primary-3); }
+      .fab-wrap {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        z-index: 60;
+      }
+      .fab {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--grad);
+        color: #fff;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        box-shadow: 0 14px 30px -8px rgba(79, 70, 229, 0.6);
+        transition: 0.2s var(--ease);
+      }
+      .fab:hover {
+        transform: scale(1.06) rotate(90deg);
+      }
+      .fab-menu {
+        position: absolute;
+        bottom: 68px;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(8px);
+        transition: 0.18s var(--ease);
+      }
+      .fab-menu.open {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+      .fab-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--card);
+        box-shadow: var(--shadow);
+        border-radius: 14px;
+        padding: 10px 16px;
+        font-size: 12.5px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .fab-menu-item i {
+        color: var(--primary-3);
+      }
 
-  @media (max-width:1080px){ .kpi-row{ grid-template-columns:repeat(2,1fr); } .dash-grid, .dash-grid-3{ grid-template-columns:1fr; } .quick-actions{ grid-template-columns:repeat(2,1fr); } }
-</style>
-</head>
-<body>
-
-<div class="app-shell">
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="brand-mark">N</div>
-      <div class="brand-text"><span class="brand-name">Nexus</span><span class="brand-sub">OPERATIONS OS</span></div>
-      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
-    </div>
-    <nav class="sidebar-scroll" id="sidebarNav"></nav>
-    <div class="sidebar-footer">
-      <div class="dropdown-wrap">
-        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
-          <div class="user-avatar" id="userChipAvatar">AK</div>
-          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
-          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
+      @media (max-width: 1080px) {
+        .kpi-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .dash-grid,
+        .dash-grid-3 {
+          grid-template-columns: 1fr;
+        }
+        .quick-actions {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-mark">SC</div>
+          <div class="brand-text">
+            <span class="brand-name">Sagero</span
+            ><span class="brand-sub">CREATIONS</span>
+          </div>
+          <button
+            class="sidebar-collapse-btn"
+            data-tip="Collapse sidebar"
+            onclick="NexusApp.toggleSidebarCollapse()"
+          >
+            <i class="ri-arrow-left-s-line" id="collapseIcon"></i>
+          </button>
         </div>
-        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
-          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
-          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
-          <div class="dd-divider"></div>
-          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-left">
-        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
-        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Nexus</span><i class="ri-arrow-right-s-line"></i><b>Dashboard</b></div>
-      </div>
-      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
-      <div class="topbar-right">
-        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
-        <div class="dropdown-wrap">
-          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
-          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:300px;">
-            <div class="dd-item"><i class="ri-checkbox-circle-line"></i>Batch #BX-1042 completed QC</div>
-            <div class="dd-item"><i class="ri-alert-line"></i>Batch #BX-1039 flagged delayed</div>
-            <div class="dd-item"><i class="ri-team-line"></i>3 workers checked in late</div>
-            <div class="dd-divider"></div>
-            <div class="dd-item" onclick="location.href='reports.html'"><i class="ri-eye-line"></i>View all activity</div>
+        <nav class="sidebar-scroll" id="sidebarNav"></nav>
+        <div class="sidebar-footer">
+          <div class="dropdown-wrap">
+            <div
+              class="user-chip"
+              onclick="NexusApp.toggleDropdown('userMenu')"
+            >
+              <div class="user-avatar" id="userChipAvatar">SC</div>
+              <div class="user-meta">
+                <div class="user-name" id="userChipName">Sagero Creation</div>
+                <div class="user-role" id="userChipRole">
+                  CEO
+                </div>
+              </div>
+              <i class="ri-more-2-fill" style="color: var(--ink-faint)"></i>
+            </div>
+            <div
+              class="dropdown-panel"
+              id="userMenu"
+              style="bottom: 64px; left: 14px; width: 220px"
+            >
+              <div class="dd-item" onclick="location.href = 'settings.html'">
+                <i class="ri-user-line"></i>My profile
+              </div>
+              <div class="dd-item" onclick="location.href = 'settings.html'">
+                <i class="ri-settings-4-line"></i>Settings
+              </div>
+              <div class="dd-divider"></div>
+              <div class="dd-item danger" onclick="NexusApp.logout()">
+                <i class="ri-logout-box-line"></i>Log out
+              </div>
+            </div>
           </div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="location.href='batches.html'"><i class="ri-add-line"></i>New Batch</button>
+      </aside>
+
+      <!-- MAIN -->
+      <div class="main">
+        <div class="topbar">
+          <div class="topbar-left">
+            <button class="menu-btn" onclick="NexusApp.toggleSidebar()">
+              <i class="ri-menu-line"></i>
+            </button>
+            <div class="breadcrumbs">
+              <i class="ri-home-5-line"></i><span>Sagero</span
+              ><i class="ri-arrow-right-s-line"></i><b>Dashboard</b>
+            </div>
+          </div>
+          <div class="topbar-search" onclick="NexusApp.openCmdk()">
+            <i class="ri-search-line"></i><span>Search or jump to…</span
+            ><span class="kbd">⌘K</span>
+          </div>
+          <div class="topbar-right">
+            <button
+              class="icon-btn"
+              data-tip="Toggle theme"
+              onclick="NexusApp.toggleTheme()"
+            >
+              <i id="themeToggleIcon" class="ri-moon-line"></i>
+            </button>
+            <div class="dropdown-wrap">
+              <button
+                class="icon-btn"
+                data-tip="Notifications"
+                onclick="NexusApp.toggleDropdown('notifPanel')"
+              >
+                <i class="ri-notification-3-line"></i
+                ><span class="icon-dot"></span>
+              </button>
+              <div
+                class="dropdown-panel"
+                id="notifPanel"
+                style="top: 50px; right: 0; width: 300px"
+              >
+                <div class="dd-item">
+                  <i class="ri-checkbox-circle-line"></i>Batch #BX-1042
+                  completed QC
+                </div>
+                <div class="dd-item">
+                  <i class="ri-alert-line"></i>Batch #BX-1039 flagged delayed
+                </div>
+                <div class="dd-item">
+                  <i class="ri-team-line"></i>3 workers checked in late
+                </div>
+                <div class="dd-divider"></div>
+                <div class="dd-item" onclick="location.href = 'reports.html'">
+                  <i class="ri-eye-line"></i>View all activity
+                </div>
+              </div>
+            </div>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="location.href = 'batches.html'"
+            >
+              <i class="ri-add-line"></i>New Batch
+            </button>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="section-head fade-up">
+            <div>
+              <div class="section-title">Good to see you, CEO 👋</div>
+              <div class="section-sub">
+                Here's what's happening across the production floor today.
+              </div>
+            </div>
+            <div class="chart-tabs">
+              <span class="chart-tab active">Today</span>
+              <span
+                class="chart-tab"
+                onclick="NexusApp.toast('Weekly view (demo)', 'info')"
+                >This Week</span
+              >
+              <span
+                class="chart-tab"
+                onclick="NexusApp.toast('Monthly view (demo)', 'info')"
+                >This Month</span
+              >
+            </div>
+          </div>
+
+          <div class="kpi-row" id="kpiRow"></div>
+
+          <div class="dash-grid">
+            <div class="card fade-up">
+              <div class="section-head">
+                <div>
+                  <div class="section-title">Production Trend</div>
+                  <div class="section-sub">
+                    Units produced, last 6 working days
+                  </div>
+                </div>
+              </div>
+              <div style="height: 240px"><canvas id="trendChart"></canvas></div>
+            </div>
+            <div class="card fade-up">
+              <div class="section-head">
+                <div>
+                  <div class="section-title">Recent Activity</div>
+                  <div class="section-sub">Live feed across the floor</div>
+                </div>
+              </div>
+              <div id="activityFeed"></div>
+            </div>
+          </div>
+
+          <div class="dash-grid-3">
+            <div class="card fade-up">
+              <div class="section-head">
+                <div>
+                  <div class="section-title">Daily Output</div>
+                  <div class="section-sub">By production stage</div>
+                </div>
+              </div>
+              <div style="height: 200px">
+                <canvas id="outputChart"></canvas>
+              </div>
+            </div>
+            <div class="card fade-up">
+              <div class="section-head">
+                <div>
+                  <div class="section-title">Worker Performance</div>
+                  <div class="section-sub">Distribution this week</div>
+                </div>
+              </div>
+              <div style="height: 200px"><canvas id="perfChart"></canvas></div>
+            </div>
+            <div class="card fade-up">
+              <div class="section-head">
+                <div><div class="section-title">Upcoming Deadlines</div></div>
+              </div>
+              <div id="deadlineList"></div>
+            </div>
+          </div>
+
+          <div class="dash-grid">
+            <div class="card fade-up">
+              <div class="section-head">
+                <div>
+                  <div class="section-title">Top Workers</div>
+                  <div class="section-sub">Ranked by units this week</div>
+                </div>
+                <button
+                  class="btn btn-ghost btn-sm"
+                  onclick="location.href = 'workers.html'"
+                >
+                  View all<i class="ri-arrow-right-line"></i>
+                </button>
+              </div>
+              <div id="topWorkersList"></div>
+            </div>
+            <div class="card fade-up">
+              <div class="section-head">
+                <div><div class="section-title">Quick Actions</div></div>
+              </div>
+              <div class="quick-actions">
+                <a class="quick-action" href="batches.html"
+                  ><i class="ri-add-box-line"></i><span>New Batch</span></a
+                >
+                <a class="quick-action" href="attendance.html"
+                  ><i class="ri-calendar-check-line"></i
+                  ><span>Mark Attendance</span></a
+                >
+                <a class="quick-action" href="payroll.html"
+                  ><i class="ri-bank-card-line"></i><span>Run Payroll</span></a
+                >
+                <a class="quick-action" href="reports.html"
+                  ><i class="ri-download-2-line"></i
+                  ><span>Export Report</span></a
+                >
+              </div>
+              <div class="section-head" style="margin-top: 22px">
+                <div>
+                  <div class="section-title" style="font-size: 14px">
+                    Announcements
+                  </div>
+                </div>
+              </div>
+              <div class="activity-row">
+                <div
+                  class="activity-icon"
+                  style="background: var(--info-soft); color: var(--info)"
+                >
+                  <i class="ri-megaphone-line"></i>
+                </div>
+                <div class="activity-text">
+                  <span
+                    >Warehouse B will run extended hours this Saturday for the
+                    Vivo Y-series batch.</span
+                  ><small>Posted by HR · 2 hr ago</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="content">
-      <div class="section-head fade-up">
-        <div>
-          <div class="section-title">Good to see you, Alex 👋</div>
-          <div class="section-sub">Here's what's happening across the production floor today.</div>
-        </div>
-        <div class="chart-tabs">
-          <span class="chart-tab active">Today</span>
-          <span class="chart-tab" onclick="NexusApp.toast('Weekly view (demo)','info')">This Week</span>
-          <span class="chart-tab" onclick="NexusApp.toast('Monthly view (demo)','info')">This Month</span>
-        </div>
+    <!-- FLOATING ACTION BUTTON -->
+    <div class="fab-wrap">
+      <div class="fab-menu" id="fabMenu">
+        <a class="fab-menu-item" href="batches.html"
+          ><i class="ri-smartphone-line"></i>New batch</a
+        >
+        <a class="fab-menu-item" href="workers.html"
+          ><i class="ri-user-add-line"></i>Add worker</a
+        >
+        <a class="fab-menu-item" href="attendance.html"
+          ><i class="ri-calendar-check-line"></i>Mark attendance</a
+        >
       </div>
-
-      <div class="kpi-row" id="kpiRow"></div>
-
-      <div class="dash-grid">
-        <div class="card fade-up">
-          <div class="section-head"><div><div class="section-title">Production Trend</div><div class="section-sub">Units produced, last 6 working days</div></div></div>
-          <div style="height:240px;"><canvas id="trendChart"></canvas></div>
-        </div>
-        <div class="card fade-up">
-          <div class="section-head"><div><div class="section-title">Recent Activity</div><div class="section-sub">Live feed across the floor</div></div></div>
-          <div id="activityFeed"></div>
-        </div>
-      </div>
-
-      <div class="dash-grid-3">
-        <div class="card fade-up">
-          <div class="section-head"><div><div class="section-title">Daily Output</div><div class="section-sub">By production stage</div></div></div>
-          <div style="height:200px;"><canvas id="outputChart"></canvas></div>
-        </div>
-        <div class="card fade-up">
-          <div class="section-head"><div><div class="section-title">Worker Performance</div><div class="section-sub">Distribution this week</div></div></div>
-          <div style="height:200px;"><canvas id="perfChart"></canvas></div>
-        </div>
-        <div class="card fade-up">
-          <div class="section-head"><div><div class="section-title">Upcoming Deadlines</div></div></div>
-          <div id="deadlineList"></div>
-        </div>
-      </div>
-
-      <div class="dash-grid">
-        <div class="card fade-up">
-          <div class="section-head"><div><div class="section-title">Top Workers</div><div class="section-sub">Ranked by units this week</div></div>
-            <button class="btn btn-ghost btn-sm" onclick="location.href='workers.html'">View all<i class="ri-arrow-right-line"></i></button>
-          </div>
-          <div id="topWorkersList"></div>
-        </div>
-        <div class="card fade-up">
-          <div class="section-head"><div><div class="section-title">Quick Actions</div></div></div>
-          <div class="quick-actions">
-            <a class="quick-action" href="batches.html"><i class="ri-add-box-line"></i><span>New Batch</span></a>
-            <a class="quick-action" href="attendance.html"><i class="ri-calendar-check-line"></i><span>Mark Attendance</span></a>
-            <a class="quick-action" href="payroll.html"><i class="ri-bank-card-line"></i><span>Run Payroll</span></a>
-            <a class="quick-action" href="reports.html"><i class="ri-download-2-line"></i><span>Export Report</span></a>
-          </div>
-          <div class="section-head" style="margin-top:22px;"><div><div class="section-title" style="font-size:14px;">Announcements</div></div></div>
-          <div class="activity-row">
-            <div class="activity-icon" style="background:var(--info-soft); color:var(--info);"><i class="ri-megaphone-line"></i></div>
-            <div class="activity-text"><span>Warehouse B will run extended hours this Saturday for the Vivo Y-series batch.</span><small>Posted by HR · 2 hr ago</small></div>
-          </div>
-        </div>
-      </div>
+      <button class="fab" id="fab"><i class="ri-add-line"></i></button>
     </div>
-  </div>
-</div>
 
-<!-- FLOATING ACTION BUTTON -->
-<div class="fab-wrap">
-  <div class="fab-menu" id="fabMenu">
-    <a class="fab-menu-item" href="batches.html"><i class="ri-smartphone-line"></i>New batch</a>
-    <a class="fab-menu-item" href="workers.html"><i class="ri-user-add-line"></i>Add worker</a>
-    <a class="fab-menu-item" href="attendance.html"><i class="ri-calendar-check-line"></i>Mark attendance</a>
-  </div>
-  <button class="fab" id="fab"><i class="ri-add-line"></i></button>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
-<script src="assets/js/app.js"></script>
-<script src="assets/js/dashboard.js"></script>
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/dashboard.js"></script>
+  </body>
 </html>
