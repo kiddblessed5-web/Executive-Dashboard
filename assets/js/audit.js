@@ -147,8 +147,8 @@ function wireToolbar(){
   document.getElementById('filterUser').addEventListener('change', e => { filters.user = e.target.value; renderList(); });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const session = NexusApp.requireAuth();
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('audit.html', session);
   seedAuditLog();

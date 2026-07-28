@@ -301,8 +301,8 @@ function renderAll(){
   renderCharts();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const session = NexusApp.requireAuth();
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('attendance.html', session);
   loadAttendance();

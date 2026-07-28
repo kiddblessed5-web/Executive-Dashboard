@@ -336,8 +336,8 @@ function wireSettings(){
   document.getElementById('auditSearch').addEventListener('input', e => { auditSearch = e.target.value.trim().toLowerCase(); renderAuditPreview(); });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const session = NexusApp.requireAuth();
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('settings.html', session);
   wireSettings();

@@ -264,8 +264,8 @@ function submitNewWorker(e){
   e.target.reset();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const session = NexusApp.requireAuth();
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('workers.html', session);
   seedWorkers();

@@ -7,7 +7,23 @@
 const NexusApp = (() => {
 
   /* ---------------- AUTH GUARD ---------------- */
-  function requireAuth(){
+  async function requireAuth(){
+    if(SagoBackend?.isConfigured()){
+      const backendSession = await SagoBackend.getSession();
+      if(!backendSession){
+        window.location.href = 'login.html';
+        return null;
+      }
+      const profile = await SagoBackend.getProfile(backendSession.user.id);
+      const session = {
+        name: profile?.full_name || backendSession.user.email,
+        email: backendSession.user.email,
+        role: profile?.role || 'Worker',
+        initials: (profile?.full_name || backendSession.user.email).split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase(),
+      };
+      localStorage.setItem('nexus_session', JSON.stringify(session)); // keeps other modules that still read this in sync
+      return session;
+    }
     const session = localStorage.getItem('nexus_session');
     if(!session){
       window.location.href = 'login.html';
@@ -16,7 +32,8 @@ const NexusApp = (() => {
     return JSON.parse(session);
   }
 
-  function logout(){
+  async function logout(){
+    if(SagoBackend?.isConfigured()) await SagoBackend.signOut();
     localStorage.removeItem('nexus_session');
     window.location.href = 'login.html';
   }

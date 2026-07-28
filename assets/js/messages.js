@@ -155,12 +155,25 @@ function renderOnlineNow(){
       <span class="status-dot online"></span>
     </div>`).join('');
 }
-function openDMWith(personId){
+async function openDMWith(personId){
   let conv = CONVERSATIONS.find(c => c.type==='dm' && c.personId===personId);
-  if(!conv) conv = createDMConversation(personId);
+  if(!conv) conv = await createDMConversation(personId);
   selectConversation(conv.id);
 }
-function createDMConversation(personId){
+async function createDMConversation(personId){
+  if(SagoBackend?.isConfigured()){
+    const sb = SagoBackend.getClient();
+    const { data: newConv, error } = await sb.from('conversations').insert({ type:'dm', created_by: backendUserId }).select().single();
+    if(error){ NexusApp.toast('Could not start conversation: ' + error.message, 'error'); return null; }
+    await sb.from('conversation_members').insert([
+      { conversation_id: newConv.id, user_id: backendUserId },
+      { conversation_id: newConv.id, user_id: personId },
+    ]);
+    const conv = { id:newConv.id, type:'dm', personId, convPinned:false };
+    CONVERSATIONS.push(conv);
+    MESSAGES[conv.id] = [];
+    return conv;
+  }
   const conv = { id:'dm-'+personId, type:'dm', personId, convPinned:false };
   CONVERSATIONS.push(conv);
   MESSAGES[conv.id] = [];
@@ -195,10 +208,11 @@ function renderComposeList(){
     </div>`;
   }).join('') || `<div class="muted-note" style="padding:16px;">No one matches your search.</div>`;
 }
-function startNewConversation(personId){
+async function startNewConversation(personId){
   let conv = CONVERSATIONS.find(c => c.type==='dm' && c.personId===personId);
   const isNew = !conv;
-  if(!conv) conv = createDMConversation(personId);
+  if(!conv) conv = await createDMConversation(personId);
+  if(!conv) return;
   NexusApp.closeModal('modal-compose');
   selectConversation(conv.id);
   renderConvList();
@@ -240,10 +254,13 @@ function renderConvList(){
 }
 
 /* ---------------- ACTIVE CONVERSATION ---------------- */
-function selectConversation(id){
+async function selectConversation(id){
   activeConvId = id;
   unreadState[id] = 0;
   persistUnread();
+  if(SagoBackend?.isConfigured() && !MESSAGES[id]){
+    await loadBackendMessages(id);
+  }
   renderConvList();
   renderActiveHeader();
   renderMessages();
@@ -393,6 +410,17 @@ function scrollToBottom(){
 const QUICK_EMOJIS = ['👍','❤️','😂','🎉','🔥','🙏','👏','😮'];
 
 function toggleReaction(msgId, emoji){
+  if(SagoBackend?.isConfigured()){
+    const sb = SagoBackend.getClient();
+    sb.from('message_reactions').insert({ message_id: msgId, user_id: backendUserId, emoji })
+      .then(({ error }) => {
+        if(error && error.code !== '23505'){ NexusApp.toast('Reaction failed: ' + error.message, 'error'); return; }
+        const msgs = MESSAGES[activeConvId];
+        const m = msgs?.find(x=>x.id===msgId);
+        if(m){ m.reactions = m.reactions || {}; m.reactions[emoji] = (m.reactions[emoji]||0)+1; renderMessages(); }
+      });
+    return;
+  }
   const msgs = MESSAGES[activeConvId];
   const m = msgs.find(x=>x.id===msgId);
   if(!m) return;
@@ -416,7 +444,19 @@ function togglePin(msgId){
   const msgs = MESSAGES[activeConvId];
   const m = msgs.find(x=>x.id===msgId);
   if(!m) return;
-  m.pinned = !m.pinned;
+  const nextPinned = !m.pinned;
+
+  if(SagoBackend?.isConfigured()){
+    const sb = SagoBackend.getClient();
+    sb.from('messages').update({ pinned: nextPinned }).eq('id', msgId).then(({ error }) => {
+      if(error){ NexusApp.toast('Could not update pin: ' + error.message, 'error'); return; }
+      m.pinned = nextPinned;
+      renderMessages();
+      NexusApp.toast(m.pinned ? 'Message pinned' : 'Message unpinned', 'info');
+    });
+    return;
+  }
+  m.pinned = nextPinned;
   persistMessages();
   renderMessages();
   NexusApp.toast(m.pinned ? 'Message pinned' : 'Message unpinned', 'info');
@@ -438,11 +478,17 @@ function sendMessage(){
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
   if(!text) return;
+  input.value = '';
+  autoGrow(input);
+
+  if(SagoBackend?.isConfigured()){
+    sendMessageBackend(text);
+    return;
+  }
+
   if(!MESSAGES[activeConvId]) MESSAGES[activeConvId] = [];
   MESSAGES[activeConvId].push({ id:genId(), sender:'me', text, time:new Date().toISOString(), reactions:{}, pinned:false });
   persistMessages();
-  input.value = '';
-  autoGrow(input);
   renderMessages();
   renderConvList();
   maybeAutoReply();
@@ -568,12 +614,127 @@ function wireSidebarControls(){
   document.getElementById('composeSearch').addEventListener('input', e => { composeSearch = e.target.value.trim().toLowerCase(); renderComposeList(); });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const session = NexusApp.requireAuth();
+/* ============================================================
+   BACKEND MODE — real, shared, cross-device messaging
+   Activates automatically once assets/js/supabase-client.js
+   has real credentials (see backend_schema_phase1.sql).
+   Populates the exact same CONVERSATIONS / MESSAGES / MSG_PEOPLE
+   shapes the rest of this file already renders, so every UI
+   function above (renderConvList, renderMessages, polls,
+   reactions, pins...) works unchanged in both modes.
+============================================================ */
+let backendUserId = null;
+let realtimeChannel = null;
+
+async function initBackendMessaging(session){
+  const sb = SagoBackend.getClient();
+  const authSession = await SagoBackend.getSession();
+  backendUserId = authSession.user.id;
+
+  // pull every profile so avatars/names/online-state resolve for anyone in the workspace
+  const { data: profiles, error: profileErr } = await sb.from('profiles').select('*');
+  if(profileErr){ NexusApp.toast('Could not load team directory: ' + profileErr.message, 'error'); }
+  MSG_PEOPLE['me'] = { name: session.name, color:'#6D5DF6', online:true, role: session.role };
+  (profiles || []).forEach(p => {
+    if(p.id === backendUserId) return;
+    MSG_PEOPLE[p.id] = { name: p.full_name, color: p.avatar_color || '#3B82F6', online: !!p.is_online, role: p.role };
+  });
+
+  // conversations this user belongs to, with their fellow members
+  const { data: memberRows, error: memberErr } = await sb
+    .from('conversation_members')
+    .select('conversation_id, conversations(id, type, name, created_by), user_id')
+    .eq('user_id', backendUserId);
+  if(memberErr){ NexusApp.toast('Could not load conversations: ' + memberErr.message, 'error'); return; }
+
+  const convIds = (memberRows || []).map(r => r.conversation_id);
+  let allMembers = [];
+  if(convIds.length){
+    const { data } = await sb.from('conversation_members').select('conversation_id, user_id').in('conversation_id', convIds);
+    allMembers = data || [];
+  }
+
+  CONVERSATIONS = (memberRows || []).map(r => {
+    const conv = r.conversations;
+    const otherMemberId = allMembers.find(m => m.conversation_id === conv.id && m.user_id !== backendUserId)?.user_id;
+    return {
+      id: conv.id,
+      type: conv.type,
+      name: conv.name,
+      personId: conv.type === 'dm' ? otherMemberId : null,
+      membersLabel: conv.type !== 'dm' ? `${allMembers.filter(m=>m.conversation_id===conv.id).length} Members` : undefined,
+      convPinned: false,
+      description: '',
+    };
+  });
+
+  if(CONVERSATIONS.length) activeConvId = CONVERSATIONS[0].id;
+  MESSAGES = {};
+  for(const c of CONVERSATIONS) await loadBackendMessages(c.id);
+
+  subscribeRealtime(sb);
+}
+
+async function loadBackendMessages(conversationId){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb
+    .from('messages')
+    .select('*, message_reactions(emoji, user_id)')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending:true });
+  if(error){ NexusApp.toast('Could not load messages: ' + error.message, 'error'); return; }
+
+  MESSAGES[conversationId] = (data || []).map(m => ({
+    id: m.id,
+    sender: m.sender_id === backendUserId ? 'me' : m.sender_id,
+    text: m.body || '',
+    time: m.created_at,
+    attachment: m.attachment || undefined,
+    poll: m.poll || undefined,
+    pinned: m.pinned,
+    reactions: (m.message_reactions || []).reduce((acc, r) => { acc[r.emoji] = (acc[r.emoji]||0)+1; return acc; }, {}),
+  }));
+}
+
+function subscribeRealtime(sb){
+  if(realtimeChannel) sb.removeChannel(realtimeChannel);
+  realtimeChannel = sb.channel('sagero-messages')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, async (payload) => {
+      const m = payload.new;
+      if(!CONVERSATIONS.some(c => c.id === m.conversation_id)) return; // not one of ours
+      if(!MESSAGES[m.conversation_id]) MESSAGES[m.conversation_id] = [];
+      MESSAGES[m.conversation_id].push({
+        id: m.id, sender: m.sender_id === backendUserId ? 'me' : m.sender_id,
+        text: m.body || '', time: m.created_at, attachment: m.attachment || undefined,
+        poll: m.poll || undefined, pinned: m.pinned, reactions: {},
+      });
+      if(m.conversation_id === activeConvId){ renderMessages(); }
+      else { unreadState[m.conversation_id] = (unreadState[m.conversation_id]||0) + 1; }
+      renderConvList();
+    })
+    .subscribe();
+}
+
+async function sendMessageBackend(text){
+  const sb = SagoBackend.getClient();
+  const { error } = await sb.from('messages').insert({ conversation_id: activeConvId, sender_id: backendUserId, body: text });
+  if(error) NexusApp.toast('Message failed to send: ' + error.message, 'error');
+  // no local push needed — the realtime subscription above delivers it back to us too, keeping every open tab/device in sync
+}
+
+/* ---------------- DOMContentLoaded ---------------- */
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('messages.html', session);
-  loadMessagesState();
   wireSidebarControls();
+
+  if(SagoBackend?.isConfigured()){
+    await initBackendMessaging(session);
+  } else {
+    loadMessagesState();
+  }
+
   renderOnlineNow();
   renderConvList();
   renderActiveHeader();

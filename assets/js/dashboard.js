@@ -165,8 +165,8 @@ function initFab(){
   document.addEventListener('click', (e) => { if(!e.target.closest('.fab-wrap')) fabMenu.classList.remove('open'); });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const session = NexusApp.requireAuth();
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('index.html', session);
   renderKPIs();

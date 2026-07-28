@@ -357,8 +357,8 @@ function exportBatchesCSV(){
   NexusApp.toast('Exported ' + getFilteredSorted().length + ' batches to CSV','success');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const session = NexusApp.requireAuth();
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('batches.html', session);
   seedBatches();

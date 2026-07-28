@@ -1,990 +1,303 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Payroll — Sagero Creations</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="assets/css/style.css" />
-    <style>
-      /* ---------------- HERO ---------------- */
-      .payroll-hero {
-        position: relative;
-        overflow: hidden;
-        border-radius: 10px;
-        padding: 34px 36px;
-        background: #ff6b2d;
-        color: #fff;
-      }
-      .payroll-hero::before,
-      .payroll-hero::after {
-        content: "";
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(60px);
-        opacity: 0.5;
-      }
-      .payroll-hero::before {
-        width: 320px;
-        height: 320px;
-        background: #8b7cfb;
-        top: -120px;
-        right: -60px;
-        animation: heroFloat 10s ease-in-out infinite;
-      }
-      .payroll-hero::after {
-        width: 260px;
-        height: 260px;
-        background: #3b82f6;
-        bottom: -100px;
-        left: 10%;
-        animation: heroFloat 12s ease-in-out infinite reverse;
-      }
-      @keyframes heroFloat {
-        0%,
-        100% {
-          transform: translateY(0) scale(1);
-        }
-        50% {
-          transform: translateY(18px) scale(1.07);
-        }
-      }
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payroll — Sagero Creations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  /* ---------------- HERO ---------------- */
+  .payroll-hero{
+    position:relative; overflow:hidden; border-radius:28px; padding:34px 36px;
+    background: linear-gradient(160deg, #6D5DF6 0%, #4F46E5 48%, #3B82F6 100%);
+    color:#fff; box-shadow:0 30px 60px -20px rgba(79,70,229,0.5);
+  }
+  .payroll-hero::before, .payroll-hero::after{ content:''; position:absolute; border-radius:50%; filter:blur(60px); opacity:.5; }
+  .payroll-hero::before{ width:320px; height:320px; background:#8B7CFB; top:-120px; right:-60px; animation: heroFloat 10s ease-in-out infinite; }
+  .payroll-hero::after{ width:260px; height:260px; background:#3B82F6; bottom:-100px; left:10%; animation: heroFloat 12s ease-in-out infinite reverse; }
+  @keyframes heroFloat{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(18px) scale(1.07); } }
 
-      .hero-top {
-        position: relative;
-        z-index: 2;
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        flex-wrap: wrap;
-      }
-      .hero-eyebrow {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        font-weight: 700;
-        opacity: 0.85;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-      }
-      .hero-eyebrow i {
-        font-size: 15px;
-      }
-      .hero-total-label {
-        font-size: 13px;
-        opacity: 0.85;
-        font-weight: 600;
-        margin-top: 10px;
-      }
-      .hero-total {
-        font-family: "Inter Tight";
-        font-size: 46px;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        margin-top: 4px;
-      }
-      .hero-status {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        font-weight: 700;
-        padding: 6px 13px;
-        border-radius: 10px;
-        margin-top: 10px;
-      }
-      .hero-status.paid {
-        background: rgba(255, 255, 255, 0.22);
-      }
-      .hero-status.pending {
-        background: rgba(255, 255, 255, 0.14);
-      }
+  .hero-top{ position:relative; z-index:2; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .hero-eyebrow{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; opacity:.85; letter-spacing:.04em; text-transform:uppercase; }
+  .hero-eyebrow i{ font-size:15px; }
+  .hero-total-label{ font-size:13px; opacity:.85; font-weight:600; margin-top:10px; }
+  .hero-total{ font-family:'Inter Tight'; font-size:46px; font-weight:800; letter-spacing:-0.02em; margin-top:4px; }
+  .hero-status{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; padding:6px 13px; border-radius:20px; margin-top:10px; }
+  .hero-status.paid{ background:rgba(255,255,255,0.22); }
+  .hero-status.pending{ background:rgba(255,255,255,0.14); }
 
-      .period-nav {
-        position: relative;
-        z-index: 2;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: rgba(255, 255, 255, 0.14);
-        backdrop-filter: blur(6px);
-        border-radius: 10px;
-        padding: 8px 10px;
-      }
-      .period-nav-btn {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.16);
-        border: none;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .period-nav-btn:hover {
-        background: rgba(255, 255, 255, 0.28);
-      }
-      .period-nav-label {
-        font-size: 12.5px;
-        font-weight: 700;
-        min-width: 150px;
-        text-align: center;
-      }
+  .period-nav{ position:relative; z-index:2; display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.14); backdrop-filter:blur(6px); border-radius:16px; padding:8px 10px; }
+  .period-nav-btn{ width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,0.16); border:none; color:#fff; display:flex; align-items:center; justify-content:center; }
+  .period-nav-btn:hover{ background:rgba(255,255,255,0.28); }
+  .period-nav-label{ font-size:12.5px; font-weight:700; min-width:150px; text-align:center; }
 
-      .period-toggle {
-        position: relative;
-        z-index: 2;
-        display: inline-flex;
-        gap: 3px;
-        background: rgba(255, 255, 255, 0.14);
-        padding: 4px;
-        border-radius: 10px;
-        margin-top: 16px;
-      }
-      .period-toggle-btn {
-        padding: 7px 14px;
-        border-radius: 9px;
-        font-size: 12px;
-        font-weight: 700;
-        color: rgba(255, 255, 255, 0.75);
-        border: none;
-        background: none;
-      }
-      .period-toggle-btn.active {
-        background: #fff;
-        color: var(--primary-3);
-      }
+  .period-toggle{ position:relative; z-index:2; display:inline-flex; gap:3px; background:rgba(255,255,255,0.14); padding:4px; border-radius:12px; margin-top:16px; }
+  .period-toggle-btn{ padding:7px 14px; border-radius:9px; font-size:12px; font-weight:700; color:rgba(255,255,255,0.75); border:none; background:none; }
+  .period-toggle-btn.active{ background:#fff; color:var(--primary-3); }
 
-      .hero-stats {
-        position: relative;
-        z-index: 2;
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-        margin-top: 26px;
-      }
-      .hero-stat-chip {
-        background: rgba(255, 255, 255, 0.14);
-        backdrop-filter: blur(6px);
-        border-radius: 10px;
-        padding: 14px 16px;
-      }
-      .hero-stat-chip small {
-        font-size: 10.5px;
-        opacity: 0.8;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        display: block;
-        margin-bottom: 5px;
-      }
-      .hero-stat-chip b {
-        font-family: "Inter Tight";
-        font-size: 17px;
-        font-weight: 800;
-      }
+  .hero-stats{ position:relative; z-index:2; display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:26px; }
+  .hero-stat-chip{ background:rgba(255,255,255,0.14); backdrop-filter:blur(6px); border-radius:16px; padding:14px 16px; }
+  .hero-stat-chip small{ font-size:10.5px; opacity:.8; font-weight:700; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:5px; }
+  .hero-stat-chip b{ font-family:'Inter Tight'; font-size:17px; font-weight:800; }
 
-      .hero-actions {
-        position: relative;
-        z-index: 2;
-        display: flex;
-        gap: 10px;
-        margin-top: 24px;
-        flex-wrap: wrap;
-      }
-      .btn-hero-primary {
-        background: #fff;
-        color: var(--primary-3);
-        border: none;
-        padding: 12px 22px;
-        border-radius: 10px;
-        font-size: 13.5px;
-        font-weight: 800;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.25);
-        transition: 0.15s var(--ease);
-      }
-      .btn-hero-primary:hover {
-        transform: translateY(-2px);
-      }
-      .btn-hero-primary:disabled {
-        opacity: 0.7;
-      }
-      .btn-hero-ghost {
-        background: rgba(255, 255, 255, 0.14);
-        color: #fff;
-        border: none;
-        padding: 12px 20px;
-        border-radius: 10px;
-        font-size: 13px;
-        font-weight: 700;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .btn-hero-ghost:hover {
-        background: rgba(255, 255, 255, 0.24);
-      }
+  .hero-actions{ position:relative; z-index:2; display:flex; gap:10px; margin-top:24px; flex-wrap:wrap; }
+  .btn-hero-primary{ background:#fff; color:var(--primary-3); border:none; padding:12px 22px; border-radius:14px; font-size:13.5px; font-weight:800; display:inline-flex; align-items:center; gap:8px; box-shadow:0 12px 24px -8px rgba(0,0,0,0.25); transition:.15s var(--ease); }
+  .btn-hero-primary:hover{ transform:translateY(-2px); }
+  .btn-hero-primary:disabled{ opacity:.7; }
+  .btn-hero-ghost{ background:rgba(255,255,255,0.14); color:#fff; border:none; padding:12px 20px; border-radius:14px; font-size:13px; font-weight:700; display:inline-flex; align-items:center; gap:8px; }
+  .btn-hero-ghost:hover{ background:rgba(255,255,255,0.24); }
 
-      /* ---------------- KPIs ---------------- */
-      .kpi-row {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 18px;
-        margin: 20px 0;
-      }
-      .kpi-card {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-      }
-      .kpi-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 13px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        flex-shrink: 0;
-      }
-      .kpi-value {
-        font-family: "Inter Tight";
-        font-size: 20px;
-        font-weight: 800;
-      }
-      .kpi-label {
-        font-size: 11.5px;
-        color: var(--ink-faint);
-        font-weight: 600;
-      }
+  /* ---------------- KPIs ---------------- */
+  .kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin:20px 0; }
+  .kpi-card{ display:flex; align-items:center; gap:14px; }
+  .kpi-icon{ width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .kpi-value{ font-family:'Inter Tight'; font-size:20px; font-weight:800; }
+  .kpi-label{ font-size:11.5px; color:var(--ink-faint); font-weight:600; }
 
-      .pr-grid {
-        display: grid;
-        grid-template-columns: 1.5fr 1fr;
-        gap: 18px;
-        margin-bottom: 18px;
-      }
+  .pr-grid{ display:grid; grid-template-columns:1.5fr 1fr; gap:18px; margin-bottom:18px; }
 
-      /* ---------------- toolbar / table ---------------- */
-      .pr-toolbar {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-bottom: 16px;
-      }
-      .toolbar-search {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-pill);
-        padding: 10px 14px;
-        min-width: 200px;
-        flex: 1;
-      }
-      .toolbar-search input {
-        border: none;
-        outline: none;
-        background: none;
-        font-size: 13px;
-        font-family: inherit;
-        color: var(--ink);
-        width: 100%;
-      }
-      .toolbar-search i {
-        color: var(--ink-faint);
-      }
-      select.pill-select {
-        appearance: none;
-        -webkit-appearance: none;
-        border: 1px solid var(--border);
-        cursor: pointer;
-        background: var(--card);
-        border-radius: var(--radius-pill);
-        padding: 10px 30px 10px 14px;
-        font-size: 12.5px;
-        font-weight: 700;
-        color: var(--ink);
-        font-family: inherit;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 10px center;
-        background-size: 10px 10px;
-      }
-      .region-cell {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
+  /* ---------------- toolbar / table ---------------- */
+  .pr-toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .toolbar-search{ display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-pill); padding:10px 14px; min-width:200px; flex:1; }
+  .toolbar-search input{ border:none; outline:none; background:none; font-size:13px; font-family:inherit; color:var(--ink); width:100%; }
+  .toolbar-search i{ color:var(--ink-faint); }
+  select.pill-select{
+    appearance:none; -webkit-appearance:none; border:1px solid var(--border); cursor:pointer; background:var(--card);
+    border-radius:var(--radius-pill); padding:10px 30px 10px 14px; font-size:12.5px; font-weight:700; color:var(--ink); font-family:inherit;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 10px center; background-size:10px 10px;
+  }
+  .region-cell{ display:flex; align-items:center; gap:10px; }
 
-      /* ---------------- history ---------------- */
-      .history-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 4px;
-        border-bottom: 1px solid var(--border);
-        cursor: pointer;
-        border-radius: 12px;
-        transition: 0.15s var(--ease);
-      }
-      .history-row:hover {
-        background: var(--grad-soft);
-      }
-      .history-row:last-child {
-        border-bottom: none;
-      }
-      .history-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 11px;
-        background: var(--success-soft);
-        color: var(--success);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        flex-shrink: 0;
-      }
-      .history-text {
-        display: flex;
-        flex-direction: column;
-        font-size: 12.5px;
-      }
-      .history-text small {
-        color: var(--ink-faint);
-        font-weight: 600;
-        margin-top: 2px;
-      }
-      .history-amt {
-        margin-left: auto;
-        font-weight: 800;
-        font-family: "Inter Tight";
-        font-size: 13.5px;
-      }
-      .muted-note {
-        font-size: 12px;
-        color: var(--ink-faint);
-      }
+  /* ---------------- history ---------------- */
+  .history-row{ display:flex; align-items:center; gap:12px; padding:12px 4px; border-bottom:1px solid var(--border); cursor:pointer; border-radius:12px; transition:.15s var(--ease); }
+  .history-row:hover{ background:var(--grad-soft); }
+  .history-row:last-child{ border-bottom:none; }
+  .history-icon{ width:38px; height:38px; border-radius:11px; background:var(--success-soft); color:var(--success); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .history-text{ display:flex; flex-direction:column; font-size:12.5px; }
+  .history-text small{ color:var(--ink-faint); font-weight:600; margin-top:2px; }
+  .history-amt{ margin-left:auto; font-weight:800; font-family:'Inter Tight'; font-size:13.5px; }
+  .muted-note{ font-size:12px; color:var(--ink-faint); }
 
-      /* ---------------- PAYSLIP DOCUMENT ---------------- */
-      .payslip-modal {
-        width: 480px;
-        padding: 0;
-        overflow: hidden;
-      }
-      .payslip-doc {
-        background: #fff;
-      }
-      .payslip-header {
-        background: linear-gradient(135deg, #6d5df6, #4f46e5);
-        color: #fff;
-        padding: 26px 28px 22px;
-        position: relative;
-        overflow: hidden;
-      }
-      .payslip-header::after {
-        content: "";
-        position: absolute;
-        width: 180px;
-        height: 180px;
-        background: rgba(255, 255, 255, 0.12);
-        border-radius: 50%;
-        top: -90px;
-        right: -40px;
-      }
-      .payslip-brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        position: relative;
-        z-index: 2;
-      }
-      .payslip-brand .mark {
-        width: 30px;
-        height: 30px;
-        border-radius: 9px;
-        background: rgba(255, 255, 255, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 14px;
-      }
-      .payslip-brand b {
-        font-family: "Inter Tight";
-        font-size: 14px;
-        font-weight: 800;
-      }
-      .payslip-title {
-        font-family: "Inter Tight";
-        font-size: 20px;
-        font-weight: 800;
-        margin-top: 16px;
-        position: relative;
-        z-index: 2;
-      }
-      .payslip-sub {
-        font-size: 11.5px;
-        opacity: 0.85;
-        margin-top: 4px;
-        position: relative;
-        z-index: 2;
-      }
-      .payslip-close {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        background: rgba(255, 255, 255, 0.18);
-        border: none;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        color: #fff;
-        z-index: 3;
-      }
+  /* ---------------- PAYSLIP DOCUMENT ---------------- */
+  .payslip-modal{ width:480px; padding:0; overflow:hidden; }
+  .payslip-doc{ background:#fff; }
+  .payslip-header{
+    background: linear-gradient(135deg, #6D5DF6, #4F46E5); color:#fff; padding:26px 28px 22px; position:relative; overflow:hidden;
+  }
+  .payslip-header::after{ content:''; position:absolute; width:180px; height:180px; background:rgba(255,255,255,0.12); border-radius:50%; top:-90px; right:-40px; }
+  .payslip-brand{ display:flex; align-items:center; gap:10px; position:relative; z-index:2; }
+  .payslip-brand .mark{ width:30px; height:30px; border-radius:9px; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
+  .payslip-brand b{ font-family:'Inter Tight'; font-size:14px; font-weight:800; }
+  .payslip-title{ font-family:'Inter Tight'; font-size:20px; font-weight:800; margin-top:16px; position:relative; z-index:2; }
+  .payslip-sub{ font-size:11.5px; opacity:.85; margin-top:4px; position:relative; z-index:2; }
+  .payslip-close{ position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.18); border:none; width:30px; height:30px; border-radius:50%; color:#fff; z-index:3; }
 
-      .payslip-body {
-        padding: 24px 28px;
-      }
-      .ps-employee-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-        padding-bottom: 18px;
-        border-bottom: 1px dashed var(--border);
-      }
-      .ps-meta-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-bottom: 18px;
-        font-size: 11.5px;
-      }
-      .ps-meta-grid div {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
-      .ps-meta-grid small {
-        color: var(--ink-faint);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-        font-size: 10px;
-      }
-      .ps-meta-grid b {
-        font-size: 12.5px;
-      }
+  .payslip-body{ padding:24px 28px; }
+  .ps-employee-row{ display:flex; align-items:center; gap:12px; margin-bottom:20px; padding-bottom:18px; border-bottom:1px dashed var(--border); }
+  .ps-meta-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; font-size:11.5px; }
+  .ps-meta-grid div{ display:flex; flex-direction:column; gap:2px; }
+  .ps-meta-grid small{ color:var(--ink-faint); font-weight:700; text-transform:uppercase; letter-spacing:.03em; font-size:10px; }
+  .ps-meta-grid b{ font-size:12.5px; }
 
-      .ps-line-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 9px 0;
-        font-size: 12.5px;
-      }
-      .ps-line-item small {
-        display: block;
-        color: var(--ink-faint);
-        font-weight: 600;
-        font-size: 10.5px;
-        margin-top: 1px;
-      }
-      .ps-divider {
-        height: 1px;
-        background: var(--border);
-        margin: 8px 0;
-      }
-      .ps-total-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 16px;
-        background: var(--grad-soft);
-        border-radius: 14px;
-        margin-top: 14px;
-      }
-      .ps-total-row b {
-        font-family: "Inter Tight";
-        font-size: 19px;
-        font-weight: 800;
-        color: var(--primary-3);
-      }
-      .ps-total-label {
-        font-size: 12.5px;
-        font-weight: 700;
-      }
+  .ps-line-item{ display:flex; align-items:center; justify-content:space-between; padding:9px 0; font-size:12.5px; }
+  .ps-line-item small{ display:block; color:var(--ink-faint); font-weight:600; font-size:10.5px; margin-top:1px; }
+  .ps-divider{ height:1px; background:var(--border); margin:8px 0; }
+  .ps-total-row{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:var(--grad-soft); border-radius:14px; margin-top:14px; }
+  .ps-total-row b{ font-family:'Inter Tight'; font-size:19px; font-weight:800; color:var(--primary-3); }
+  .ps-total-label{ font-size:12.5px; font-weight:700; }
 
-      .payslip-actions {
-        display: flex;
-        gap: 10px;
-        padding: 0 28px 26px;
-      }
+  .payslip-actions{ display:flex; gap:10px; padding:0 28px 26px; }
 
-      /* print styles: only the payslip prints */
-      @media print {
-        body * {
-          visibility: hidden;
-        }
-        #modal-payslip,
-        #modal-payslip * {
-          visibility: visible;
-        }
-        #modal-payslip {
-          position: absolute;
-          top: 0;
-          left: 0;
-          transform: none;
-          box-shadow: none;
-          width: 100%;
-        }
-        .payslip-actions,
-        .payslip-close {
-          display: none !important;
-        }
-      }
+  /* print styles: only the payslip prints */
+  @media print{
+    body *{ visibility:hidden; }
+    #modal-payslip, #modal-payslip *{ visibility:visible; }
+    #modal-payslip{ position:absolute; top:0; left:0; transform:none; box-shadow:none; width:100%; }
+    .payslip-actions, .payslip-close{ display:none !important; }
+  }
 
-      @media (max-width: 1080px) {
-        .kpi-row {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .pr-grid {
-          grid-template-columns: 1fr;
-        }
-        .hero-stats {
-          grid-template-columns: repeat(2, 1fr);
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="app-shell">
-      <aside class="sidebar">
-        <div class="sidebar-brand">
-          <div class="brand-mark">SC</div>
-          <div class="brand-text">
-            <span class="brand-name">Sagero</span
-            ><span class="brand-sub">CREATIONS</span>
-          </div>
-          <button
-            class="sidebar-collapse-btn"
-            data-tip="Collapse sidebar"
-            onclick="NexusApp.toggleSidebarCollapse()"
-          >
-            <i class="ri-arrow-left-s-line" id="collapseIcon"></i>
-          </button>
+  @media (max-width:1080px){ .kpi-row{ grid-template-columns:repeat(2,1fr); } .pr-grid{ grid-template-columns:1fr; } .hero-stats{ grid-template-columns:repeat(2,1fr); } }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">SC</div>
+      <div class="brand-text"><span class="brand-name">Sagero</span><span class="brand-sub">CREATIONS</span></div>
+      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
+    </div>
+    <nav class="sidebar-scroll" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="dropdown-wrap">
+        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
+          <div class="user-avatar" id="userChipAvatar">AK</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
         </div>
-        <nav class="sidebar-scroll" id="sidebarNav"></nav>
-        <div class="sidebar-footer">
-          <div class="dropdown-wrap">
-            <div
-              class="user-chip"
-              onclick="NexusApp.toggleDropdown('userMenu')"
-            >
-              <div class="user-avatar" id="userChipAvatar">AK</div>
-              <div class="user-meta">
-                <div class="user-name" id="userChipName">Alex Kimani</div>
-                <div class="user-role" id="userChipRole">
-                  Production Manager
-                </div>
-              </div>
-              <i class="ri-more-2-fill" style="color: var(--ink-faint)"></i>
-            </div>
-            <div
-              class="dropdown-panel"
-              id="userMenu"
-              style="bottom: 64px; left: 14px; width: 220px"
-            >
-              <div class="dd-item" onclick="location.href = 'settings.html'">
-                <i class="ri-user-line"></i>My profile
-              </div>
-              <div class="dd-item" onclick="location.href = 'settings.html'">
-                <i class="ri-settings-4-line"></i>Settings
-              </div>
-              <div class="dd-divider"></div>
-              <div class="dd-item danger" onclick="NexusApp.logout()">
-                <i class="ri-logout-box-line"></i>Log out
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <div class="main">
-        <div class="topbar">
-          <div class="topbar-left">
-            <button class="menu-btn" onclick="NexusApp.toggleSidebar()">
-              <i class="ri-menu-line"></i>
-            </button>
-            <div class="breadcrumbs">
-              <i class="ri-home-5-line"></i><span>Sagero</span
-              ><i class="ri-arrow-right-s-line"></i><span>People</span
-              ><i class="ri-arrow-right-s-line"></i><b>Payroll</b>
-            </div>
-          </div>
-          <div class="topbar-search" onclick="NexusApp.openCmdk()">
-            <i class="ri-search-line"></i><span>Search or jump to…</span
-            ><span class="kbd">⌘K</span>
-          </div>
-          <div class="topbar-right">
-            <button
-              class="icon-btn"
-              data-tip="Toggle theme"
-              onclick="NexusApp.toggleTheme()"
-            >
-              <i id="themeToggleIcon" class="ri-moon-line"></i>
-            </button>
-            <div class="dropdown-wrap">
-              <button
-                class="icon-btn"
-                data-tip="Notifications"
-                onclick="NexusApp.toggleDropdown('notifPanel')"
-              >
-                <i class="ri-notification-3-line"></i
-                ><span class="icon-dot"></span>
-              </button>
-              <div
-                class="dropdown-panel"
-                id="notifPanel"
-                style="top: 50px; right: 0; width: 280px"
-              >
-                <div class="dd-item">
-                  <i class="ri-money-dollar-circle-line"></i>This week's payroll
-                  is ready to run
-                </div>
-              </div>
-            </div>
-            <button
-              class="btn btn-secondary btn-sm"
-              onclick="exportPayrollCSV()"
-            >
-              <i class="ri-download-2-line"></i>Export
-            </button>
-          </div>
-        </div>
-
-        <div class="content">
-          <!-- HERO -->
-          <div class="payroll-hero fade-up">
-            <div class="hero-top">
-              <div>
-                <div class="hero-eyebrow">
-                  <i class="ri-bank-card-2-line"></i
-                  ><span id="heroPeriodType">Weekly Payroll</span>
-                </div>
-                <div class="hero-total-label">
-                  Total net pay for this period
-                </div>
-                <div class="hero-total" id="heroTotal">KES 0</div>
-                <div class="hero-status pending" id="heroStatus">
-                  <i class="ri-time-line"></i> Pending
-                </div>
-
-                <div class="period-toggle">
-                  <button
-                    class="period-toggle-btn active"
-                    data-type="weekly"
-                    onclick="setPeriodType('weekly')"
-                  >
-                    Weekly
-                  </button>
-                  <button
-                    class="period-toggle-btn"
-                    data-type="monthly"
-                    onclick="setPeriodType('monthly')"
-                  >
-                    Monthly
-                  </button>
-                </div>
-              </div>
-
-              <div class="period-nav">
-                <button class="period-nav-btn" onclick="shiftPeriod(-1)">
-                  <i class="ri-arrow-left-s-line"></i>
-                </button>
-                <span class="period-nav-label" id="periodLabel">—</span>
-                <button class="period-nav-btn" onclick="shiftPeriod(1)">
-                  <i class="ri-arrow-right-s-line"></i>
-                </button>
-              </div>
-            </div>
-
-            <div class="hero-stats">
-              <div class="hero-stat-chip">
-                <small>Base pay</small><b id="heroBase">KES 0</b>
-              </div>
-              <div class="hero-stat-chip">
-                <small>Overtime</small><b id="heroOT">KES 0</b>
-              </div>
-              <div class="hero-stat-chip">
-                <small>Bonuses</small><b id="heroBonus">KES 0</b>
-              </div>
-              <div class="hero-stat-chip">
-                <small>Deductions</small><b id="heroDed">KES 0</b>
-              </div>
-            </div>
-
-            <div class="hero-actions">
-              <button
-                class="btn-hero-primary"
-                id="runPayrollBtn"
-                onclick="runPayroll()"
-              >
-                <i class="ri-play-circle-line"></i> Run Payroll
-              </button>
-              <button class="btn-hero-ghost" onclick="exportPayrollCSV()">
-                <i class="ri-download-2-line"></i> Export
-                <span id="periodTypeLabel">Week</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- KPIs -->
-          <div class="kpi-row fade-up">
-            <div class="card kpi-card">
-              <div
-                class="kpi-icon"
-                style="background: var(--grad-soft); color: var(--primary-3)"
-              >
-                <i class="ri-team-line"></i>
-              </div>
-              <div>
-                <div class="kpi-value" id="kpiWorkers">0</div>
-                <div class="kpi-label">Workers paid</div>
-              </div>
-            </div>
-            <div class="card kpi-card">
-              <div
-                class="kpi-icon"
-                style="background: var(--info-soft); color: var(--info)"
-              >
-                <i class="ri-scales-3-line"></i>
-              </div>
-              <div>
-                <div class="kpi-value" id="kpiAvg">KES 0</div>
-                <div class="kpi-label">Average net pay</div>
-              </div>
-            </div>
-            <div class="card kpi-card">
-              <div
-                class="kpi-icon"
-                style="background: var(--success-soft); color: var(--success)"
-              >
-                <i class="ri-timer-flash-line"></i>
-              </div>
-              <div>
-                <div class="kpi-value" id="kpiOTHours">0 hrs</div>
-                <div class="kpi-label">Total overtime</div>
-              </div>
-            </div>
-            <div class="card kpi-card">
-              <div
-                class="kpi-icon"
-                style="background: var(--danger-soft); color: var(--danger)"
-              >
-                <i class="ri-subtract-line"></i>
-              </div>
-              <div>
-                <div class="kpi-value" id="kpiDeductions">KES 0</div>
-                <div class="kpi-label">Total deductions</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- charts + history -->
-          <div class="pr-grid fade-up">
-            <div class="card">
-              <div class="section-head">
-                <div>
-                  <div class="section-title">Payroll Trend</div>
-                  <div class="section-sub">
-                    Net pay across the last 6 periods
-                  </div>
-                </div>
-              </div>
-              <div style="height: 220px">
-                <canvas id="prTrendChart"></canvas>
-              </div>
-            </div>
-            <div class="card">
-              <div class="section-head">
-                <div><div class="section-title">Pay Breakdown</div></div>
-              </div>
-              <div style="height: 220px">
-                <canvas id="prBreakdownChart"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <div class="pr-grid fade-up" style="grid-template-columns: 1fr">
-            <div class="card">
-              <div class="section-head">
-                <div>
-                  <div class="section-title">
-                    Payroll — <span id="periodLabel2"></span>
-                  </div>
-                  <div class="section-sub">
-                    Automatically calculated from attendance records
-                  </div>
-                </div>
-              </div>
-              <div class="pr-toolbar">
-                <div class="toolbar-search">
-                  <i class="ri-search-line"></i
-                  ><input id="prSearch" placeholder="Search workers…" />
-                </div>
-                <select class="pill-select" id="prStatusFilter">
-                  <option value="all">All workers</option>
-                  <option value="worked">Worked this period</option>
-                  <option value="none">No days worked</option>
-                </select>
-              </div>
-              <div style="overflow-x: auto">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Worker</th>
-                      <th>Days</th>
-                      <th>Base Pay</th>
-                      <th>Overtime</th>
-                      <th>Bonus</th>
-                      <th>Deductions</th>
-                      <th>Net Pay</th>
-                      <th>Status</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody id="prTableBody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div class="card fade-up">
-            <div class="section-head">
-              <div>
-                <div class="section-title">Payment History</div>
-                <div class="section-sub">
-                  Past payroll runs — click one to view that period
-                </div>
-              </div>
-            </div>
-            <div id="historyList"></div>
-          </div>
+        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
+          <div class="dd-divider"></div>
+          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
         </div>
       </div>
     </div>
+  </aside>
 
-    <!-- PAYSLIP MODAL -->
-    <div
-      class="overlay"
-      id="overlay-modal-payslip"
-      onclick="NexusApp.closeModal('modal-payslip')"
-    ></div>
-    <div class="modal payslip-modal" id="modal-payslip">
-      <div class="payslip-doc">
-        <div class="payslip-header">
-          <button
-            class="payslip-close"
-            onclick="NexusApp.closeModal('modal-payslip')"
-          >
-            <i class="ri-close-line"></i>
-          </button>
-          <div class="payslip-brand">
-            <div class="mark">SC</div>
-            <b>Sagero Creations</b>
-          </div>
-          <div class="payslip-title">Payslip</div>
-          <div class="payslip-sub">
-            Pay period: <span id="psPeriod"></span> · Issued
-            <span id="psIssued"></span>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Sagero</span><i class="ri-arrow-right-s-line"></i><span>People</span><i class="ri-arrow-right-s-line"></i><b>Payroll</b></div>
+      </div>
+      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
+        <div class="dropdown-wrap">
+          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
+          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:280px;">
+            <div class="dd-item"><i class="ri-money-dollar-circle-line"></i>This week's payroll is ready to run</div>
           </div>
         </div>
-        <div class="payslip-body">
-          <div class="ps-employee-row">
-            <div
-              class="avatar"
-              id="psWorkerAvatar"
-              style="width: 44px; height: 44px; font-size: 14px"
-            ></div>
-            <div>
-              <div
-                style="font-weight: 800; font-size: 14px"
-                id="psWorkerName"
-              ></div>
-              <div
-                style="
-                  font-size: 11.5px;
-                  color: var(--ink-faint);
-                  font-weight: 600;
-                "
-                id="psWorkerRole"
-              ></div>
-            </div>
-            <span class="badge" id="psStatus" style="margin-left: auto"></span>
-          </div>
-
-          <div class="ps-line-item">
-            <div>Basic pay<small id="psDaysWorked"></small></div>
-            <b id="psBasePay"></b>
-          </div>
-          <div class="ps-line-item">
-            <div>Overtime<small id="psOvertime"></small></div>
-            <b id="psOvertimePay"></b>
-          </div>
-          <div class="ps-line-item">
-            <div>Performance bonus</div>
-            <b id="psBonus"></b>
-          </div>
-          <div class="ps-divider"></div>
-          <div class="ps-line-item">
-            <div>Gross pay</div>
-            <b id="psGross"></b>
-          </div>
-          <div class="ps-line-item" style="color: var(--danger)">
-            <div>Deductions<small id="psLateDays"></small></div>
-            <b id="psDeductions"></b>
-          </div>
-
-          <div class="ps-total-row">
-            <span class="ps-total-label">Net Pay</span>
-            <b id="psNet"></b>
-          </div>
-        </div>
-        <div class="payslip-actions">
-          <button class="btn btn-secondary btn-block" onclick="sendPayslip()">
-            <i class="ri-send-plane-line"></i>Send to worker
-          </button>
-          <button
-            class="btn btn-primary btn-block"
-            onclick="downloadPayslipPDF()"
-          >
-            <i class="ri-download-2-line"></i>Download PDF
-          </button>
-        </div>
+        <button class="btn btn-secondary btn-sm" onclick="exportPayrollCSV()"><i class="ri-download-2-line"></i>Export</button>
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
-    <script src="assets/js/app.js"></script>
-    <script src="assets/js/payroll.js"></script>
-  </body>
+    <div class="content">
+
+      <!-- HERO -->
+      <div class="payroll-hero fade-up">
+        <div class="hero-top">
+          <div>
+            <div class="hero-eyebrow"><i class="ri-bank-card-2-line"></i><span id="heroPeriodType">Weekly Payroll</span></div>
+            <div class="hero-total-label">Total net pay for this period</div>
+            <div class="hero-total" id="heroTotal">KES 0</div>
+            <div class="hero-status pending" id="heroStatus"><i class="ri-time-line"></i> Pending</div>
+
+            <div class="period-toggle">
+              <button class="period-toggle-btn active" data-type="weekly" onclick="setPeriodType('weekly')">Weekly</button>
+              <button class="period-toggle-btn" data-type="monthly" onclick="setPeriodType('monthly')">Monthly</button>
+            </div>
+          </div>
+
+          <div class="period-nav">
+            <button class="period-nav-btn" onclick="shiftPeriod(-1)"><i class="ri-arrow-left-s-line"></i></button>
+            <span class="period-nav-label" id="periodLabel">—</span>
+            <button class="period-nav-btn" onclick="shiftPeriod(1)"><i class="ri-arrow-right-s-line"></i></button>
+          </div>
+        </div>
+
+        <div class="hero-stats">
+          <div class="hero-stat-chip"><small>Base pay</small><b id="heroBase">KES 0</b></div>
+          <div class="hero-stat-chip"><small>Overtime</small><b id="heroOT">KES 0</b></div>
+          <div class="hero-stat-chip"><small>Bonuses</small><b id="heroBonus">KES 0</b></div>
+          <div class="hero-stat-chip"><small>Deductions</small><b id="heroDed">KES 0</b></div>
+        </div>
+
+        <div class="hero-actions">
+          <button class="btn-hero-primary" id="runPayrollBtn" onclick="runPayroll()"><i class="ri-play-circle-line"></i> Run Payroll</button>
+          <button class="btn-hero-ghost" onclick="exportPayrollCSV()"><i class="ri-download-2-line"></i> Export <span id="periodTypeLabel">Week</span></button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row fade-up">
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--grad-soft); color:var(--primary-3);"><i class="ri-team-line"></i></div><div><div class="kpi-value" id="kpiWorkers">0</div><div class="kpi-label">Workers paid</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--info-soft); color:var(--info);"><i class="ri-scales-3-line"></i></div><div><div class="kpi-value" id="kpiAvg">KES 0</div><div class="kpi-label">Average net pay</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--success-soft); color:var(--success);"><i class="ri-timer-flash-line"></i></div><div><div class="kpi-value" id="kpiOTHours">0 hrs</div><div class="kpi-label">Total overtime</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--danger-soft); color:var(--danger);"><i class="ri-subtract-line"></i></div><div><div class="kpi-value" id="kpiDeductions">KES 0</div><div class="kpi-label">Total deductions</div></div></div>
+      </div>
+
+      <!-- charts + history -->
+      <div class="pr-grid fade-up">
+        <div class="card">
+          <div class="section-head"><div><div class="section-title">Payroll Trend</div><div class="section-sub">Net pay across the last 6 periods</div></div></div>
+          <div style="height:220px;"><canvas id="prTrendChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="section-head"><div><div class="section-title">Pay Breakdown</div></div></div>
+          <div style="height:220px;"><canvas id="prBreakdownChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="pr-grid fade-up" style="grid-template-columns:1fr;">
+        <div class="card">
+          <div class="section-head"><div><div class="section-title">Payroll — <span id="periodLabel2"></span></div><div class="section-sub">Automatically calculated from attendance records</div></div></div>
+          <div class="pr-toolbar">
+            <div class="toolbar-search"><i class="ri-search-line"></i><input id="prSearch" placeholder="Search workers…"></div>
+            <select class="pill-select" id="prStatusFilter">
+              <option value="all">All workers</option>
+              <option value="worked">Worked this period</option>
+              <option value="none">No days worked</option>
+            </select>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>Worker</th><th>Days</th><th>Base Pay</th><th>Overtime</th><th>Bonus</th><th>Deductions</th><th>Net Pay</th><th>Status</th><th></th></tr></thead>
+              <tbody id="prTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card fade-up">
+        <div class="section-head"><div><div class="section-title">Payment History</div><div class="section-sub">Past payroll runs — click one to view that period</div></div></div>
+        <div id="historyList"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- PAYSLIP MODAL -->
+<div class="overlay" id="overlay-modal-payslip" onclick="NexusApp.closeModal('modal-payslip')"></div>
+<div class="modal payslip-modal" id="modal-payslip">
+  <div class="payslip-doc">
+    <div class="payslip-header">
+      <button class="payslip-close" onclick="NexusApp.closeModal('modal-payslip')"><i class="ri-close-line"></i></button>
+      <div class="payslip-brand"><div class="mark">SC</div><b>Sagero Creations</b></div>
+      <div class="payslip-title">Payslip</div>
+      <div class="payslip-sub">Pay period: <span id="psPeriod"></span> · Issued <span id="psIssued"></span></div>
+    </div>
+    <div class="payslip-body">
+      <div class="ps-employee-row">
+        <div class="avatar" id="psWorkerAvatar" style="width:44px;height:44px;font-size:14px;"></div>
+        <div>
+          <div style="font-weight:800; font-size:14px;" id="psWorkerName"></div>
+          <div style="font-size:11.5px; color:var(--ink-faint); font-weight:600;" id="psWorkerRole"></div>
+        </div>
+        <span class="badge" id="psStatus" style="margin-left:auto;"></span>
+      </div>
+
+      <div class="ps-line-item"><div>Basic pay<small id="psDaysWorked"></small></div><b id="psBasePay"></b></div>
+      <div class="ps-line-item"><div>Overtime<small id="psOvertime"></small></div><b id="psOvertimePay"></b></div>
+      <div class="ps-line-item"><div>Performance bonus</div><b id="psBonus"></b></div>
+      <div class="ps-divider"></div>
+      <div class="ps-line-item"><div>Gross pay</div><b id="psGross"></b></div>
+      <div class="ps-line-item" style="color:var(--danger);"><div>Deductions<small id="psLateDays"></small></div><b id="psDeductions"></b></div>
+
+      <div class="ps-total-row">
+        <span class="ps-total-label">Net Pay</span>
+        <b id="psNet"></b>
+      </div>
+    </div>
+    <div class="payslip-actions">
+      <button class="btn btn-secondary btn-block" onclick="sendPayslip()"><i class="ri-send-plane-line"></i>Send to worker</button>
+      <button class="btn btn-primary btn-block" onclick="downloadPayslipPDF()"><i class="ri-download-2-line"></i>Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/payroll.js"></script>
+</body>
 </html>

@@ -53,25 +53,7 @@
   .remember input{ accent-color:var(--primary); width:15px; height:15px; }
   .link-accent{ color:var(--primary-3); font-weight:700; font-size:12.5px; }
 
-  .divider{ display:flex; align-items:center; gap:12px; margin:22px 0; color:var(--ink-faint); font-size:11.5px; font-weight:600; }
-  .divider::before, .divider::after{ content:''; flex:1; height:1px; background:var(--border); }
-
-  .social-row{ display:flex; flex-direction:column; gap:10px; }
-  .social-btn{
-    display:flex; align-items:center; justify-content:center; gap:10px; padding:11px; border-radius:14px;
-    border:1px solid var(--border); background:var(--card); font-size:13px; font-weight:700; color:var(--ink-soft);
-    transition:.15s var(--ease); width:100%;
-  }
-  .social-btn:hover{ border-color:var(--primary); color:var(--primary-3); transform:translateY(-2px); }
-  .social-btn i{ font-size:17px; }
-  .social-btn.google i{ color:#4285F4; }
-  .social-btn.facebook i{ color:#1877F2; }
   .demo-banner{ display:flex; align-items:center; gap:6px; justify-content:center; font-size:10.5px; font-weight:700; color:var(--ink-faint); background:var(--grad-soft); border-radius:20px; padding:5px 12px; margin:0 auto 18px; width:fit-content; }
-
-  .switch-line{ text-align:center; margin-top:24px; font-size:13px; color:var(--ink-soft); }
-
-  .demo-hint{ margin-top:18px; background:var(--grad-soft); border-radius:12px; padding:10px 12px; font-size:11.5px; color:var(--primary-3); font-weight:600; display:flex; gap:8px; align-items:flex-start; }
-  .demo-hint i{ font-size:15px; margin-top:1px; }
 
   @media (max-width:820px){ .auth-visual{ display:none; } .auth-form{ padding:40px 28px; } }
 </style>
@@ -93,9 +75,8 @@
     </div>
 
     <div class="auth-form">
-      <div class="demo-banner"><i class="ri-flask-line"></i>Prototype build — no real accounts are stored</div>
+      <div class="demo-banner" id="modeBanner"><i class="ri-flask-line"></i>Restricted access — single admin account</div>
 
-      <!-- LOGIN FORM -->
       <form id="loginForm" novalidate>
         <div class="form-mark"><i class="ri-cpu-line"></i></div>
         <h1>Welcome back</h1>
@@ -113,67 +94,42 @@
             <input type="password" id="loginPassword" placeholder="••••••••••" autocomplete="current-password">
             <i class="ri-eye-off-line toggle-eye" onclick="togglePass('loginPassword', this)"></i>
           </div>
-          <span class="field-error">Password must be at least 6 characters</span>
+          <span class="field-error">Incorrect email or password</span>
         </div>
 
         <div class="row-between">
           <label class="remember"><input type="checkbox" id="rememberMe" checked> Remember me</label>
-          <a href="#" class="link-accent" onclick="NexusApp.toast('Password reset link sent (demo)','info'); return false;">Forgot password?</a>
+          <a href="#" class="link-accent" onclick="NexusApp.toast('Contact your admin to reset this password','info'); return false;">Forgot password?</a>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
           <span id="loginBtnText">Sign in</span>
         </button>
-
-        <div class="demo-hint"><i class="ri-information-line"></i> Demo access — any email + a password of 6+ characters signs you in.</div>
-
-        <div class="divider">or continue with</div>
-        <div class="social-row">
-          <button type="button" class="social-btn google" id="googleBtn" onclick="startGoogleLogin()"><i class="ri-google-fill"></i>Continue with Google</button>
-          <button type="button" class="social-btn facebook" id="facebookBtn" onclick="startFacebookLogin()"><i class="ri-facebook-circle-fill"></i>Continue with Facebook</button>
-        </div>
-
-        <div class="switch-line">Don't have an account? <a href="#" class="link-accent" onclick="showSignup(); return false;">Sign up</a></div>
       </form>
-
-      <!-- SIGNUP FORM -->
-      <form id="signupForm" novalidate style="display:none;">
-        <div class="form-mark"><i class="ri-cpu-line"></i></div>
-        <h1>Create an account</h1>
-        <p class="lead">Set up access to your production floor, workers and reports in one place.</p>
-
-        <div class="field" id="fld-name">
-          <label>Full name</label>
-          <input type="text" id="signupName" placeholder="Jane Wanjiru">
-          <span class="field-error">Enter your full name</span>
-        </div>
-
-        <div class="field" id="fld-semail">
-          <label>Work email</label>
-          <input type="email" id="signupEmail" placeholder="you@sagerocreations.com">
-          <span class="field-error">Enter a valid email address</span>
-        </div>
-
-        <div class="field" id="fld-spassword">
-          <label>Password</label>
-          <div class="pass-wrap">
-            <input type="password" id="signupPassword" placeholder="Create a password">
-            <i class="ri-eye-off-line toggle-eye" onclick="togglePass('signupPassword', this)"></i>
-          </div>
-          <span class="field-error">Password must be at least 6 characters</span>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block">Create account</button>
-
-        <div class="switch-line">Already have an account? <a href="#" class="link-accent" onclick="showLogin(); return false;">Sign in</a></div>
-      </form>
-
     </div>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
 <script>
   if(localStorage.getItem('nexus_session')){ window.location.href = 'index.html'; }
+
+  // The one and only account. If you later connect Supabase (see
+  // backend_schema_phase1.sql), create a matching user with this
+  // exact email + password in Authentication → Users, and this
+  // page automatically switches to checking it for real instead
+  // of this local hardcoded pair.
+  const ALLOWED_EMAIL = 'kiddblessed5@gmail.com';
+  const ALLOWED_PASSWORD = 'Kimbachez3';
+  const ADMIN_NAME = 'Blessed Kidd';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const banner = document.getElementById('modeBanner');
+    if(SagoBackend?.isConfigured()){
+      banner.innerHTML = '<i class="ri-shield-check-line"></i>Connected to Sagero Creations backend';
+    }
+  });
 
   function togglePass(id, iconEl){
     const input = document.getElementById(id);
@@ -181,9 +137,6 @@
     input.type = isPass ? 'text' : 'password';
     iconEl.className = isPass ? 'ri-eye-line toggle-eye' : 'ri-eye-off-line toggle-eye';
   }
-
-  function showSignup(){ document.getElementById('loginForm').style.display='none'; document.getElementById('signupForm').style.display='block'; document.getElementById('signupForm').classList.add('fade-up'); }
-  function showLogin(){ document.getElementById('signupForm').style.display='none'; document.getElementById('loginForm').style.display='block'; document.getElementById('loginForm').classList.add('fade-up'); }
 
   function validEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
@@ -197,162 +150,57 @@
     return name.trim().split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase();
   }
 
-  function createSession(name, email){
+  function createSession(name, email, role){
     localStorage.setItem('nexus_session', JSON.stringify({
-      name, email, role:'Production Manager', initials: initials(name || email)
+      name, email, role: role || 'Super Admin', initials: initials(name || email)
     }));
   }
 
-  document.getElementById('loginForm').addEventListener('submit', function(e){
+  function setLoading(isLoading){
+    const btn = document.getElementById('loginBtn');
+    const btnText = document.getElementById('loginBtnText');
+    btn.disabled = isLoading;
+    btnText.innerHTML = isLoading
+      ? '<i class="ri-loader-4-line" style="animation:spin .7s linear infinite;"></i> Signing in…'
+      : 'Sign in';
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async function(e){
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim();
     const pass = document.getElementById('loginPassword').value;
     const emailOk = validEmail(email);
-    const passOk = pass.length >= 6;
     setFieldState('fld-email', emailOk);
-    setFieldState('fld-password', passOk);
-    if(!emailOk || !passOk){ NexusApp.toast('Please fix the highlighted fields','error'); return; }
+    if(!emailOk){ NexusApp.toast('Enter a valid email address', 'error'); return; }
 
-    const btn = document.getElementById('loginBtn');
-    const btnText = document.getElementById('loginBtnText');
-    btn.disabled = true;
-    btnText.innerHTML = '<i class="ri-loader-4-line" style="animation:spin .7s linear infinite;"></i> Signing in…';
+    setLoading(true);
 
-    setTimeout(() => {
-      const name = email.split('@')[0].replace(/[\.\-_]/g,' ').replace(/\b\w/g, c=>c.toUpperCase());
-      createSession(name, email);
-      NexusApp.toast('Welcome back — redirecting…','success');
-      setTimeout(()=> window.location.href = 'index.html', 500);
-    }, 900);
-  });
-
-  document.getElementById('signupForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    const name = document.getElementById('signupName').value.trim();
-    const email = document.getElementById('signupEmail').value.trim();
-    const pass = document.getElementById('signupPassword').value;
-    const nameOk = name.length > 1;
-    const emailOk = validEmail(email);
-    const passOk = pass.length >= 6;
-    setFieldState('fld-name', nameOk);
-    setFieldState('fld-semail', emailOk);
-    setFieldState('fld-spassword', passOk);
-    if(!nameOk || !emailOk || !passOk){ NexusApp.toast('Please fix the highlighted fields','error'); return; }
-
-    createSession(name, email);
-    NexusApp.toast('Account created — welcome to Sagero','success');
-    setTimeout(()=> window.location.href = 'index.html', 600);
-  });
-
-  /* ============================================================
-     REAL OAUTH — Google & Facebook
-     These call the actual identity providers. No backend is
-     required for this flow (the browser talks to Google/Facebook
-     directly and gets the user's real profile back), but each
-     provider still requires YOU to register a free app and paste
-     your own ID below — that's true of any real OAuth integration,
-     with or without a backend.
-
-     Google:   https://console.cloud.google.com/apis/credentials
-               → Create OAuth client ID → Web application
-               → Add this exact origin under "Authorized JavaScript origins"
-     Facebook: https://developers.facebook.com/apps
-               → Create app → Add "Facebook Login" product
-               → Add this exact origin under "Valid OAuth Redirect URIs" /
-                 "App Domains"
-  ============================================================ */
-  const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
-  const FACEBOOK_APP_ID = 'YOUR_FACEBOOK_APP_ID';
-
-  const googleConfigured = !GOOGLE_CLIENT_ID.startsWith('YOUR_');
-  const facebookConfigured = !FACEBOOK_APP_ID.startsWith('YOUR_');
-
-  let googleTokenClient = null;
-  let fbSdkReady = false;
-
-  function loadScriptOnce(src){
-    return new Promise((resolve, reject) => {
-      if(document.querySelector(`script[src="${src}"]`)){ resolve(); return; }
-      const s = document.createElement('script');
-      s.src = src; s.async = true; s.defer = true;
-      s.onload = () => resolve();
-      s.onerror = () => reject(new Error('Failed to load ' + src));
-      document.head.appendChild(s);
-    });
-  }
-
-  async function startGoogleLogin(){
-    if(!googleConfigured){
-      NexusApp.toast('Google Sign-In isn\u2019t configured yet — add your OAuth Client ID in login.html', 'error');
-      return;
-    }
-    const btn = document.getElementById('googleBtn');
-    try{
-      await loadScriptOnce('https://accounts.google.com/gsi/client');
-      if(!googleTokenClient){
-        googleTokenClient = google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: 'openid email profile',
-          callback: async (resp) => {
-            if(resp.error){ NexusApp.toast('Google sign-in was cancelled or failed', 'error'); return; }
-            try{
-              const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { Authorization: 'Bearer ' + resp.access_token }
-              });
-              const profile = await r.json();
-              createSession(profile.name || profile.email, profile.email);
-              NexusApp.toast('Signed in with Google — redirecting…', 'success');
-              setTimeout(() => window.location.href = 'index.html', 500);
-            }catch(err){
-              NexusApp.toast('Could not fetch your Google profile', 'error');
-            }
-          }
-        });
-      }
-      googleTokenClient.requestAccessToken();
-    }catch(err){
-      NexusApp.toast('Could not load Google Sign-In — check your connection', 'error');
-    }
-  }
-
-  async function startFacebookLogin(){
-    if(!facebookConfigured){
-      NexusApp.toast('Facebook Login isn\u2019t configured yet — add your App ID in login.html', 'error');
-      return;
-    }
-    try{
-      if(!fbSdkReady){
-        window.fbAsyncInit = function(){
-          FB.init({ appId: FACEBOOK_APP_ID, cookie:true, xfbml:false, version:'v19.0' });
-          fbSdkReady = true;
-          doFacebookLogin();
-        };
-        await loadScriptOnce('https://connect.facebook.net/en_US/sdk.js');
-      } else {
-        doFacebookLogin();
-      }
-    }catch(err){
-      NexusApp.toast('Could not load Facebook Login — check your connection', 'error');
-    }
-  }
-  function doFacebookLogin(){
-    FB.login((response) => {
-      if(response.status !== 'connected'){
-        NexusApp.toast('Facebook sign-in was cancelled or failed', 'error');
+    if(SagoBackend?.isConfigured()){
+      const { data, error } = await SagoBackend.signInWithPassword(email, pass);
+      setLoading(false);
+      if(error){
+        setFieldState('fld-password', false);
+        NexusApp.toast(error.message || 'Incorrect email or password', 'error');
         return;
       }
-      FB.api('/me', { fields:'name,email' }, (profile) => {
-        createSession(profile.name, profile.email || (profile.name.replace(/\s+/g,'.').toLowerCase()+'@facebook.com'));
-        NexusApp.toast('Signed in with Facebook — redirecting…', 'success');
-        setTimeout(() => window.location.href = 'index.html', 500);
-      });
-    }, { scope: 'public_profile,email' });
-  }
+      NexusApp.toast('Welcome back — redirecting…', 'success');
+      setTimeout(() => window.location.href = 'index.html', 500);
+      return;
+    }
 
-  // Reflect unconfigured state visibly rather than pretending these work
-  document.addEventListener('DOMContentLoaded', () => {
-    if(!googleConfigured) document.getElementById('googleBtn').style.opacity = '0.6';
-    if(!facebookConfigured) document.getElementById('facebookBtn').style.opacity = '0.6';
+    // local fallback — single hardcoded account until Supabase is connected
+    setTimeout(() => {
+      setLoading(false);
+      const match = email.toLowerCase() === ALLOWED_EMAIL.toLowerCase() && pass === ALLOWED_PASSWORD;
+      if(!match){
+        setFieldState('fld-password', false);
+        NexusApp.toast('Incorrect email or password', 'error');
+        return;
+      }
+      createSession(ADMIN_NAME, ALLOWED_EMAIL, 'Super Admin');
+      NexusApp.toast('Welcome back — redirecting…', 'success');
+      setTimeout(() => window.location.href = 'index.html', 500);
+    }, 700);
   });
 </script>
 </body>
