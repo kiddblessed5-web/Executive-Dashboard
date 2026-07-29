@@ -4,26 +4,7 @@
 
 const MSG_PEOPLE = {
   'me': { name:'Alex Kimani', color:'#6D5DF6', online:true, role:'You' },
-  'wei': { name:'Wei Zhang', color:'#3B82F6', online:true, role:'Chinese Manager' },
-  'li': { name:'Li Chen', color:'#7C3AED', online:false, role:'Chinese Manager' },
-  'feng': { name:'Feng Yun', color:'#4F46E5', online:true, role:'Chinese Manager' },
-  'chao': { name:'Chao Liu', color:'#5B5CF6', online:false, role:'Chinese Manager' },
-  'grace': { name:'Grace Achieng', color:'#4F46E5', online:true, role:'Unboxing' },
-  'kevin': { name:'Kevin Otieno', color:'#5B5CF6', online:false, role:'Quality Check' },
-  'mercy': { name:'Mercy Njoki', color:'#7C3AED', online:true, role:'Quality Check' },
-  'samuel': { name:'Samuel Kiprono', color:'#3B82F6', online:false, role:'Resealing' },
-  'peter': { name:'Peter Mutua', color:'#6D5DF6', online:true, role:'Packaging' },
-  'joy': { name:'Joy Chebet', color:'#4F46E5', online:false, role:'Unboxing' },
-  'dennisk': { name:'Dennis Kamau', color:'#5B5CF6', online:true, role:'Software Install' },
-  'ruth': { name:'Ruth Wanjiku', color:'#7C3AED', online:false, role:'Quality Check' },
-  'collins': { name:'Collins Odhiambo', color:'#3B82F6', online:true, role:'Resealing' },
-  'faitha': { name:'Faith Auma', color:'#6D5DF6', online:false, role:'Packaging' },
-  'esther': { name:'Esther Nyambura', color:'#4F46E5', online:true, role:'Software Install' },
-  'brian': { name:'Brian Mwangi', color:'#3B82F6', online:true, role:'Salesman' },
-  'faithk': { name:'Faith Kerubo', color:'#7C3AED', online:false, role:'Salesman' },
-  'denniso': { name:'Dennis Otieno', color:'#5B5CF6', online:true, role:'Salesman' },
-  'ann': { name:'Ann Wambui', color:'#6D5DF6', online:false, role:'Salesman' },
-  'hr': { name:'HR Desk', color:'#7C3AED', online:true, role:'HR' },
+
 };
 
 const MENTIONABLE = Object.entries(MSG_PEOPLE).filter(([k])=>k!=='me').map(([k,v])=>({ id:k, name:v.name }));
