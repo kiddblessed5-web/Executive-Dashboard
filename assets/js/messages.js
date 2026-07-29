@@ -205,7 +205,7 @@ function convRowHTML(c){
   const last = lastMessageOf(c.id);
   const unread = unreadState[c.id] || 0;
   const isDM = c.type === 'dm';
-  const online = isDM && MSG_PEOPLE[c.personId].online;
+  const online = isDM && MSG_PEOPLE[c.personId]?.online;
   const lastText = last ? (last.text || attachmentPreviewText(last)) : 'No messages yet';
   const lastSender = last && last.sender === 'me' ? 'You: ' : '';
   return `
