@@ -309,9 +309,12 @@ function persistUnread() {
 }
 
 function initials(name) {
+  if (!name) return "?";
+
   return name
-    .split("")
-    .map((p) => p[0])
+    .trim()
+    .split(/\s+/)
+    .map((word) => word[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
