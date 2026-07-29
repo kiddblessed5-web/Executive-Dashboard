@@ -276,7 +276,7 @@ function initials(name) {
     .toUpperCase();
 }
 function convDisplayName(c) {
-  return c.type === "dm" ? MSG_PEOPLE[c.personId].name : c.name;
+  return c.type === "dm" ? MSG_PEOPLE[c.personId]?.name : c.name;
 }
 function convAvatarColor(c) {
   return c.type === "dm"
