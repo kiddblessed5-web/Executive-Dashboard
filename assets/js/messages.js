@@ -3,7 +3,48 @@
 ============================================================ */
 
 const MSG_PEOPLE = {
-  me: { name: "Alex Kimani", color: "#6D5DF6", online: true, role: "You" },
+  me: {
+    name: "Alex Kimani",
+    color: "#6D5DF6",
+    online: true,
+    role: "You",
+  },
+  wei: {
+    name: "Wei Zhang",
+    color: "#3B82F6",
+    online: true,
+    role: "Manager",
+  },
+  grace: {
+    name: "Grace Wanjiku",
+    color: "#10B981",
+    online: true,
+    role: "Operator",
+  },
+  kevin: {
+    name: "Kevin Otieno",
+    color: "#F59E0B",
+    online: false,
+    role: "QC",
+  },
+  brian: {
+    name: "Brian Mwangi",
+    color: "#EF4444",
+    online: true,
+    role: "Warehouse",
+  },
+  hr: {
+    name: "HR Department",
+    color: "#8B5CF6",
+    online: false,
+    role: "HR",
+  },
+  li: {
+    name: "Li Chen",
+    color: "#06B6D4",
+    online: true,
+    role: "Manager",
+  },
 };
 
 const MENTIONABLE = Object.entries(MSG_PEOPLE)
