@@ -35,6 +35,46 @@ function loadAttendance(){
 }
 function persistAttendance(){ localStorage.setItem('nexus_attendance', JSON.stringify(ATT_DATA)); }
 
+/* ============================================================
+   BACKEND MODE — real, shared attendance (see backend_schema_phase2.sql)
+   Populates the same ATT_DATA[date][workerId] shape the rest of
+   this file already renders.
+============================================================ */
+let attRealtimeChannel = null;
+
+async function loadAttendanceFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('attendance').select('*');
+  ATT_DATA = {};
+  if(error){ NexusApp.toast('Could not load attendance: ' + error.message, 'error'); return; }
+  (data || []).forEach(row => {
+    if(!ATT_DATA[row.work_date]) ATT_DATA[row.work_date] = {};
+    ATT_DATA[row.work_date][row.worker_id] = { status: row.status, checkIn: row.check_in, checkOut: row.check_out };
+  });
+}
+function subscribeAttendanceRealtime(sb){
+  if(attRealtimeChannel) sb.removeChannel(attRealtimeChannel);
+  attRealtimeChannel = sb.channel('sagero-attendance')
+    .on('postgres_changes', { event:'*', schema:'public', table:'attendance' }, async () => {
+      await loadAttendanceFromBackend();
+      renderAll();
+    })
+    .subscribe();
+}
+async function upsertAttendanceBackend(workerId, workerName, patch){
+  const sb = SagoBackend.getClient();
+  const { error } = await sb.from('attendance').upsert(
+    { worker_id: workerId, worker_name: workerName, work_date: selectedDate, ...patch },
+    { onConflict: 'worker_id,work_date' }
+  );
+  if(error) NexusApp.toast('Could not save attendance: ' + error.message, 'error');
+}
+async function deleteAttendanceBackend(workerId){
+  const sb = SagoBackend.getClient();
+  const { error } = await sb.from('attendance').delete().eq('worker_id', workerId).eq('work_date', selectedDate);
+  if(error) NexusApp.toast('Could not reset attendance: ' + error.message, 'error');
+}
+
 function seedHistoryIfMissing(){
   let changed = false;
   for(let i = 1; i <= 30; i++){
@@ -137,34 +177,42 @@ function checkIn(workerId){
   const time = fmtTime(now);
   const status = timeToMinutes(time) > LATE_CUTOFF_MIN ? 'late' : 'present';
   ATT_DATA[selectedDate][workerId] = { status, checkIn: time, checkOut: null };
-  persistAttendance();
   const w = ATT_ROSTER.find(x=>x.id===workerId);
   NexusApp.toast(`${w.name} checked in — marked ${status}`, status==='late' ? 'warning' : 'success');
   renderAll();
+
+  if(SagoBackend?.isConfigured()) upsertAttendanceBackend(workerId, w.name, { status, check_in: time, check_out: null });
+  else persistAttendance();
 }
 function checkOut(workerId){
   ensureDay(selectedDate);
   const rec = ATT_DATA[selectedDate][workerId];
   if(!rec) return;
   rec.checkOut = fmtTime(new Date());
-  persistAttendance();
   const w = ATT_ROSTER.find(x=>x.id===workerId);
   NexusApp.toast(`${w.name} checked out`, 'info');
   renderAll();
+
+  if(SagoBackend?.isConfigured()) upsertAttendanceBackend(workerId, w.name, { status: rec.status, check_in: rec.checkIn, check_out: rec.checkOut });
+  else persistAttendance();
 }
 function markAbsent(workerId){
   ensureDay(selectedDate);
   ATT_DATA[selectedDate][workerId] = { status:'absent', checkIn:null, checkOut:null };
-  persistAttendance();
   const w = ATT_ROSTER.find(x=>x.id===workerId);
   NexusApp.toast(`${w.name} marked absent`, 'error');
   renderAll();
+
+  if(SagoBackend?.isConfigured()) upsertAttendanceBackend(workerId, w.name, { status:'absent', check_in:null, check_out:null });
+  else persistAttendance();
 }
 function resetMark(workerId){
   ensureDay(selectedDate);
   delete ATT_DATA[selectedDate][workerId];
-  persistAttendance();
   renderAll();
+
+  if(SagoBackend?.isConfigured()) deleteAttendanceBackend(workerId);
+  else persistAttendance();
 }
 
 /* ---------------- DATE NAV ---------------- */
@@ -301,11 +349,21 @@ function renderAll(){
   renderCharts();
 }
 
+let attDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
+  if(attDidInit) return;
+  attDidInit = true;
+
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('attendance.html', session);
-  loadAttendance();
+
+  if(SagoBackend?.isConfigured()){
+    await loadAttendanceFromBackend();
+    subscribeAttendanceRealtime(SagoBackend.getClient());
+  } else {
+    loadAttendance();
+  }
 
   const d = new Date(selectedDate+'T00:00:00');
   calMonth = d.getMonth(); calYear = d.getFullYear();

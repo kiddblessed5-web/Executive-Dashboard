@@ -61,6 +61,7 @@ create table if not exists conversation_members (
   conversation_id uuid not null references conversations(id) on delete cascade,
   user_id uuid not null references profiles(id) on delete cascade,
   joined_at timestamptz not null default now(),
+  last_read_at timestamptz not null default now(),
   primary key (conversation_id, user_id)
 );
 
@@ -97,31 +98,50 @@ alter table conversation_members enable row level security;
 alter table messages enable row level security;
 alter table message_reactions enable row level security;
 
+-- Recursion-safe membership check. A plain subquery against
+-- conversation_members from within conversation_members' own
+-- policy would cause infinite recursion (Postgres has to
+-- re-evaluate the policy to answer the subquery, which re-triggers
+-- the subquery, forever). A SECURITY DEFINER function bypasses RLS
+-- for its own internal lookup, avoiding that recursion entirely.
+create or replace function is_conversation_member(conv_id uuid, uid uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from conversation_members
+    where conversation_id = conv_id and user_id = uid
+  );
+$$;
+
 create policy "Anyone signed in can view profiles" on profiles for select using (auth.role() = 'authenticated');
 create policy "Users can update their own profile" on profiles for update using (auth.uid() = id);
 
 create policy "Members can view their conversations" on conversations for select using (
-  exists (select 1 from conversation_members m where m.conversation_id = id and m.user_id = auth.uid())
+  is_conversation_member(id, auth.uid())
 );
 create policy "Signed-in users can create conversations" on conversations for insert with check (auth.role() = 'authenticated');
 
 create policy "Members can view membership rows for their conversations" on conversation_members for select using (
-  exists (select 1 from conversation_members m2 where m2.conversation_id = conversation_id and m2.user_id = auth.uid())
+  is_conversation_member(conversation_id, auth.uid())
 );
 create policy "Signed-in users can add members" on conversation_members for insert with check (auth.role() = 'authenticated');
+create policy "Members can remove their own membership" on conversation_members for delete using (auth.uid() = user_id);
+create policy "Members can update their own last_read_at" on conversation_members for update using (auth.uid() = user_id);
 
 create policy "Members can read messages in their conversations" on messages for select using (
-  exists (select 1 from conversation_members m where m.conversation_id = messages.conversation_id and m.user_id = auth.uid())
+  is_conversation_member(conversation_id, auth.uid())
 );
 create policy "Members can send messages in their conversations" on messages for insert with check (
-  auth.uid() = sender_id and
-  exists (select 1 from conversation_members m where m.conversation_id = messages.conversation_id and m.user_id = auth.uid())
+  auth.uid() = sender_id and is_conversation_member(conversation_id, auth.uid())
 );
 create policy "Senders can update their own messages" on messages for update using (auth.uid() = sender_id);
 
 create policy "Members can read reactions" on message_reactions for select using (
-  exists (select 1 from messages msg join conversation_members m on m.conversation_id = msg.conversation_id
-          where msg.id = message_id and m.user_id = auth.uid())
+  exists (select 1 from messages msg where msg.id = message_id and is_conversation_member(msg.conversation_id, auth.uid()))
 );
 create policy "Signed-in users can react" on message_reactions for insert with check (auth.uid() = user_id);
 create policy "Users can remove their own reactions" on message_reactions for delete using (auth.uid() = user_id);

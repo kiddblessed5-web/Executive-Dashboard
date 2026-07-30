@@ -85,7 +85,7 @@ function renderWorkerGrid(){
     const rank = rankedByOutput.indexOf(w.id);
     const isTop3 = rank < 3;
     return `
-    <div class="worker-card scale-in" onclick="openWorkerDrawer('${w.id}')">
+    <div class="worker-card" onclick="openWorkerDrawer('${w.id}')">
       ${isTop3 ? `<div class="worker-rank-badge" style="color:${RANK_COLOR[rank]}"><i class="${RANK_MEDAL[rank]}"></i></div>` : ''}
       <button class="worker-card-remove" data-tip="Remove worker" onclick="event.stopPropagation(); confirmRemoveWorker('${w.id}')"><i class="ri-close-line"></i></button>
       <div class="worker-card-top">

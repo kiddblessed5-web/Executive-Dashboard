@@ -236,10 +236,8 @@
       <div class="topbar-right">
         <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
         <div class="dropdown-wrap">
-          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
-          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:280px;">
-            <div class="dd-item"><i class="ri-chat-3-line"></i>3 unread conversations</div>
-          </div>
+          <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot" style="display:none;"></span></button>
+          <div class="dropdown-panel" id="notifPanel" style="top:50px;right:0;width:280px;"></div>
         </div>
       </div>
     </div>
@@ -339,7 +337,6 @@
           <div class="info-block" id="infoDescTitle">
             <div class="info-block-label"><i class="ri-file-text-line"></i>Description</div>
             <div class="info-desc-text" id="infoDescription"></div>
-            <span class="info-tag"><i class="ri-hashtag"></i>sagerocreations</span>
           </div>
 
           <div class="info-block">

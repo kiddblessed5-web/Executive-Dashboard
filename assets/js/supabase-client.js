@@ -13,8 +13,8 @@
    nothing breaks by leaving this unconfigured.
 ============================================================ */
 
-const SUPABASE_URL = 'https://grtzjvyyhyuxtkvcfzjb.supabase.co';       // e.g. https://xyzcompany.supabase.co
-const SUPABASE_ANON_KEY = 'sb_publishable_RDxlp4hHYtbd89c-CEb8yQ_FVjgoGd1';       // Project Settings → API → anon public
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';       // e.g. https://xyzcompany.supabase.co
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';       // Project Settings → API → anon public
 
 const SagoBackend = (() => {
   const configured = SUPABASE_URL !== 'YOUR_SUPABASE_PROJECT_URL'

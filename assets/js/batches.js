@@ -11,6 +11,16 @@ const BRANDS = ['Vivo'];
 const MODELS = ['Y18','Y28','V30','Y36','X100','Y17s'];
 const STATUS_COLOR = { 'On Track':'success', 'At Risk':'warning', 'Delayed':'danger', 'Completed':'info' };
 
+// The backend's single source-of-truth `stage` uses the full 8-step pipeline
+// (shared with Workflow). Batches' own Kanban view intentionally keeps a
+// simpler 6-column layout — these map between the two without changing
+// either page's UI.
+const STAGE_TO_KANBAN = {
+  'Received':'Waiting', 'Assigned':'Assigned', 'Unboxed':'Software', 'Software':'Software',
+  'Quality Check':'Quality Check', 'Resealed':'Packaging', 'Packaging':'Packaging', 'Completed':'Completed',
+};
+const KANBAN_TO_STAGE = { 'Waiting':'Received', 'Assigned':'Assigned', 'Software':'Software', 'Quality Check':'Quality Check', 'Packaging':'Packaging', 'Completed':'Completed' };
+
 let BATCHES = [];
 
 function seedBatches(){
@@ -54,6 +64,53 @@ function seedBatches(){
   persistBatches();
 }
 function persistBatches(){ localStorage.setItem('nexus_batches', JSON.stringify(BATCHES)); }
+
+/* ============================================================
+   BACKEND MODE — real, shared batches (see backend_schema_phase2.sql)
+   Populates the exact same BATCHES shape the rest of this file
+   already renders, so every render function below is unchanged.
+============================================================ */
+let batchesRealtimeChannel = null;
+
+function mapDbBatchToLocal(row){
+  return {
+    id: row.id, model: row.model, brand: row.brand, qty: row.qty,
+    salesman: row.salesman, manager: row.manager, progress: row.progress,
+    workers: row.workers, received: row.received_date, finish: row.finish_date,
+    status: row.status, kanban: STAGE_TO_KANBAN[row.stage] || 'Waiting', dbStage: row.stage,
+    workerContrib: row.worker_contributions || [],
+    activity: row.activity_log || [],
+    notes: row.notes || '',
+  };
+}
+
+async function loadBatchesFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('batches').select('*').order('created_at', { ascending:false });
+  if(error){ NexusApp.toast('Could not load batches: ' + error.message, 'error'); BATCHES = []; return; }
+  BATCHES = (data || []).map(mapDbBatchToLocal);
+}
+
+function subscribeBatchesRealtime(sb){
+  if(batchesRealtimeChannel) sb.removeChannel(batchesRealtimeChannel);
+  batchesRealtimeChannel = sb.channel('sagero-batches')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'batches' }, (payload) => {
+      if(BATCHES.some(b=>b.id===payload.new.id)) return; // already added optimistically by this tab
+      BATCHES.unshift(mapDbBatchToLocal(payload.new));
+      renderViews();
+    })
+    .on('postgres_changes', { event:'UPDATE', schema:'public', table:'batches' }, (payload) => {
+      const idx = BATCHES.findIndex(b=>b.id===payload.new.id);
+      if(idx === -1) return;
+      BATCHES[idx] = mapDbBatchToLocal(payload.new);
+      renderViews();
+    })
+    .on('postgres_changes', { event:'DELETE', schema:'public', table:'batches' }, (payload) => {
+      BATCHES = BATCHES.filter(b=>b.id!==payload.old.id);
+      renderViews();
+    })
+    .subscribe();
+}
 
 let currentView = localStorage.getItem('nexus_batch_view') || 'grid';
 let filters = { search:'', brand:'all', manager:'all', status:'all' };
@@ -106,7 +163,7 @@ function paginate(list){
 function batchCardHTML(b){
   const color = STATUS_COLOR[b.status];
   return `
-  <div class="batch-card scale-in" onclick="openBatchDrawer('${b.id}')">
+  <div class="batch-card" onclick="openBatchDrawer('${b.id}')">
     <div class="batch-card-top">
       <div>
         <div class="batch-id">${b.id}</div>
@@ -185,13 +242,26 @@ function renderKanban(){
         const id = evt.item.dataset.id;
         const newStage = evt.to.dataset.stage;
         const b = BATCHES.find(x=>x.id===id);
-        if(b){
-          b.kanban = newStage;
-          if(newStage === 'Completed'){ b.status = 'Completed'; b.progress = 100; }
-          persistBatches();
+        if(!b) return;
+        b.kanban = newStage;
+        if(newStage === 'Completed'){ b.status = 'Completed'; b.progress = 100; }
+
+        if(SagoBackend?.isConfigured()){
+          const dbStage = KANBAN_TO_STAGE[newStage] || 'Received';
+          b.dbStage = dbStage;
+          const updates = { stage: dbStage };
+          if(newStage === 'Completed'){ updates.status = 'Completed'; updates.progress = 100; }
+          SagoBackend.getClient().from('batches').update(updates).eq('id', id).then(({ error }) => {
+            if(error) NexusApp.toast('Could not save stage change: ' + error.message, 'error');
+          });
           NexusApp.toast(`${id} moved to ${newStage}`,'success');
           renderKanban();
+          return;
         }
+
+        persistBatches();
+        NexusApp.toast(`${id} moved to ${newStage}`,'success');
+        renderKanban();
       }
     });
   });
@@ -246,7 +316,7 @@ function wireToolbar(){
 
 /* ---------------- NEW BATCH MODAL ---------------- */
 function openNewBatchModal(){ NexusApp.openModal('modal-newbatch'); }
-function submitNewBatch(e){
+async function submitNewBatch(e){
   e.preventDefault();
   const model = document.getElementById('nb-model').value;
   const qty = parseInt(document.getElementById('nb-qty').value, 10);
@@ -255,10 +325,29 @@ function submitNewBatch(e){
   if(!model || !qty || qty < 1){ NexusApp.toast('Please fill in all required fields','error'); return; }
 
   const id = 'BX-' + (1030 + BATCHES.length + Math.floor(Math.random()*90));
+  const receivedDate = new Date().toISOString().slice(0,10);
+  const finishDate = new Date(Date.now()+7*86400000).toISOString().slice(0,10);
+
+  if(SagoBackend?.isConfigured()){
+    const { data, error } = await SagoBackend.getClient().from('batches').insert({
+      id, model, brand:'Vivo', qty, salesman, manager, progress:5, workers:2,
+      received_date: receivedDate, finish_date: finishDate, status:'On Track', stage:'Received',
+      worker_contributions: [], activity_log:[{ text:'Batch received at warehouse', time:'Just now' }], notes:'',
+    }).select().single();
+    if(error){ NexusApp.toast('Could not create batch: ' + error.message, 'error'); return; }
+    BATCHES.unshift(mapDbBatchToLocal(data));
+    NexusApp.closeModal('modal-newbatch');
+    NexusApp.toast('Batch ' + id + ' created','success');
+    currentPage = 1;
+    renderViews();
+    e.target.reset();
+    return;
+  }
+
   BATCHES.unshift({
     id, model, brand:'Vivo', qty, salesman, manager, progress:5, workers:2,
-    received: new Date().toISOString().slice(0,10),
-    finish: new Date(Date.now()+7*86400000).toISOString().slice(0,10),
+    received: receivedDate,
+    finish: finishDate,
     status:'On Track', kanban:'Waiting',
     workerContrib: [], activity:[{ text:'Batch received at warehouse', time:'Just now' }],
     notes:''
@@ -330,18 +419,35 @@ function completeBatch(id){
   if(!b) return;
   b.status = 'Completed'; b.progress = 100; b.kanban = 'Completed';
   b.activity.unshift({ text:'Batch marked as completed', time:'Just now' });
-  persistBatches();
   NexusApp.toast(id + ' marked as completed', 'success');
   openBatchDrawer(id);
   renderViews();
+
+  if(SagoBackend?.isConfigured()){
+    b.dbStage = 'Completed';
+    SagoBackend.getClient().from('batches').update({
+      status:'Completed', progress:100, stage:'Completed', activity_log: b.activity,
+    }).eq('id', id).then(({ error }) => {
+      if(error) NexusApp.toast('Could not save completion: ' + error.message, 'error');
+    });
+    return;
+  }
+  persistBatches();
 }
 
 function saveDrawerNotes(){
   const b = BATCHES.find(x=>x.id===window.currentDrawerBatch);
   if(!b) return;
   b.notes = document.getElementById('drawerNotes').value;
-  persistBatches();
   NexusApp.toast('Notes saved','success');
+
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('batches').update({ notes: b.notes }).eq('id', b.id).then(({ error }) => {
+      if(error) NexusApp.toast('Could not save notes: ' + error.message, 'error');
+    });
+    return;
+  }
+  persistBatches();
 }
 
 function exportBatchesCSV(){
@@ -357,11 +463,22 @@ function exportBatchesCSV(){
   NexusApp.toast('Exported ' + getFilteredSorted().length + ' batches to CSV','success');
 }
 
+let batchesDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
+  if(batchesDidInit) return;
+  batchesDidInit = true;
+
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('batches.html', session);
-  seedBatches();
+
+  if(SagoBackend?.isConfigured()){
+    await loadBatchesFromBackend();
+    subscribeBatchesRealtime(SagoBackend.getClient());
+  } else {
+    seedBatches();
+  }
+
   wireToolbar();
   renderViews();
 });

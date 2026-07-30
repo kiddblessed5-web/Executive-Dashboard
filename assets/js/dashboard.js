@@ -36,6 +36,68 @@ const DASH_DATA = {
 
 function initials(name){ return name.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase(); }
 
+/* ============================================================
+   BACKEND MODE — derives real Dashboard numbers from the same
+   `batches` and `attendance` tables Batches/Workflow/Attendance
+   already read and write (see backend_schema_phase2.sql).
+   Revenue and Top Workers/Worker Performance still show
+   illustrative figures — those need a pricing table and the
+   Workers module on the backend, which aren't part of this phase.
+============================================================ */
+let backendTrendData = null, backendOutputData = null;
+
+async function loadDashboardFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data: batches, error: bErr } = await sb.from('batches').select('*');
+  if(bErr){ NexusApp.toast('Could not load dashboard data: ' + bErr.message, 'error'); return; }
+
+  const today = new Date().toISOString().slice(0,10);
+  const { data: attToday } = await sb.from('attendance').select('*').eq('work_date', today);
+
+  const active = batches.filter(b => b.status !== 'Completed').length;
+  const completed = batches.filter(b => b.status === 'Completed').length;
+  const delayed = batches.filter(b => b.status === 'Delayed').length;
+  const efficiency = batches.length ? Math.round((batches.length - delayed) / batches.length * 100) : 100;
+  const totalQty = batches.reduce((s,b)=>s+b.qty, 0);
+  const rosterSize = 10; // matches the seeded roster size used on Attendance/Workers until those go multi-user aware
+  const presentToday = (attToday || []).filter(r => r.status==='present' || r.status==='late').length;
+  const attendanceRate = Math.min(100, Math.round(presentToday / rosterSize * 100));
+
+  DASH_DATA.kpis[0].value = totalQty; // Today's Production — proxied from total tracked quantity, no daily production log yet
+  DASH_DATA.kpis[1].value = active;
+  DASH_DATA.kpis[2].value = completed;
+  DASH_DATA.kpis[3].value = delayed;
+  DASH_DATA.kpis[4].value = efficiency;
+  DASH_DATA.kpis[6].value = attendanceRate;
+  // kpis[5] Revenue stays illustrative — no pricing data source in this phase
+
+  const recentBatches = [...batches].sort((a,b)=> new Date(b.updated_at)-new Date(a.updated_at)).slice(0,6);
+  DASH_DATA.activity = recentBatches.map(b => {
+    const last = (b.activity_log && b.activity_log[0]) || { text:'Updated', time:'recently' };
+    return { icon:'ri-smartphone-line', color:'primary', text:`Batch <b>#${b.id}</b> — ${last.text}`, time: last.time };
+  });
+
+  const upcoming = batches.filter(b => b.finish_date && b.status !== 'Completed')
+    .sort((a,b)=> new Date(a.finish_date)-new Date(b.finish_date)).slice(0,4);
+  DASH_DATA.deadlines = upcoming.map(b => {
+    const daysLeft = Math.ceil((new Date(b.finish_date) - new Date()) / 86400000);
+    return { title:`Batch #${b.id} — ${b.model}`, due: daysLeft<=0 ? 'Overdue' : daysLeft===1 ? 'Due tomorrow' : `Due in ${daysLeft} days`, tag: daysLeft<=1 ? 'urgent' : 'normal' };
+  });
+
+  const days = [];
+  for(let i=5;i>=0;i--){ const d = new Date(); d.setDate(d.getDate()-i); days.push(d); }
+  backendTrendData = {
+    labels: days.map(d=>d.toLocaleDateString('en-GB',{weekday:'short'})),
+    values: days.map(d => batches.filter(b=>b.received_date===d.toISOString().slice(0,10)).reduce((s,b)=>s+b.qty,0)),
+  };
+
+  const stageBuckets = { Unboxing:'Unboxed', Software:'Software', QC:'Quality Check', Reseal:'Resealed', Packaging:'Packaging' };
+  backendOutputData = {
+    labels: Object.keys(stageBuckets),
+    values: Object.values(stageBuckets).map(stage => batches.filter(b=>b.stage===stage).reduce((s,b)=>s+b.qty,0)),
+  };
+}
+
 function renderKPIs(){
   const wrap = document.getElementById('kpiRow');
   wrap.innerHTML = DASH_DATA.kpis.map((k,i) => `
@@ -100,12 +162,14 @@ function initCharts(){
   const grad = trendCtx.createLinearGradient(0,0,0,240);
   grad.addColorStop(0, 'rgba(109,93,246,0.35)');
   grad.addColorStop(1, 'rgba(109,93,246,0.02)');
+  const trendLabels = backendTrendData ? backendTrendData.labels : ['Mon','Tue','Wed','Thu','Fri','Sat'];
+  const trendValues = backendTrendData ? backendTrendData.values : [1420,1560,1380,1710,1840,1690];
   new Chart(trendCtx, {
     type:'line',
     data:{
-      labels:['Mon','Tue','Wed','Thu','Fri','Sat'],
+      labels: trendLabels,
       datasets:[{
-        label:'Units produced', data:[1420,1560,1380,1710,1840,1690],
+        label:'Units produced', data: trendValues,
         borderColor:'#6D5DF6', backgroundColor:grad, fill:true, tension:.4,
         pointBackgroundColor:'#fff', pointBorderColor:'#6D5DF6', pointBorderWidth:2, pointRadius:4, borderWidth:3,
       }]
@@ -115,19 +179,21 @@ function initCharts(){
       plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#14162B', padding:10, cornerRadius:10, titleFont:{weight:700} } },
       scales:{
         x:{ grid:{ display:false }, border:{display:false} },
-        y:{ grid:{ color:gridColor }, border:{display:false}, ticks:{ callback:v=>v/1000+'k' } }
+        y:{ grid:{ color:gridColor }, border:{display:false} }
       }
     }
   });
 
   // Daily Output (bar)
   const outputCtx = document.getElementById('outputChart').getContext('2d');
+  const outputLabels = backendOutputData ? backendOutputData.labels : ['Unboxing','Software','QC','Reseal','Packaging'];
+  const outputValues = backendOutputData ? backendOutputData.values : [1920,1780,1640,1710,1580];
   new Chart(outputCtx, {
     type:'bar',
     data:{
-      labels:['Unboxing','Software','QC','Reseal','Packaging'],
+      labels: outputLabels,
       datasets:[{
-        label:'Units', data:[1920,1780,1640,1710,1580],
+        label:'Units', data: outputValues,
         backgroundColor:['#6D5DF6','#5B5CF6','#4F46E5','#7C3AED','#3B82F6'],
         borderRadius:10, maxBarThickness:38,
       }]
@@ -169,6 +235,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('index.html', session);
+
+  if(SagoBackend?.isConfigured()){
+    await loadDashboardFromBackend();
+  }
+
   renderKPIs();
   renderActivity();
   renderDeadlines();

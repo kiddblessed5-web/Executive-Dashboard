@@ -68,6 +68,60 @@ function wfSeed(){
 function wfPersistBatches(){ localStorage.setItem('nexus_wf_batches', JSON.stringify(wfBatches)); }
 function wfPersistAssignments(){ localStorage.setItem('nexus_wf_assignments', JSON.stringify(wfAssignments)); }
 
+/* ============================================================
+   BACKEND MODE — shares the SAME `batches` table as the Batches
+   page (see backend_schema_phase2.sql), so a stage change here
+   shows up there too, and vice versa. Worker allocation lives in
+   `shift_assignments`. Falls back to the local demo dataset above
+   when Supabase isn't configured.
+============================================================ */
+let wfBatchesChannel = null, wfAssignChannel = null;
+
+function mapDbRowToWfBatch(row){
+  return { id: row.id, model: row.model, qty: row.qty, stage: row.stage, enteredStageAt: row.updated_at };
+}
+
+async function loadWfBatchesFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('batches').select('*');
+  if(error){ NexusApp.toast('Could not load batches: ' + error.message, 'error'); wfBatches = []; return; }
+  wfBatches = (data || []).map(mapDbRowToWfBatch);
+}
+async function loadWfAssignmentsFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('shift_assignments').select('*');
+  wfAssignments = {};
+  WF_STAGES.forEach(s => wfAssignments[s] = []);
+  if(error){ NexusApp.toast('Could not load worker allocation: ' + error.message, 'error'); return; }
+  (data || []).forEach(row => { if(wfAssignments[row.stage]) wfAssignments[row.stage].push(row.worker_name); });
+}
+async function syncAssignmentsToBackend(){
+  const sb = SagoBackend.getClient();
+  await sb.from('shift_assignments').delete().neq('worker_name', '__none__'); // clear, then re-insert full state (mirrors local overwrite pattern)
+  const rows = [];
+  WF_STAGES.forEach(s => (wfAssignments[s]||[]).forEach(name => rows.push({ stage:s, worker_name:name })));
+  if(rows.length){
+    const { error } = await sb.from('shift_assignments').insert(rows);
+    if(error) NexusApp.toast('Could not save worker allocation: ' + error.message, 'error');
+  }
+}
+function subscribeWfRealtime(sb){
+  if(wfBatchesChannel) sb.removeChannel(wfBatchesChannel);
+  wfBatchesChannel = sb.channel('sagero-workflow-batches')
+    .on('postgres_changes', { event:'*', schema:'public', table:'batches' }, async () => {
+      await loadWfBatchesFromBackend();
+      renderPipeline(); renderBoard(); renderStats();
+    })
+    .subscribe();
+  if(wfAssignChannel) sb.removeChannel(wfAssignChannel);
+  wfAssignChannel = sb.channel('sagero-workflow-assignments')
+    .on('postgres_changes', { event:'*', schema:'public', table:'shift_assignments' }, async () => {
+      await loadWfAssignmentsFromBackend();
+      renderBoard(); renderPool();
+    })
+    .subscribe();
+}
+
 function wfAssignedWorkers(){
   return new Set(Object.values(wfAssignments).flat());
 }
@@ -141,10 +195,17 @@ function renderBoard(){
         if(b && newStage !== b.stage){
           b.stage = newStage;
           b.enteredStageAt = new Date().toISOString();
-          wfPersistBatches();
           NexusApp.toast(`${id} moved to ${newStage}`,'success');
           renderPipeline();
           renderBoard();
+
+          if(SagoBackend?.isConfigured()){
+            SagoBackend.getClient().from('batches').update({ stage:newStage }).eq('id', id).then(({ error }) => {
+              if(error) NexusApp.toast('Could not save stage change: ' + error.message, 'error');
+            });
+          } else {
+            wfPersistBatches();
+          }
         }
       }
     });
@@ -159,9 +220,11 @@ function renderBoard(){
           z.querySelectorAll('.worker-chip').forEach(chip => newAssignments[s].push(chip.dataset.worker));
         });
         wfAssignments = newAssignments;
-        wfPersistAssignments();
         renderPool();
         NexusApp.toast('Worker allocation updated','success');
+
+        if(SagoBackend?.isConfigured()) syncAssignmentsToBackend();
+        else wfPersistAssignments();
       }
     });
   });
@@ -187,8 +250,10 @@ function renderPool(){
         z.querySelectorAll('.worker-chip').forEach(chip => newAssignments[s].push(chip.dataset.worker));
       });
       wfAssignments = newAssignments;
-      wfPersistAssignments();
       renderPool();
+
+      if(SagoBackend?.isConfigured()) syncAssignmentsToBackend();
+      else wfPersistAssignments();
     }
   });
 }
@@ -239,6 +304,10 @@ function wfSimulateLiveTick(){
 
 /* ---------------- RESET DEMO DATA ---------------- */
 function wfResetDemo(){
+  if(SagoBackend?.isConfigured()){
+    NexusApp.toast('Reset isn\u2019t available once connected to the real backend \u2014 that would erase everyone\u2019s live data', 'error');
+    return;
+  }
   localStorage.removeItem('nexus_wf_batches');
   localStorage.removeItem('nexus_wf_assignments');
   wfSeed();
@@ -254,11 +323,25 @@ function renderAll(){
   wfTickTimers();
 }
 
+let wfDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
+  if(wfDidInit) return;
+  wfDidInit = true;
+
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('workflow.html', session);
-  wfSeed();
+
+  if(SagoBackend?.isConfigured()){
+    await loadWfBatchesFromBackend();
+    await loadWfAssignmentsFromBackend();
+    wfShiftStart = new Date().toISOString();
+    wfUnitsToday = 4820;
+    subscribeWfRealtime(SagoBackend.getClient());
+  } else {
+    wfSeed();
+  }
+
   renderAll();
 
   wfTimerHandle = setInterval(wfTickTimers, 1000);
