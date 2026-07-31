@@ -309,6 +309,18 @@ const NexusApp = (() => {
     tipTarget = null;
     tipEl?.classList.remove('visible');
   }
+  /* ---------------- DEBOUNCE ----------------
+     Used to coalesce rapid-fire realtime events (e.g. several
+     people moving batches around at once) into a single re-render
+     instead of rebuilding the whole view on every individual change. */
+  function debounce(fn, waitMs){
+    let handle = null;
+    return function(...args){
+      clearTimeout(handle);
+      handle = setTimeout(() => fn.apply(this, args), waitMs);
+    };
+  }
+
   function initTooltips(){
     document.addEventListener('mouseover', (e) => {
       const target = e.target.closest?.('[data-tip]');
@@ -439,6 +451,6 @@ const NexusApp = (() => {
     requireAuth, logout, toggleTheme, toast, toggleDropdown,
     openModal, closeModal, openDrawer, closeDrawer,
     toggleSidebar, closeSidebar, toggleSidebarCollapse, openCmdk, closeCmdk, countUp, initShell, renderSidebar,
-    setAccent, applyAccent, ACCENT_PRESETS
+    setAccent, applyAccent, ACCENT_PRESETS, debounce
   };
 })();

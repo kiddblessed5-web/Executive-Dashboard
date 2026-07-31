@@ -105,20 +105,23 @@ async function syncAssignmentsToBackend(){
     if(error) NexusApp.toast('Could not save worker allocation: ' + error.message, 'error');
   }
 }
+const refreshBatchesDebounced = NexusApp.debounce(async () => {
+  await loadWfBatchesFromBackend();
+  renderPipeline(); renderBoard(); renderStats();
+}, 400);
+const refreshAssignmentsDebounced = NexusApp.debounce(async () => {
+  await loadWfAssignmentsFromBackend();
+  renderBoard(); renderPool();
+}, 400);
+
 function subscribeWfRealtime(sb){
   if(wfBatchesChannel) sb.removeChannel(wfBatchesChannel);
   wfBatchesChannel = sb.channel('sagero-workflow-batches')
-    .on('postgres_changes', { event:'*', schema:'public', table:'batches' }, async () => {
-      await loadWfBatchesFromBackend();
-      renderPipeline(); renderBoard(); renderStats();
-    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'batches' }, () => refreshBatchesDebounced())
     .subscribe();
   if(wfAssignChannel) sb.removeChannel(wfAssignChannel);
   wfAssignChannel = sb.channel('sagero-workflow-assignments')
-    .on('postgres_changes', { event:'*', schema:'public', table:'shift_assignments' }, async () => {
-      await loadWfAssignmentsFromBackend();
-      renderBoard(); renderPool();
-    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'shift_assignments' }, () => refreshAssignmentsDebounced())
     .subscribe();
 }
 

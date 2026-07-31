@@ -52,13 +52,14 @@ async function loadAttendanceFromBackend(){
     ATT_DATA[row.work_date][row.worker_id] = { status: row.status, checkIn: row.check_in, checkOut: row.check_out };
   });
 }
+const refreshAttendanceDebounced = NexusApp.debounce(async () => {
+  await loadAttendanceFromBackend();
+  renderAll();
+}, 400);
 function subscribeAttendanceRealtime(sb){
   if(attRealtimeChannel) sb.removeChannel(attRealtimeChannel);
   attRealtimeChannel = sb.channel('sagero-attendance')
-    .on('postgres_changes', { event:'*', schema:'public', table:'attendance' }, async () => {
-      await loadAttendanceFromBackend();
-      renderAll();
-    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'attendance' }, () => refreshAttendanceDebounced())
     .subscribe();
 }
 async function upsertAttendanceBackend(workerId, workerName, patch){

@@ -91,23 +91,25 @@ async function loadBatchesFromBackend(){
   BATCHES = (data || []).map(mapDbBatchToLocal);
 }
 
+const renderViewsDebounced = NexusApp.debounce(() => renderViews(), 300);
+
 function subscribeBatchesRealtime(sb){
   if(batchesRealtimeChannel) sb.removeChannel(batchesRealtimeChannel);
   batchesRealtimeChannel = sb.channel('sagero-batches')
     .on('postgres_changes', { event:'INSERT', schema:'public', table:'batches' }, (payload) => {
       if(BATCHES.some(b=>b.id===payload.new.id)) return; // already added optimistically by this tab
       BATCHES.unshift(mapDbBatchToLocal(payload.new));
-      renderViews();
+      renderViewsDebounced();
     })
     .on('postgres_changes', { event:'UPDATE', schema:'public', table:'batches' }, (payload) => {
       const idx = BATCHES.findIndex(b=>b.id===payload.new.id);
       if(idx === -1) return;
       BATCHES[idx] = mapDbBatchToLocal(payload.new);
-      renderViews();
+      renderViewsDebounced();
     })
     .on('postgres_changes', { event:'DELETE', schema:'public', table:'batches' }, (payload) => {
       BATCHES = BATCHES.filter(b=>b.id!==payload.old.id);
-      renderViews();
+      renderViewsDebounced();
     })
     .subscribe();
 }

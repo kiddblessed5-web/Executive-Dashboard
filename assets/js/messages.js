@@ -153,13 +153,31 @@ function subscribeRealtime(){
       list[idx] = mapDbMessage(m);
       if(m.conversation_id === activeConvId) renderMessages();
     })
-    .on('postgres_changes', { event:'*', schema:'public', table:'message_reactions' }, async (payload) => {
-      const msgId = payload.new?.message_id || payload.old?.message_id;
-      if(!msgId) return;
-      // reactions aren't embedded in the payload shape we need, so just refresh the one conversation's messages
-      if(activeConvId) { await loadMessages(activeConvId); renderMessages(); }
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'message_reactions' }, (payload) => {
+      if(payload.new.user_id === backendUserId) return; // our own write already applied optimistically in toggleReaction
+      applyReactionDelta(payload.new.message_id, payload.new.emoji, +1);
+    })
+    .on('postgres_changes', { event:'DELETE', schema:'public', table:'message_reactions' }, (payload) => {
+      applyReactionDelta(payload.old.message_id, payload.old.emoji, -1);
     })
     .subscribe();
+}
+function findMessageById(msgId){
+  for(const list of Object.values(MESSAGES)){
+    const m = list.find(x => x.id === msgId);
+    if(m) return m;
+  }
+  return null;
+}
+function applyReactionDelta(msgId, emoji, delta){
+  const m = findMessageById(msgId);
+  if(!m) return;
+  m.reactions = m.reactions || {};
+  m.reactions[emoji] = Math.max(0, (m.reactions[emoji] || 0) + delta);
+  if(m.reactions[emoji] === 0) delete m.reactions[emoji];
+  // only re-render if this message is actually visible right now — reactions
+  // happening in a chat you're not looking at shouldn't touch the DOM at all
+  if(MESSAGES[activeConvId]?.includes(m)) renderMessages();
 }
 
 /* ---------------- SEND ---------------- */
@@ -305,12 +323,9 @@ function renderConvList(){
 }
 // Cheaper than renderConvList() — used for realtime updates so we're not
 // rebuilding the whole sidebar (and restarting its CSS) on every message.
+const renderConvListDebounced = NexusApp.debounce(() => renderConvList(), 250);
 function renderConvListRow(convId){
-  if(!document.querySelector(`.conv-item[onclick="selectConversation('${convId}')"]`)){
-    renderConvList(); // row doesn't exist yet (e.g. first message in a brand-new conversation) — fall back to a full rebuild
-    return;
-  }
-  renderConvList();
+  renderConvListDebounced();
 }
 function updateNotifBadge(){
   const total = Object.values(unreadCounts).reduce((s,n)=>s+n, 0);
@@ -465,10 +480,17 @@ const QUICK_EMOJIS = ['👍','❤️','😂','🎉','🔥','🙏','👏','😮']
 
 async function toggleReaction(msgId, emoji){
   const sb = SagoBackend.getClient();
+  const m = findMessageById(msgId);
+  if(m){ // instant local feedback — don't wait on the realtime round-trip to see your own reaction land
+    m.reactions = m.reactions || {};
+    m.reactions[emoji] = (m.reactions[emoji] || 0) + 1;
+    if(MESSAGES[activeConvId]?.includes(m)) renderMessages();
+  }
   const { error } = await sb.from('message_reactions').insert({ message_id: msgId, user_id: backendUserId, emoji });
   if(error && error.code !== '23505'){ NexusApp.toast('Reaction failed: ' + error.message, 'error'); return; }
-  const m = (MESSAGES[activeConvId]||[]).find(x=>x.id===msgId);
-  if(m){ m.reactions = m.reactions || {}; m.reactions[emoji] = (m.reactions[emoji]||0)+1; renderMessages(); }
+  // the realtime echo of this exact insert will arrive shortly after — the
+  // handler above recognizes it's our own write (matching user_id) and skips
+  // re-applying it, so this doesn't get double-counted or double-rendered
 }
 function openReactPicker(evt, msgId){
   evt.stopPropagation();

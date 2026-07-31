@@ -43,15 +43,17 @@ function recomputePendingPerModel(){
     item.outgoing = SHIPMENTS.filter(s => s.model===item.model && s.type==='Outgoing' && s.status==='Pending').reduce((s,x)=>s+x.qty,0);
   });
 }
+const refreshStockDebounced = NexusApp.debounce(async () => {
+  await loadStockFromBackend(); recomputePendingPerModel(); renderStockTable(); renderKPIs(); renderCharts();
+}, 400);
+const refreshShipmentsDebounced = NexusApp.debounce(async () => {
+  await loadShipmentsFromBackend(); recomputePendingPerModel(); renderStockTable(); renderShipments(); renderKPIs(); renderCharts();
+}, 400);
 function subscribeWarehouseRealtime(sb){
   if(whRealtimeChannel) sb.removeChannel(whRealtimeChannel);
   whRealtimeChannel = sb.channel('sagero-warehouse')
-    .on('postgres_changes', { event:'*', schema:'public', table:'warehouse_stock' }, async () => {
-      await loadStockFromBackend(); recomputePendingPerModel(); renderStockTable(); renderKPIs(); renderCharts();
-    })
-    .on('postgres_changes', { event:'*', schema:'public', table:'warehouse_shipments' }, async () => {
-      await loadShipmentsFromBackend(); recomputePendingPerModel(); renderStockTable(); renderShipments(); renderKPIs(); renderCharts();
-    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'warehouse_stock' }, () => refreshStockDebounced())
+    .on('postgres_changes', { event:'*', schema:'public', table:'warehouse_shipments' }, () => refreshShipmentsDebounced())
     .subscribe();
 }
 
