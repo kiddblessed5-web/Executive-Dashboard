@@ -7,10 +7,26 @@
 const NexusApp = (() => {
 
   /* ---------------- AUTH GUARD ---------------- */
+  const SESSION_CACHE_KEY = 'sagero_session_cache';
+  const SESSION_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — long enough that clicking through the app feels instant, short enough to pick up role/profile changes reasonably soon
+
   async function requireAuth(){
     if(SagoBackend?.isConfigured()){
+      // fast path: a recent, already-verified session means we skip both
+      // network round-trips (auth check + profile fetch) and show the page
+      // immediately, instead of flashing the loading overlay on every click
+      const cached = sessionStorage.getItem(SESSION_CACHE_KEY);
+      if(cached){
+        try{
+          const { session, cachedAt } = JSON.parse(cached);
+          if(Date.now() - cachedAt < SESSION_CACHE_TTL_MS) return session;
+        }catch(e){ /* fall through to a real check */ }
+      }
+
       const backendSession = await SagoBackend.getSession();
       if(!backendSession){
+        sessionStorage.removeItem(SESSION_CACHE_KEY);
+        localStorage.removeItem('nexus_session'); // clear the stale mirror too, or login.html's "already logged in" check bounces us right back here
         window.location.href = 'login.html';
         return null;
       }
@@ -22,6 +38,7 @@ const NexusApp = (() => {
         initials: (profile?.full_name || backendSession.user.email).split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase(),
       };
       localStorage.setItem('nexus_session', JSON.stringify(session)); // keeps other modules that still read this in sync
+      sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({ session, cachedAt: Date.now() }));
       return session;
     }
     const session = localStorage.getItem('nexus_session');
@@ -33,6 +50,7 @@ const NexusApp = (() => {
   }
 
   async function logout(){
+    sessionStorage.removeItem(SESSION_CACHE_KEY);
     if(SagoBackend?.isConfigured()) await SagoBackend.signOut();
     localStorage.removeItem('nexus_session');
     window.location.href = 'login.html';

@@ -134,7 +134,15 @@
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
 <script>
-  if(localStorage.getItem('nexus_session')){ window.location.href = 'index.html'; }
+  (async () => {
+    if(SagoBackend?.isConfigured()){
+      const session = await SagoBackend.getSession();
+      if(session) window.location.href = 'index.html';
+      else localStorage.removeItem('nexus_session'); // clear any stale mirror so we don't keep re-checking a dead session
+    } else if(localStorage.getItem('nexus_session')){
+      window.location.href = 'index.html';
+    }
+  })();
 
   document.addEventListener('DOMContentLoaded', () => {
     const banner = document.getElementById('modeBanner');
