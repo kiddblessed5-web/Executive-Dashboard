@@ -221,12 +221,17 @@ async function selectConversation(id){
   if(!MESSAGES[id]) await loadMessages(id);
   recomputeUnread(id);
   await markRead(id);
+  document.getElementById('chatEmptyState')?.classList.remove('show');
   renderConvList();
   renderActiveHeader();
   renderMessages();
   renderInfoPanel();
+  document.getElementById('msgShell')?.classList.add('mobile-chat-open'); // on mobile, swap to the full-screen chat view
   const input = document.getElementById('msgInput');
   if(input) input.focus();
+}
+function closeMobileChat(){
+  document.getElementById('msgShell')?.classList.remove('mobile-chat-open');
 }
 
 /* ---------------- RENDER: helpers ---------------- */
@@ -406,7 +411,13 @@ function renderMentions(text){
   });
 }
 function renderAttachment(att){
-  if(att.type === 'image') return `<div class="att-image"><i class="ri-image-2-line"></i><span>${att.label||'Photo'}</span></div>`;
+  if(att.type === 'image'){
+    if(att.url) return `<img src="${att.url}" class="att-image-real" alt="${att.name||'Photo'}" onclick="window.open('${att.url}','_blank')">`;
+    return `<div class="att-image"><i class="ri-image-2-line"></i><span>${att.label||'Photo'}</span></div>`; // legacy fake attachment
+  }
+  if(att.type === 'video'){
+    return `<video src="${att.url}" class="att-video-real" controls preload="metadata"></video>`;
+  }
   if(att.type === 'file') return `<div class="att-file"><div class="att-file-icon"><i class="ri-file-text-line"></i></div><div><b>${att.name}</b><small>${att.size}</small></div><i class="ri-download-2-line att-file-dl"></i></div>`;
   if(att.type === 'voice') return `<div class="att-voice" onclick="this.classList.toggle('playing')"><i class="ri-play-fill att-voice-icon"></i><div class="att-voice-wave">${Array.from({length:18}).map(()=>`<span style="height:${6+Math.round(Math.random()*16)}px"></span>`).join('')}</div><span class="att-voice-dur">${att.duration}</span></div>`;
   return '';
@@ -495,11 +506,76 @@ document.addEventListener('click', (e) => {
 function handleInputKey(e){ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } }
 function autoGrow(el){ el.style.height='auto'; el.style.height = Math.min(120, el.scrollHeight)+'px'; }
 function toggleAttachMenu(){ document.getElementById('attachMenu').classList.toggle('open'); }
+/* ---------------- REAL MEDIA UPLOAD (Supabase Storage) ---------------- */
+let pendingMediaType = null;
+function triggerMediaUpload(type){
+  document.getElementById('attachMenu').classList.remove('open');
+  if(!activeConvId) return;
+  if(!SagoBackend?.isConfigured()){
+    NexusApp.toast('Photo/video sharing needs the backend connected \u2014 see assets/js/supabase-client.js', 'error');
+    return;
+  }
+  pendingMediaType = type;
+  const input = document.getElementById('mediaFileInput');
+  input.accept = type === 'video' ? 'video/*' : 'image/*';
+  input.value = '';
+  input.click();
+}
+async function handleMediaFileSelected(e){
+  const file = e.target.files[0];
+  if(!file || !activeConvId) return;
+  const type = pendingMediaType;
+
+  const MAX_MB = 25;
+  if(file.size > MAX_MB * 1024 * 1024){
+    NexusApp.toast(`That file is too large \u2014 keep ${type}s under ${MAX_MB}MB`, 'error');
+    return;
+  }
+
+  const progressBar = document.getElementById('uploadProgressBar');
+  const progressFill = document.getElementById('uploadProgressFill');
+  progressBar.style.display = 'block';
+  progressFill.style.width = '15%';
+
+  try{
+    const sb = SagoBackend.getClient();
+    const ext = file.name.split('.').pop();
+    const path = `${activeConvId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    progressFill.style.width = '45%';
+    const { error: uploadErr } = await sb.storage.from('message-attachments').upload(path, file, { cacheControl:'3600', upsert:false });
+    if(uploadErr){ NexusApp.toast('Upload failed: ' + uploadErr.message, 'error'); progressBar.style.display = 'none'; return; }
+
+    progressFill.style.width = '75%';
+    const { data: urlData } = sb.storage.from('message-attachments').getPublicUrl(path);
+    const attachment = { type, url: urlData.publicUrl, name: file.name, size: fmtFileSize(file.size) };
+
+    const { data, error } = await sb.from('messages')
+      .insert({ conversation_id: activeConvId, sender_id: backendUserId, body:'', attachment })
+      .select().single();
+    progressFill.style.width = '100%';
+    if(error){ NexusApp.toast('Could not send: ' + error.message, 'error'); return; }
+
+    if(!MESSAGES[activeConvId]) MESSAGES[activeConvId] = [];
+    if(!MESSAGES[activeConvId].some(m => m.id === data.id)){
+      const mapped = mapDbMessage(data);
+      MESSAGES[activeConvId].push(mapped);
+      appendMessageDom(mapped);
+      renderConvList();
+    }
+  } finally {
+    setTimeout(() => { progressBar.style.display = 'none'; progressFill.style.width = '0%'; }, 300);
+  }
+}
+function fmtFileSize(bytes){
+  if(bytes < 1024*1024) return Math.round(bytes/1024) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
 async function attachMock(type){
   document.getElementById('attachMenu').classList.remove('open');
   if(!activeConvId) return;
   let attachment;
-  if(type==='image') attachment = { type:'image', label:'photo-'+Math.floor(Math.random()*900)+'.jpg' };
   if(type==='file') attachment = { type:'file', name:'shift-report.pdf', size:'188 KB' };
   if(type==='voice') attachment = { type:'voice', duration:'0:'+(10+Math.floor(Math.random()*40)) };
   const sb = SagoBackend.getClient();
@@ -616,6 +692,261 @@ function wireSidebarControls(){
 }
 
 /* ---------------- INIT ---------------- */
+/* ============================================================
+   CALLING — real peer-to-peer voice/video via WebRTC.
+   Signaling (offer/answer/ICE) rides on Supabase Realtime
+   Broadcast, scoped to each user's own channel, so calls work
+   the moment Messages is open regardless of which chat is active.
+   The audio/video itself never touches the server — it's a
+   direct connection between the two browsers.
+============================================================ */
+const ICE_SERVERS = { iceServers: [
+  { urls:'stun:stun.l.google.com:19302' },
+  { urls:'stun:stun1.l.google.com:19302' },
+] };
+const CALL_RING_TIMEOUT_MS = 30000;
+
+let myCallChannel = null;
+let outboundCallChannel = null, outboundCallChannelPeerId = null;
+let pc = null, localStream = null;
+let callState = 'idle'; // idle | calling | ringing | connecting | connected
+let currentPeerId = null, currentCallType = null, currentCallConvId = null;
+let pendingOffer = null, queuedIce = [];
+let callTimeoutHandle = null, callTimerHandle = null, callStartTime = null;
+
+function initCallSignaling(){
+  const sb = SagoBackend.getClient();
+  myCallChannel = sb.channel('user-calls-' + backendUserId)
+    .on('broadcast', { event:'offer' }, ({ payload }) => handleIncomingOffer(payload))
+    .on('broadcast', { event:'answer' }, ({ payload }) => handleAnswer(payload))
+    .on('broadcast', { event:'ice' }, ({ payload }) => handleRemoteIce(payload))
+    .on('broadcast', { event:'end' }, () => handleRemoteEnd())
+    .on('broadcast', { event:'decline' }, ({ payload }) => handleRemoteDecline(payload))
+    .subscribe();
+}
+function getOutboundChannel(toUserId){
+  if(outboundCallChannel && outboundCallChannelPeerId === toUserId) return Promise.resolve(outboundCallChannel);
+  if(outboundCallChannel) SagoBackend.getClient().removeChannel(outboundCallChannel);
+  const sb = SagoBackend.getClient();
+  const ch = sb.channel('user-calls-' + toUserId);
+  outboundCallChannel = ch;
+  outboundCallChannelPeerId = toUserId;
+  return new Promise(resolve => {
+    ch.subscribe((status) => { if(status === 'SUBSCRIBED') resolve(ch); });
+  });
+}
+async function sendSignal(toUserId, event, payload){
+  const ch = await getOutboundChannel(toUserId);
+  ch.send({ type:'broadcast', event, payload });
+}
+
+/* ---------------- OUTGOING ---------------- */
+async function startCall(type){
+  if(callState !== 'idle'){ NexusApp.toast('You\u2019re already in a call', 'error'); return; }
+  const conv = CONVERSATIONS.find(c => c.id === activeConvId);
+  if(!conv || conv.type !== 'dm'){ NexusApp.toast('Calls are only available in direct messages right now', 'error'); return; }
+  const peerId = conv.personId;
+  if(!peerId){ return; }
+
+  if(!navigator.mediaDevices?.getUserMedia){ NexusApp.toast('This browser doesn\u2019t support calling', 'error'); return; }
+
+  currentPeerId = peerId; currentCallType = type; currentCallConvId = activeConvId; callState = 'calling';
+
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video: type==='video' });
+  }catch(err){
+    NexusApp.toast('Could not access ' + (type==='video'?'camera/microphone':'microphone') + ' \u2014 check permissions', 'error');
+    callState = 'idle'; currentPeerId = null;
+    return;
+  }
+
+  showActiveCallUI('calling');
+  pc = createPeerConnection(peerId);
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  await sendSignal(peerId, 'offer', {
+    sdp: offer, callType: type, callerId: backendUserId,
+    callerName: getPerson(backendUserId).name, conversationId: activeConvId,
+  });
+
+  callTimeoutHandle = setTimeout(() => {
+    if(callState === 'calling'){ NexusApp.toast('No answer', 'info'); endCall(); }
+  }, CALL_RING_TIMEOUT_MS);
+}
+
+/* ---------------- INCOMING ---------------- */
+function handleIncomingOffer(payload){
+  if(callState !== 'idle'){ sendSignal(payload.callerId, 'decline', { reason:'busy' }); return; }
+  pendingOffer = payload;
+  currentPeerId = payload.callerId; currentCallType = payload.callType; currentCallConvId = payload.conversationId;
+  callState = 'ringing';
+  showIncomingCallUI(payload);
+
+  callTimeoutHandle = setTimeout(() => {
+    if(callState === 'ringing'){ declineCall(); }
+  }, CALL_RING_TIMEOUT_MS);
+}
+async function acceptCall(){
+  if(!pendingOffer) return;
+  const payload = pendingOffer;
+  clearTimeout(callTimeoutHandle);
+  hideIncomingCallUI();
+  callState = 'connecting';
+
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video: currentCallType==='video' });
+  }catch(err){
+    NexusApp.toast('Could not access ' + (currentCallType==='video'?'camera/microphone':'microphone') + ' \u2014 check permissions', 'error');
+    sendSignal(currentPeerId, 'decline', { reason:'no-media' });
+    cleanupCall();
+    return;
+  }
+
+  showActiveCallUI('connecting');
+  pc = createPeerConnection(currentPeerId);
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+  for(const c of queuedIce){ try{ await pc.addIceCandidate(new RTCIceCandidate(c)); }catch(e){} }
+  queuedIce = [];
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  await sendSignal(currentPeerId, 'answer', { sdp: answer });
+}
+function declineCall(){
+  if(pendingOffer) sendSignal(pendingOffer.callerId, 'decline', { reason:'declined' });
+  clearTimeout(callTimeoutHandle);
+  hideIncomingCallUI();
+  callState = 'idle';
+  currentPeerId = null; pendingOffer = null;
+}
+
+/* ---------------- PEER CONNECTION ---------------- */
+function createPeerConnection(peerId){
+  const conn = new RTCPeerConnection(ICE_SERVERS);
+  conn.onicecandidate = (e) => { if(e.candidate) sendSignal(peerId, 'ice', { candidate: e.candidate }); };
+  conn.ontrack = (e) => {
+    const stream = e.streams[0];
+    const videoEl = document.getElementById('callRemoteVideo');
+    const audioEl = document.getElementById('callRemoteAudio');
+    if(videoEl) videoEl.srcObject = stream;
+    if(audioEl) audioEl.srcObject = stream;
+  };
+  conn.onconnectionstatechange = () => {
+    if(conn.connectionState === 'connected') onCallConnected();
+    else if(['disconnected','failed','closed'].includes(conn.connectionState) && callState !== 'idle') endCall();
+  };
+  return conn;
+}
+async function handleAnswer(payload){
+  if(!pc) return;
+  await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+  for(const c of queuedIce){ try{ await pc.addIceCandidate(new RTCIceCandidate(c)); }catch(e){} }
+  queuedIce = [];
+}
+async function handleRemoteIce(payload){
+  if(pc && pc.remoteDescription){ try{ await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); }catch(e){} }
+  else queuedIce.push(payload.candidate);
+}
+function onCallConnected(){
+  callState = 'connected';
+  clearTimeout(callTimeoutHandle);
+  callStartTime = Date.now();
+  callTimerHandle = setInterval(updateCallTimer, 1000);
+  showActiveCallUI('connected');
+}
+function handleRemoteEnd(){ if(callState !== 'idle'){ NexusApp.toast('Call ended', 'info'); cleanupCall(); } }
+function handleRemoteDecline(payload){
+  NexusApp.toast(payload?.reason === 'busy' ? 'They\u2019re on another call' : 'Call declined', 'info');
+  cleanupCall();
+}
+
+/* ---------------- END / CLEANUP ---------------- */
+function endCall(){
+  if(currentPeerId) sendSignal(currentPeerId, 'end', {});
+  cleanupCall();
+}
+function cleanupCall(){
+  if(pc){ pc.close(); pc = null; }
+  if(localStream){ localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  clearTimeout(callTimeoutHandle);
+  clearInterval(callTimerHandle);
+  callState = 'idle';
+  currentPeerId = null; currentCallType = null; currentCallConvId = null; pendingOffer = null; queuedIce = [];
+  if(outboundCallChannel){ SagoBackend.getClient().removeChannel(outboundCallChannel); outboundCallChannel = null; outboundCallChannelPeerId = null; }
+  hideActiveCallUI();
+  hideIncomingCallUI();
+}
+
+/* ---------------- CONTROLS ---------------- */
+function toggleMute(){
+  if(!localStream) return;
+  const track = localStream.getAudioTracks()[0];
+  if(!track) return;
+  track.enabled = !track.enabled;
+  const btn = document.getElementById('muteBtn');
+  btn.classList.toggle('muted', !track.enabled);
+  btn.querySelector('i').className = track.enabled ? 'ri-mic-line' : 'ri-mic-off-line';
+}
+function toggleCamera(){
+  if(!localStream) return;
+  const track = localStream.getVideoTracks()[0];
+  if(!track) return;
+  track.enabled = !track.enabled;
+  const btn = document.getElementById('cameraBtn');
+  btn.classList.toggle('muted', !track.enabled);
+  btn.querySelector('i').className = track.enabled ? 'ri-vidicon-line' : 'ri-vidicon-off-line';
+  document.getElementById('callLocalVideo').style.opacity = track.enabled ? '1' : '0';
+}
+
+/* ---------------- UI ---------------- */
+function showIncomingCallUI(payload){
+  document.getElementById('incomingCallAvatar').textContent = initials(payload.callerName);
+  document.getElementById('incomingCallName').textContent = payload.callerName;
+  document.getElementById('incomingCallType').textContent = (payload.callType==='video'?'Incoming video call':'Incoming voice call') + '\u2026';
+  document.getElementById('incomingCallOverlay').classList.add('show');
+}
+function hideIncomingCallUI(){
+  document.getElementById('incomingCallOverlay').classList.remove('show');
+}
+function showActiveCallUI(state){
+  const person = getPerson(currentPeerId);
+  const overlay = document.getElementById('activeCallOverlay');
+  overlay.classList.add('show');
+  overlay.classList.toggle('video-mode', currentCallType === 'video');
+  document.getElementById('callAvatarLarge').textContent = initials(person.name);
+  document.getElementById('callPeerName').textContent = person.name;
+  document.getElementById('callStatusText').textContent = state === 'calling' ? 'Calling\u2026' : state === 'connecting' ? 'Connecting\u2026' : '00:00';
+  document.getElementById('cameraBtn').style.display = currentCallType === 'video' ? 'flex' : 'none';
+  const localVideo = document.getElementById('callLocalVideo');
+  if(currentCallType === 'video' && localStream){
+    localVideo.srcObject = localStream;
+    localVideo.style.display = 'block';
+  } else {
+    localVideo.style.display = 'none';
+  }
+}
+function hideActiveCallUI(){
+  const overlay = document.getElementById('activeCallOverlay');
+  overlay.classList.remove('show', 'video-mode');
+  document.getElementById('callRemoteVideo').srcObject = null;
+  document.getElementById('callRemoteAudio').srcObject = null;
+  document.getElementById('callLocalVideo').srcObject = null;
+  document.getElementById('muteBtn').classList.remove('muted');
+  document.getElementById('muteBtn').querySelector('i').className = 'ri-mic-line';
+  document.getElementById('cameraBtn').classList.remove('muted');
+}
+function updateCallTimer(){
+  const secs = Math.floor((Date.now() - callStartTime) / 1000);
+  const m = String(Math.floor(secs/60)).padStart(2,'0');
+  const s = String(secs%60).padStart(2,'0');
+  const el = document.getElementById('callStatusText');
+  if(el) el.textContent = `${m}:${s}`;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   if(didInit) return; // guards against this handler somehow firing twice and creating duplicate realtime channels
   didInit = true;
@@ -640,18 +971,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   for(const c of CONVERSATIONS) await loadMessages(c.id);
   CONVERSATIONS.forEach(c => recomputeUnread(c.id));
 
-  if(CONVERSATIONS.length){
-    activeConvId = CONVERSATIONS[0].id;
-    await markRead(activeConvId);
-  }
-
   subscribeRealtime();
+  initCallSignaling();
 
   renderOnlineNow();
   renderConvList();
-  if(activeConvId){ renderActiveHeader(); renderMessages(); renderInfoPanel(); }
+  document.getElementById('chatEmptyState')?.classList.add('show');
 });
 
 window.addEventListener('beforeunload', () => {
-  if(realtimeChannel && SagoBackend?.isConfigured()) SagoBackend.getClient().removeChannel(realtimeChannel);
+  if(!SagoBackend?.isConfigured()) return;
+  if(realtimeChannel) SagoBackend.getClient().removeChannel(realtimeChannel);
+  if(myCallChannel) SagoBackend.getClient().removeChannel(myCallChannel);
+  if(outboundCallChannel) SagoBackend.getClient().removeChannel(outboundCallChannel);
+  if(callState !== 'idle') endCall();
 });

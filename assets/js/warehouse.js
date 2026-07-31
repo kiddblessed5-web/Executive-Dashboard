@@ -2,7 +2,7 @@
    SAGERO CREATIONS — Warehouse module
 ============================================================ */
 
-const WH_MODELS = ['Vivo Y18','Vivo Y28','Vivo V30','Vivo Y36','Vivo X100','Vivo Y17s'];
+const WH_MODELS = ['Y17s','Y18','Y18t','Y28','Y36','Y50t','Y100','Y200','Y300','Y300 Plus','V30','V40','V50','V50 Pro','V50 Lite','V70','V70 Elite','X100','X200','X200 Ultra','X300','X300 Pro','X300 Ultra','T3','T4'];
 
 let STOCK = [];
 let SHIPMENTS = [];
@@ -18,6 +18,42 @@ function loadStock(){
   persistStock();
 }
 function persistStock(){ localStorage.setItem('nexus_warehouse_stock', JSON.stringify(STOCK)); }
+function persistShipments(){ localStorage.setItem('nexus_warehouse_shipments', JSON.stringify(SHIPMENTS)); }
+
+/* ============================================================
+   BACKEND MODE — real, shared warehouse (see backend_schema_phase3.sql)
+============================================================ */
+let whRealtimeChannel = null;
+
+async function loadStockFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('warehouse_stock').select('*').order('model');
+  if(error){ NexusApp.toast('Could not load stock: ' + error.message, 'error'); STOCK = []; return; }
+  STOCK = (data || []).map(row => ({ model: row.model, inStock: row.in_stock, threshold: row.reorder_threshold, incoming: 0, outgoing: 0 }));
+}
+async function loadShipmentsFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('warehouse_shipments').select('*').order('created_at', { ascending:false });
+  if(error){ NexusApp.toast('Could not load shipments: ' + error.message, 'error'); SHIPMENTS = []; return; }
+  SHIPMENTS = (data || []).map(row => ({ id: row.id, type: row.type, model: row.model, qty: row.qty, ref: row.reference, date: row.created_at, status: row.status }));
+}
+function recomputePendingPerModel(){
+  STOCK.forEach(item => {
+    item.incoming = SHIPMENTS.filter(s => s.model===item.model && s.type==='Incoming' && s.status==='Pending').reduce((s,x)=>s+x.qty,0);
+    item.outgoing = SHIPMENTS.filter(s => s.model===item.model && s.type==='Outgoing' && s.status==='Pending').reduce((s,x)=>s+x.qty,0);
+  });
+}
+function subscribeWarehouseRealtime(sb){
+  if(whRealtimeChannel) sb.removeChannel(whRealtimeChannel);
+  whRealtimeChannel = sb.channel('sagero-warehouse')
+    .on('postgres_changes', { event:'*', schema:'public', table:'warehouse_stock' }, async () => {
+      await loadStockFromBackend(); recomputePendingPerModel(); renderStockTable(); renderKPIs(); renderCharts();
+    })
+    .on('postgres_changes', { event:'*', schema:'public', table:'warehouse_shipments' }, async () => {
+      await loadShipmentsFromBackend(); recomputePendingPerModel(); renderStockTable(); renderShipments(); renderKPIs(); renderCharts();
+    })
+    .subscribe();
+}
 
 function loadShipments(){
   const saved = localStorage.getItem('nexus_warehouse_shipments');
@@ -37,7 +73,6 @@ function loadShipments(){
   SHIPMENTS.sort((a,b)=> new Date(b.date)-new Date(a.date));
   persistShipments();
 }
-function persistShipments(){ localStorage.setItem('nexus_warehouse_shipments', JSON.stringify(SHIPMENTS)); }
 
 function fmtDate(iso){ return new Date(iso).toLocaleDateString('en-GB',{ day:'2-digit', month:'short', year:'numeric' }); }
 function stockStatus(item){
@@ -141,7 +176,7 @@ function renderShipments(){
       <td>${s.status==='Pending' ? `<button class="btn btn-secondary btn-sm" onclick="completeShipment('${s.id}')"><i class="ri-check-line"></i>Mark received</button>` : ''}</td>
     </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--ink-faint);padding:24px;">No shipments in this view</td></tr>`;
 }
-function completeShipment(id){
+async function completeShipment(id){
   const s = SHIPMENTS.find(x=>x.id===id);
   if(!s) return;
   s.status = 'Completed';
@@ -150,28 +185,56 @@ function completeShipment(id){
     if(s.type==='Incoming') stockItem.inStock += s.qty;
     else stockItem.inStock = Math.max(0, stockItem.inStock - s.qty);
   }
-  persistShipments();
-  persistStock();
+  recomputePendingPerModel();
   renderShipments();
   renderStockTable();
   renderKPIs();
   renderCharts();
   NexusApp.toast(`${s.ref} marked received — stock updated`, 'success');
+
+  if(SagoBackend?.isConfigured()){
+    const sb = SagoBackend.getClient();
+    const { error: e1 } = await sb.from('warehouse_shipments').update({ status:'Completed' }).eq('id', id);
+    const { error: e2 } = await sb.from('warehouse_stock').update({ in_stock: stockItem.inStock, updated_at: new Date().toISOString() }).eq('model', s.model);
+    if(e1 || e2) NexusApp.toast('Could not save on server: ' + (e1?.message || e2?.message), 'error');
+  } else {
+    persistShipments();
+    persistStock();
+  }
 }
 
 /* ---------------- NEW SHIPMENT MODAL ---------------- */
 function openNewShipmentModal(){ NexusApp.openModal('modal-newshipment'); }
-function submitNewShipment(e){
+async function submitNewShipment(e){
   e.preventDefault();
   const type = document.getElementById('ns-type').value;
   const model = document.getElementById('ns-model').value;
   const qty = parseInt(document.getElementById('ns-qty').value, 10);
   const ref = document.getElementById('ns-ref').value.trim();
   if(!qty || qty < 1){ NexusApp.toast('Enter a valid quantity', 'error'); return; }
+  const reference = ref || (type==='Incoming'?'BX-NEW':'ORD-NEW');
+
+  if(SagoBackend?.isConfigured()){
+    const sb = SagoBackend.getClient();
+    const session = await SagoBackend.getSession();
+    const { data, error } = await sb.from('warehouse_shipments').insert({
+      type, model, qty, reference, status:'Pending', created_by: session?.user?.id || null,
+    }).select().single();
+    if(error){ NexusApp.toast('Could not log shipment: ' + error.message, 'error'); return; }
+    SHIPMENTS.unshift({ id:data.id, type:data.type, model:data.model, qty:data.qty, ref:data.reference, date:data.created_at, status:data.status });
+    recomputePendingPerModel();
+    NexusApp.closeModal('modal-newshipment');
+    renderShipments();
+    renderStockTable();
+    renderKPIs();
+    e.target.reset();
+    NexusApp.toast('Shipment logged', 'success');
+    return;
+  }
 
   const shipment = {
     id:'SH-'+(5001+SHIPMENTS.length+Math.floor(Math.random()*90)),
-    type, model, qty, ref: ref || (type==='Incoming'?'BX-NEW':'ORD-NEW'),
+    type, model, qty, ref: reference,
     date:new Date().toISOString(), status:'Pending',
   };
   SHIPMENTS.unshift(shipment);
@@ -194,12 +257,25 @@ function exportStockXLSX(){
   NexusApp.toast('Stock levels exported', 'success');
 }
 
+let whDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
+  if(whDidInit) return;
+  whDidInit = true;
+
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('warehouse.html', session);
-  loadStock();
-  loadShipments();
+
+  if(SagoBackend?.isConfigured()){
+    await loadStockFromBackend();
+    await loadShipmentsFromBackend();
+    recomputePendingPerModel();
+    subscribeWarehouseRealtime(SagoBackend.getClient());
+  } else {
+    loadStock();
+    loadShipments();
+  }
+
   document.querySelectorAll('.ship-tab').forEach(t => t.addEventListener('click', () => setShipmentTab(t.dataset.tab)));
   renderKPIs();
   renderCharts();

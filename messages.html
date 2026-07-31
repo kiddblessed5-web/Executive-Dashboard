@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Messages — Sagero Creations</title>
+<title>Messages — SAGERO Creations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/img/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/img/favicon-180.png">
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
   .msg-shell{ display:grid; grid-template-columns:290px 1fr 280px; height:calc(100vh - 140px); min-height:560px; background:var(--card); border-radius:var(--radius-card); box-shadow:var(--shadow); overflow:hidden; }
@@ -54,6 +57,14 @@
   /* ---------- middle: chat area ---------- */
   .chat-area{ display:flex; flex-direction:column; min-width:0; min-height:0; position:relative; }
   .chat-header{ display:flex; align-items:center; gap:12px; padding:14px 20px; border-bottom:1px solid var(--border); }
+  .chat-empty-state{
+    position:absolute; inset:0; z-index:5; display:none; flex-direction:column; align-items:center; justify-content:center;
+    gap:6px; background:var(--card); text-align:center; padding:20px;
+  }
+  .chat-empty-state.show{ display:flex; }
+  .chat-empty-icon{ width:56px; height:56px; border-radius:16px; background:var(--grad-soft); color:var(--primary-3); display:flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:6px; }
+  .chat-empty-state b{ font-size:14px; }
+  .chat-empty-state span{ font-size:12.5px; color:var(--ink-faint); max-width:220px; }
   .status-dot-inline{ width:8px; height:8px; border-radius:50%; margin-right:5px; display:inline-block; }
   .status-dot-inline.online{ background:var(--success); }
   .status-dot-inline.offline{ background:var(--ink-faint); }
@@ -103,6 +114,8 @@
   .msg-hover-actions button:hover{ background:var(--grad-soft); color:var(--primary-3); }
 
   .att-image{ display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.06); border-radius:12px; padding:20px; font-size:12px; font-weight:700; flex-direction:column; min-width:140px; }
+  .att-image-real{ max-width:260px; max-height:260px; border-radius:12px; display:block; cursor:pointer; }
+  .att-video-real{ max-width:280px; max-height:280px; border-radius:12px; display:block; }
   .att-image i{ font-size:26px; }
   .att-file{ display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px; min-width:200px; }
   .msg-row.me .att-file{ background:rgba(255,255,255,0.14); border-color:transparent; }
@@ -135,6 +148,8 @@
   @keyframes typingBounce{ 0%,60%,100%{ transform:translateY(0); opacity:.4; } 30%{ transform:translateY(-4px); opacity:1; } }
 
   .composer{ border-top:1px solid var(--border); padding:12px 16px; position:relative; }
+  .upload-progress-bar{ height:3px; background:var(--grad-soft); border-radius:3px; margin-bottom:8px; overflow:hidden; }
+  .upload-progress-fill{ height:100%; width:0%; background:var(--grad); transition:width .2s ease; }
   .composer-inner{ display:flex; align-items:flex-end; gap:8px; background:var(--grad-soft); border-radius:16px; padding:8px 8px 8px 14px; }
   .composer-inner textarea{ flex:1; border:none; outline:none; background:none; resize:none; font-family:inherit; font-size:13px; color:var(--ink); max-height:120px; padding:6px 0; line-height:1.4; }
   .composer-btn{ width:34px; height:34px; border-radius:10px; border:none; background:none; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -195,25 +210,85 @@
   .compose-new{ font-size:10.5px; font-weight:700; color:var(--primary-3); background:var(--grad-soft); padding:4px 10px; border-radius:20px; flex-shrink:0; }
   .compose-existing{ font-size:10.5px; font-weight:700; color:var(--ink-faint); flex-shrink:0; }
 
+  .mobile-back-btn{ display:none; flex-shrink:0; }
+  /* ---------------- CALLING ---------------- */
+  .incoming-call-overlay{
+    position:fixed; top:20px; right:20px; z-index:10001; display:none;
+    animation: slideInCall .3s var(--ease);
+  }
+  .incoming-call-overlay.show{ display:block; }
+  @keyframes slideInCall{ from{ transform:translateX(20px); opacity:0; } to{ transform:translateX(0); opacity:1; } }
+  .incoming-call-card{
+    background:var(--card); border-radius:20px; box-shadow:var(--shadow-lg); padding:20px 24px;
+    display:flex; flex-direction:column; align-items:center; gap:6px; width:220px; text-align:center;
+  }
+  .incoming-call-avatar{
+    width:56px; height:56px; border-radius:50%; background:var(--grad); color:#fff; font-family:'Inter Tight'; font-weight:800; font-size:18px;
+    display:flex; align-items:center; justify-content:center; margin-bottom:6px; animation:callRingPulse 1.3s ease-in-out infinite;
+  }
+  @keyframes callRingPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.1); } }
+  .incoming-call-card b{ font-size:14px; }
+  .incoming-call-card span{ font-size:12px; color:var(--ink-faint); margin-bottom:10px; }
+  .incoming-call-actions{ display:flex; gap:14px; }
+  .call-action-btn{
+    width:46px; height:46px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; font-size:19px; color:#fff;
+  }
+  .call-action-btn.accept{ background:var(--success); }
+  .call-action-btn.decline{ background:var(--danger); transform:rotate(135deg); }
+
+  .active-call-overlay{
+    position:fixed; inset:0; z-index:10000; background:#14162B; display:none;
+    align-items:center; justify-content:center; flex-direction:column;
+  }
+  .active-call-overlay.show{ display:flex; }
+  .active-call-overlay.video-mode #callRemoteVideo{ display:block; }
+  #callRemoteVideo{ display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#0c0d1a; }
+  .call-audio-view{ position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:8px; color:#fff; }
+  .active-call-overlay.video-mode .call-audio-view{ display:none; }
+  .call-avatar-large{
+    width:100px; height:100px; border-radius:50%; background:var(--grad); display:flex; align-items:center; justify-content:center;
+    font-family:'Inter Tight'; font-weight:800; font-size:32px; margin-bottom:8px;
+  }
+  .call-audio-view b{ font-size:19px; font-family:'Inter Tight'; }
+  .call-audio-view span{ font-size:13px; opacity:.7; }
+  .call-local-pip{
+    position:absolute; bottom:110px; right:24px; width:120px; height:160px; border-radius:16px; object-fit:cover; z-index:3;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4); background:#000;
+  }
+  .call-controls{ position:absolute; bottom:32px; left:50%; transform:translateX(-50%); z-index:4; display:flex; gap:16px; }
+  .call-ctrl-btn{
+    width:52px; height:52px; border-radius:50%; border:none; background:rgba(255,255,255,0.14); color:#fff; font-size:20px;
+    display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px);
+  }
+  .call-ctrl-btn.muted{ background:#fff; color:#14162B; }
+  .call-ctrl-btn.end{ background:var(--danger); transform:rotate(135deg); }
+
   @media (max-width:1200px){ .msg-shell{ grid-template-columns:280px 1fr; } .info-panel{ display:none; } }
-  @media (max-width:900px){ .msg-shell{ grid-template-columns:1fr; } .conv-panel{ display:none; } }
+  @media (max-width:900px){
+    .msg-shell{ grid-template-columns:1fr; }
+    .chat-area{ display:none; }
+    .mobile-back-btn{ display:flex; }
+    /* once a chat is opened, swap to showing it full-screen with a way back */
+    .msg-shell.mobile-chat-open .conv-panel{ display:none; }
+    .msg-shell.mobile-chat-open .chat-area{ display:flex; }
+  }
 </style>
 </head>
-<body>
+<body class="auth-checking">
 
 <div class="app-shell">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-mark">SC</div>
-      <div class="brand-text"><span class="brand-name">Sagero</span><span class="brand-sub">CREATIONS</span></div>
+      <div class="brand-mark"><img src="assets/img/logo-mark.png" alt="SAGERO Creations"></div>
+      <div class="brand-text"><span class="brand-name">SAGERO</span><span class="brand-sub">CREATIONS</span></div>
       <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
     </div>
     <nav class="sidebar-scroll" id="sidebarNav"></nav>
     <div class="sidebar-footer">
       <div class="dropdown-wrap">
         <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
-          <div class="user-avatar" id="userChipAvatar">AK</div>
-          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <div class="user-avatar" id="userChipAvatar">SA</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">SAGERO</div><div class="user-role" id="userChipRole">Production Manager</div></div>
           <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
         </div>
         <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
@@ -230,7 +305,7 @@
     <div class="topbar">
       <div class="topbar-left">
         <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
-        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Sagero</span><i class="ri-arrow-right-s-line"></i><span>Communication</span><i class="ri-arrow-right-s-line"></i><b>Messages</b></div>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>SAGERO</span><i class="ri-arrow-right-s-line"></i><span>Communication</span><i class="ri-arrow-right-s-line"></i><b>Messages</b></div>
       </div>
       <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
       <div class="topbar-right">
@@ -275,15 +350,22 @@
 
         <!-- MIDDLE: chat -->
         <div class="chat-area" id="chatArea">
+          <div class="chat-empty-state" id="chatEmptyState">
+            <div class="chat-empty-icon"><i class="ri-chat-3-line"></i></div>
+            <b>Select a conversation</b>
+            <span>Choose a chat from the list to start messaging.</span>
+          </div>
+
           <div class="chat-header">
+            <button class="icon-btn mobile-back-btn" id="mobileBackBtn" data-tip="Back to chats" onclick="closeMobileChat()"><i class="ri-arrow-left-line"></i></button>
             <div class="avatar" id="activeAvatar" style="width:38px;height:38px;font-size:13px;"></div>
             <div class="chat-header-meta">
               <b id="activeName">—</b>
               <div><span class="status-dot-inline" id="activeStatusDot"></span><span id="activeSub"></span></div>
             </div>
             <div class="chat-header-actions">
-              <button class="icon-btn" style="width:34px;height:34px;" data-tip="Voice call" onclick="NexusApp.toast('Starting voice call (demo)','info')"><i class="ri-phone-line"></i></button>
-              <button class="icon-btn" style="width:34px;height:34px;" data-tip="Video call" onclick="NexusApp.toast('Starting video call (demo)','info')"><i class="ri-vidicon-line"></i></button>
+              <button class="icon-btn" style="width:34px;height:34px;" data-tip="Voice call" onclick="startCall('audio')"><i class="ri-phone-line"></i></button>
+              <button class="icon-btn" style="width:34px;height:34px;" data-tip="Video call" onclick="startCall('video')"><i class="ri-vidicon-line"></i></button>
               <button class="icon-btn" style="width:34px;height:34px;" data-tip="Group info" onclick="toggleInfoPanel()"><i class="ri-information-line"></i></button>
             </div>
           </div>
@@ -310,10 +392,13 @@
             </div>
 
             <div class="popover" id="attachMenu">
-              <div class="attach-opt" onclick="attachMock('image')"><i class="ri-image-2-line"></i>Image</div>
+              <div class="attach-opt" onclick="triggerMediaUpload('image')"><i class="ri-image-2-line"></i>Photo</div>
+              <div class="attach-opt" onclick="triggerMediaUpload('video')"><i class="ri-video-line"></i>Video</div>
               <div class="attach-opt" onclick="attachMock('file')"><i class="ri-file-text-line"></i>File</div>
               <div class="attach-opt" onclick="attachMock('voice')"><i class="ri-mic-line"></i>Voice note</div>
             </div>
+            <input type="file" id="mediaFileInput" accept="image/*" style="display:none;" onchange="handleMediaFileSelected(event)">
+            <div class="upload-progress-bar" id="uploadProgressBar" style="display:none;"><div class="upload-progress-fill" id="uploadProgressFill"></div></div>
             <div class="popover" id="emojiPopover"></div>
             <div class="popover" id="mentionPopover"></div>
           </div>
@@ -377,6 +462,39 @@
   <div class="modal-head"><h3>New message</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-compose')"><i class="ri-close-line"></i></button></div>
   <div class="compose-search"><i class="ri-search-line"></i><input id="composeSearch" placeholder="Search people by name or role…"></div>
   <div class="compose-list" id="composeList"></div>
+</div>
+
+<!-- INCOMING CALL -->
+<div class="incoming-call-overlay" id="incomingCallOverlay">
+  <div class="incoming-call-card">
+    <div class="incoming-call-avatar" id="incomingCallAvatar"></div>
+    <b id="incomingCallName">—</b>
+    <span id="incomingCallType">Incoming call…</span>
+    <div class="incoming-call-actions">
+      <button class="call-action-btn decline" data-tip="Decline" onclick="declineCall()"><i class="ri-phone-line"></i></button>
+      <button class="call-action-btn accept" data-tip="Accept" onclick="acceptCall()"><i class="ri-phone-line"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVE CALL -->
+<div class="active-call-overlay" id="activeCallOverlay">
+  <video id="callRemoteVideo" autoplay playsinline></video>
+  <audio id="callRemoteAudio" autoplay></audio>
+
+  <div class="call-audio-view" id="callAudioView">
+    <div class="call-avatar-large" id="callAvatarLarge">—</div>
+    <b id="callPeerName">—</b>
+    <span id="callStatusText">Calling…</span>
+  </div>
+
+  <video id="callLocalVideo" autoplay playsinline muted class="call-local-pip" style="display:none;"></video>
+
+  <div class="call-controls">
+    <button class="call-ctrl-btn" id="muteBtn" data-tip="Mute" onclick="toggleMute()"><i class="ri-mic-line"></i></button>
+    <button class="call-ctrl-btn" id="cameraBtn" data-tip="Camera" onclick="toggleCamera()" style="display:none;"><i class="ri-vidicon-line"></i></button>
+    <button class="call-ctrl-btn end" data-tip="End call" onclick="endCall()"><i class="ri-phone-line"></i></button>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

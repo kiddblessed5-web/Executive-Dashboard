@@ -123,12 +123,12 @@ create policy "Users can update their own profile" on profiles for update using 
 create policy "Members can view their conversations" on conversations for select using (
   is_conversation_member(id, auth.uid())
 );
-create policy "Signed-in users can create conversations" on conversations for insert with check (auth.role() = 'authenticated');
+create policy "Signed-in users can create conversations" on conversations for insert to authenticated with check (true);
 
 create policy "Members can view membership rows for their conversations" on conversation_members for select using (
   is_conversation_member(conversation_id, auth.uid())
 );
-create policy "Signed-in users can add members" on conversation_members for insert with check (auth.role() = 'authenticated');
+create policy "Signed-in users can add members" on conversation_members for insert to authenticated with check (true);
 create policy "Members can remove their own membership" on conversation_members for delete using (auth.uid() = user_id);
 create policy "Members can update their own last_read_at" on conversation_members for update using (auth.uid() = user_id);
 

@@ -2,7 +2,7 @@
    SAGERO CREATIONS — Audit Logs module
 ============================================================ */
 
-const AUDIT_USERS = ['Alex Kimani','Wei Zhang','Li Chen','HR Desk','Kevin Otieno','Grace Achieng','System'];
+const AUDIT_USERS = ['SAGERO','Wei Zhang','Li Chen','HR Desk','Kevin Otieno','Grace Achieng','System'];
 const AUDIT_CATEGORIES = ['Production','People','Payroll','Messages','Quality Control','Inventory','Settings','Security'];
 
 const AUDIT_TEMPLATES = [
@@ -48,6 +48,25 @@ function seedAuditLog(){
 }
 function persistAuditLog(){ localStorage.setItem('nexus_audit_log', JSON.stringify(AUDIT_LOG)); }
 
+/* ============================================================
+   BACKEND MODE — real audit trail (see backend_schema_phase4.sql)
+============================================================ */
+async function loadAuditLogFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('audit_log').select('*').order('created_at', { ascending:false }).limit(500);
+  if(error){ NexusApp.toast('Could not load audit log: ' + error.message, 'error'); AUDIT_LOG = []; return; }
+  AUDIT_LOG = (data || []).map(row => ({
+    id: row.id, user: row.actor_name, category: row.category, icon: categoryIcon(row.category),
+    text: row.event_text, time: row.created_at, ip: row.ip_address || '—',
+  }));
+}
+function categoryIcon(cat){
+  const map = { Production:'ri-smartphone-line', People:'ri-user-add-line', Payroll:'ri-money-dollar-circle-line',
+    Messages:'ri-chat-3-line', 'Quality Control':'ri-shield-check-line', Inventory:'ri-qr-scan-2-line',
+    Settings:'ri-settings-4-line', Security:'ri-login-box-line' };
+  return map[cat] || 'ri-information-line';
+}
+
 function fmtDateTime(iso){ return new Date(iso).toLocaleString('en-GB',{ day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }); }
 function isToday(iso){ return new Date(iso).toDateString() === new Date().toDateString(); }
 
@@ -70,7 +89,10 @@ let filters = { search:'', category:'all', user:'all' };
 
 function populateFilters(){
   const userSel = document.getElementById('filterUser');
-  userSel.innerHTML = '<option value="all">All users</option>' + AUDIT_USERS.map(u=>`<option>${u}</option>`).join('');
+  const users = SagoBackend?.isConfigured()
+    ? [...new Set(AUDIT_LOG.map(a=>a.user))].sort()
+    : AUDIT_USERS;
+  userSel.innerHTML = '<option value="all">All users</option>' + users.map(u=>`<option>${u}</option>`).join('');
 }
 
 function getFiltered(){
@@ -147,11 +169,21 @@ function wireToolbar(){
   document.getElementById('filterUser').addEventListener('change', e => { filters.user = e.target.value; renderList(); });
 }
 
+let auditDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
+  if(auditDidInit) return;
+  auditDidInit = true;
+
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('audit.html', session);
-  seedAuditLog();
+
+  if(SagoBackend?.isConfigured()){
+    await loadAuditLogFromBackend();
+  } else {
+    seedAuditLog();
+  }
+
   populateFilters();
   renderCategoryChips();
   wireToolbar();

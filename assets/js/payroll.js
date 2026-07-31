@@ -39,6 +39,16 @@ function loadAttendanceSource(){
   ATT_DATA = saved ? JSON.parse(saved) : {};
   seedAttendanceIfMissing();
 }
+async function loadAttendanceSourceFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('attendance').select('*');
+  ATT_DATA = {};
+  if(error){ NexusApp.toast('Could not load attendance for payroll: ' + error.message, 'error'); return; }
+  (data || []).forEach(row => {
+    if(!ATT_DATA[row.work_date]) ATT_DATA[row.work_date] = {};
+    ATT_DATA[row.work_date][row.worker_id] = { status: row.status };
+  });
+}
 function persistAttendanceSource(){ localStorage.setItem('nexus_attendance', JSON.stringify(ATT_DATA)); }
 function seedAttendanceIfMissing(){
   let changed = false;
@@ -145,7 +155,20 @@ function calcPeriodPayroll(){
 
 /* ---------------- PAYMENT RUNS ---------------- */
 let PAYROLL_RUNS = {};
-function loadRuns(){
+async function loadRuns(){
+  if(SagoBackend?.isConfigured()){
+    const sb = SagoBackend.getClient();
+    const { data, error } = await sb.from('payroll_runs').select('*');
+    if(error){ NexusApp.toast('Could not load payroll history: ' + error.message, 'error'); PAYROLL_RUNS = {}; return; }
+    PAYROLL_RUNS = {};
+    (data || []).forEach(r => {
+      PAYROLL_RUNS[r.period_type + ':' + r.period_key] = {
+        periodType: r.period_type, periodKey: r.period_key, label: r.label,
+        total: Number(r.total), workers: r.workers_paid, runDate: r.run_at, status: r.status,
+      };
+    });
+    return;
+  }
   const saved = localStorage.getItem('nexus_payroll_runs');
   PAYROLL_RUNS = saved ? JSON.parse(saved) : {};
 }
@@ -153,18 +176,35 @@ function persistRuns(){ localStorage.setItem('nexus_payroll_runs', JSON.stringif
 function runKey(){ return periodType + ':' + getPeriodKey(); }
 function isPeriodPaid(){ return !!PAYROLL_RUNS[runKey()]; }
 
-function runPayroll(){
+async function runPayroll(){
   const payroll = calcPeriodPayroll();
   const total = payroll.reduce((s,p)=>s+p.netPay, 0);
   const btn = document.getElementById('runPayrollBtn');
   btn.disabled = true;
   btn.innerHTML = '<i class="ri-loader-4-line" style="animation:spin .7s linear infinite;"></i> Processing…';
 
+  const record = {
+    periodType, periodKey:getPeriodKey(), label:getPeriodLabel(),
+    total, workers: payroll.length, runDate: new Date().toISOString(), status:'Paid'
+  };
+
+  if(SagoBackend?.isConfigured()){
+    const sb = SagoBackend.getClient();
+    const session = await SagoBackend.getSession();
+    const { error } = await sb.from('payroll_runs').upsert({
+      period_type: record.periodType, period_key: record.periodKey, label: record.label,
+      total: record.total, workers_paid: record.workers, status: 'Paid',
+      run_by: session?.user?.id || null, run_at: record.runDate,
+    }, { onConflict: 'period_type,period_key' });
+    if(error){ NexusApp.toast('Could not save payroll run: ' + error.message, 'error'); btn.disabled = false; return; }
+    PAYROLL_RUNS[runKey()] = record;
+    NexusApp.toast(`Payroll processed — ${money(total)} paid to ${payroll.length} workers`, 'success');
+    renderAll();
+    return;
+  }
+
   setTimeout(() => {
-    PAYROLL_RUNS[runKey()] = {
-      periodType, periodKey:getPeriodKey(), label:getPeriodLabel(),
-      total, workers: payroll.length, runDate: new Date().toISOString(), status:'Paid'
-    };
+    PAYROLL_RUNS[runKey()] = record;
     persistRuns();
     NexusApp.toast(`Payroll processed — ${money(total)} paid to ${payroll.length} workers`, 'success');
     renderAll();
@@ -394,8 +434,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('payroll.html', session);
-  loadAttendanceSource();
-  loadRuns();
+
+  if(SagoBackend?.isConfigured()){
+    await loadAttendanceSourceFromBackend();
+  } else {
+    loadAttendanceSource();
+  }
+  await loadRuns();
+
   wireToolbar();
   renderAll();
 });

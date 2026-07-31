@@ -34,6 +34,14 @@ create table if not exists batches (
   updated_at timestamptz not null default now()
 );
 
+create or replace function set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
 drop trigger if exists trg_batches_updated_at on batches;
 create trigger trg_batches_updated_at
   before update on batches

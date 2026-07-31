@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reports — Sagero Creations</title>
+<title>Reports — SAGERO Creations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/img/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/img/favicon-180.png">
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
   .report-tabs{ display:flex; gap:6px; background:var(--grad-soft); padding:5px; border-radius:14px; overflow-x:auto; margin-bottom:18px; }
@@ -45,21 +48,21 @@
   @media (max-width:1080px){ .kpi-row{ grid-template-columns:repeat(2,1fr); } .report-chart-grid{ grid-template-columns:1fr; } }
 </style>
 </head>
-<body>
+<body class="auth-checking">
 
 <div class="app-shell">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-mark">SC</div>
-      <div class="brand-text"><span class="brand-name">Sagero</span><span class="brand-sub">CREATIONS</span></div>
+      <div class="brand-mark"><img src="assets/img/logo-mark.png" alt="SAGERO Creations"></div>
+      <div class="brand-text"><span class="brand-name">SAGERO</span><span class="brand-sub">CREATIONS</span></div>
       <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
     </div>
     <nav class="sidebar-scroll" id="sidebarNav"></nav>
     <div class="sidebar-footer">
       <div class="dropdown-wrap">
         <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
-          <div class="user-avatar" id="userChipAvatar">AK</div>
-          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <div class="user-avatar" id="userChipAvatar">SA</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">SAGERO</div><div class="user-role" id="userChipRole">Production Manager</div></div>
           <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
         </div>
         <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
@@ -76,7 +79,7 @@
     <div class="topbar">
       <div class="topbar-left">
         <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
-        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Sagero</span><i class="ri-arrow-right-s-line"></i><span>Analytics</span><i class="ri-arrow-right-s-line"></i><b>Reports</b></div>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>SAGERO</span><i class="ri-arrow-right-s-line"></i><span>Analytics</span><i class="ri-arrow-right-s-line"></i><b>Reports</b></div>
       </div>
       <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
       <div class="topbar-right">
@@ -92,7 +95,7 @@
 
     <div class="content" id="printable">
       <div class="section-head fade-up">
-        <div><div class="section-title">Reports</div><div class="section-sub">Production, attendance, payroll, manager and worker analytics — pulled from live data across Sagero.</div></div>
+        <div><div class="section-title">Reports</div><div class="section-sub">Production, attendance, payroll, manager and worker analytics — pulled from live data across SAGERO.</div></div>
       </div>
 
       <div class="report-tabs fade-up">

@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Phone Batches — Sagero Creations</title>
+<title>Phone Batches — SAGERO Creations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/img/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/img/favicon-180.png">
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
   .batch-toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
@@ -26,7 +29,15 @@
 
   /* grid */
   #view-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
-  .batch-card{ background:var(--card); border-radius:var(--radius-card); box-shadow:var(--shadow); padding:20px; cursor:pointer; transition: transform .18s var(--ease), box-shadow .18s var(--ease); }
+  .batch-card{ background:var(--card); border-radius:var(--radius-card); box-shadow:var(--shadow); padding:20px; cursor:pointer; transition: transform .18s var(--ease), box-shadow .18s var(--ease); position:relative; }
+  .batch-card-remove{
+    position:absolute; top:-9px; right:-9px; width:26px; height:26px; border-radius:50%;
+    background:var(--card); border:1px solid var(--border); color:var(--ink-faint); box-shadow:var(--shadow-sm);
+    display:flex; align-items:center; justify-content:center; font-size:14px;
+    opacity:0; transition:.15s var(--ease); z-index:2;
+  }
+  .batch-card:hover .batch-card-remove{ opacity:1; }
+  .batch-card-remove:hover{ background:var(--danger-soft); color:var(--danger); border-color:transparent; }
   .batch-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-lg); }
   .batch-card-top{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
   .batch-id{ font-family:'Inter Tight'; font-size:15.5px; font-weight:800; }
@@ -96,21 +107,21 @@
   @media (max-width:720px){ #view-grid{ grid-template-columns:1fr; } .drawer-meta-grid{ grid-template-columns:1fr; } }
 </style>
 </head>
-<body>
+<body class="auth-checking">
 
 <div class="app-shell">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-mark">SC</div>
-      <div class="brand-text"><span class="brand-name">Sagero</span><span class="brand-sub">CREATIONS</span></div>
+      <div class="brand-mark"><img src="assets/img/logo-mark.png" alt="SAGERO Creations"></div>
+      <div class="brand-text"><span class="brand-name">SAGERO</span><span class="brand-sub">CREATIONS</span></div>
       <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
     </div>
     <nav class="sidebar-scroll" id="sidebarNav"></nav>
     <div class="sidebar-footer">
       <div class="dropdown-wrap">
         <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
-          <div class="user-avatar" id="userChipAvatar">AK</div>
-          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <div class="user-avatar" id="userChipAvatar">SA</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">SAGERO</div><div class="user-role" id="userChipRole">Production Manager</div></div>
           <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
         </div>
         <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
@@ -127,7 +138,7 @@
     <div class="topbar">
       <div class="topbar-left">
         <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
-        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Sagero</span><i class="ri-arrow-right-s-line"></i><span>Production</span><i class="ri-arrow-right-s-line"></i><b>Phone Batches</b></div>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>SAGERO</span><i class="ri-arrow-right-s-line"></i><span>Production</span><i class="ri-arrow-right-s-line"></i><b>Phone Batches</b></div>
       </div>
       <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
       <div class="topbar-right">
@@ -198,7 +209,7 @@
     <div class="field"><label>Phone model</label>
       <select id="nb-model" required>
         <option value="">Select model…</option>
-        <option>Y18</option><option>Y28</option><option>V30</option><option>Y36</option><option>X100</option><option>Y17s</option>
+        <option>Y17s</option><option>Y18</option><option>Y18t</option><option>Y28</option><option>Y36</option><option>Y50t</option><option>Y100</option><option>Y200</option><option>Y300</option><option>Y300 Plus</option><option>V30</option><option>V40</option><option>V50</option><option>V50 Pro</option><option>V50 Lite</option><option>V70</option><option>V70 Elite</option><option>X100</option><option>X200</option><option>X200 Ultra</option><option>X300</option><option>X300 Pro</option><option>X300 Ultra</option><option>T3</option><option>T4</option>
       </select>
     </div>
     <div class="field"><label>Quantity</label><input type="number" id="nb-qty" min="1" placeholder="e.g. 250" required></div>
@@ -215,6 +226,19 @@
   </form>
 </div>
 
+<!-- REMOVE BATCH CONFIRMATION -->
+<div class="overlay" id="overlay-modal-removebatch" onclick="NexusApp.closeModal('modal-removebatch')"></div>
+<div class="modal" id="modal-removebatch">
+  <div class="modal-head"><h3>Remove batch</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-removebatch')"><i class="ri-close-line"></i></button></div>
+  <p style="font-size:13px; color:var(--ink-soft); line-height:1.6; margin-bottom:18px;">
+    Are you sure you want to remove batch <b id="removeBatchName">this batch</b>? Its production history and worker contributions will no longer be accessible. This can't be undone.
+  </p>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-removebatch')">Cancel</button>
+    <button type="button" class="btn btn-danger" onclick="removeBatch()"><i class="ri-delete-bin-line"></i>Remove batch</button>
+  </div>
+</div>
+
 <!-- BATCH DETAILS DRAWER -->
 <div class="overlay" id="drawer-overlay" onclick="NexusApp.closeDrawer('batchDrawer')"></div>
 <div class="drawer" id="batchDrawer">
@@ -229,11 +253,12 @@
     <button class="modal-close" onclick="NexusApp.closeDrawer('batchDrawer')"><i class="ri-close-line"></i></button>
   </div>
   <div class="drawer-body">
-    <div style="display:flex; gap:8px; margin-bottom:18px;">
+    <div style="display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;">
       <button class="btn btn-secondary btn-sm"><i class="ri-user-add-line"></i>Assign Workers</button>
       <button class="btn btn-secondary btn-sm"><i class="ri-edit-line"></i>Edit</button>
       <button class="btn btn-secondary btn-sm" onclick="exportBatchesCSV()"><i class="ri-download-2-line"></i>Export</button>
       <button class="btn btn-primary btn-sm" id="drawerCompleteBtn"><i class="ri-check-line"></i>Complete</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmRemoveBatch(window.currentDrawerBatch)"><i class="ri-delete-bin-line"></i>Remove</button>
     </div>
 
     <div class="section-title" style="font-size:13.5px;">Production Pipeline</div>

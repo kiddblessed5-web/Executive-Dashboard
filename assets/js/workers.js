@@ -54,6 +54,46 @@ function seedWorkers(){
 function persistWorkers(){ localStorage.setItem('nexus_workers', JSON.stringify(WORKERS)); }
 function initials(name){ return name.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase(); }
 
+/* ============================================================
+   BACKEND MODE — real roster (see backend_schema_phase4.sql).
+   Attendance rate / 30-day log are computed live from the real
+   `attendance` table by worker id, not stored on the worker row.
+============================================================ */
+async function loadWorkersFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data: rows, error } = await sb.from('workers').select('*').order('created_at');
+  if(error){ NexusApp.toast('Could not load workers: ' + error.message, 'error'); WORKERS = []; return; }
+
+  const { data: attRows } = await sb.from('attendance').select('*');
+  const days = Array.from({length:30}, (_,i) => { const d = new Date(); d.setDate(d.getDate()-i); return d.toISOString().slice(0,10); }).reverse();
+
+  WORKERS = (rows || []).map(row => {
+    const myAtt = (attRows || []).filter(a => a.worker_id === row.id);
+    const log = days.map(d => myAtt.find(a => a.work_date === d)?.status || 'absent');
+    const presentDays = log.filter(s => s==='present' || s==='late').length;
+    const attendanceRate = Math.round(presentDays / days.length * 100);
+    return {
+      id: row.id, name: row.name, role: row.role, department: row.department,
+      color: row.avatar_color, status: row.status, phone: row.phone,
+      skills: row.skills || [], joined: row.joined_date,
+      warnings: row.warnings || [], achievements: row.achievements || [],
+      dailyOutput: 180 + Math.round(seededRandomW(row.id) * 140),
+      attendanceRate, attendanceLog: log,
+      productionHistory: Array.from({length:7}, (_,i) => 140 + Math.round(seededRandomW(row.id+i) * 160)),
+      documents: [
+        { name:'National ID (copy)', type:'PDF', size:'420 KB' },
+        { name:'Employment contract', type:'PDF', size:'180 KB' },
+      ],
+      payslips: [],
+    };
+  });
+}
+function seededRandomW(seed){
+  let h = 0; const s = String(seed);
+  for(let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return (h % 1000) / 1000;
+}
+
 let wFilters = { search:'', role:'all', status:'all' };
 let wSort = 'output-desc';
 
@@ -135,6 +175,7 @@ function openWorkerDrawer(id){
 
   document.getElementById('wdMeta').innerHTML = `
     <div><small>Worker ID</small><b>${w.id}</b></div>
+    <div><small>Phone</small><b>${w.phone || 'Not on file'}</b></div>
     <div><small>Joined</small><b>${new Date(w.joined).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</b></div>
     <div><small>Daily output</small><b>${w.dailyOutput} units</b></div>
     <div><small>Attendance rate</small><b>${w.attendanceRate}%</b></div>`;
@@ -197,7 +238,7 @@ function openWorkerDrawer(id){
 }
 
 function downloadWorkerDoc(workerName, docName){
-  const blob = new Blob([`Sagero Creations\n\nWorker: ${workerName}\nDocument: ${docName}\nGenerated: ${new Date().toLocaleString()}\n\nThis is a demo export.`], { type:'text/plain' });
+  const blob = new Blob([`SAGERO Creations\n\nWorker: ${workerName}\nDocument: ${docName}\nGenerated: ${new Date().toLocaleString()}\n\nThis is a demo export.`], { type:'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = docName.replace(/\s+/g,'_') + '.txt';
@@ -211,10 +252,17 @@ function issueWarning(){
   if(!w) return;
   w.warnings.unshift({ text:'Manual warning issued by supervisor', date:'Just now' });
   w.status = 'Warning';
-  persistWorkers();
   NexusApp.toast('Warning issued to ' + w.name, 'warning');
   openWorkerDrawer(w.id);
   renderWorkerGrid();
+
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('workers').update({ warnings: w.warnings, status:'Warning' }).eq('id', w.id).then(({ error }) => {
+      if(error) NexusApp.toast('Could not save warning: ' + error.message, 'error');
+    });
+  } else {
+    persistWorkers();
+  }
 }
 
 /* ---------------- REMOVE WORKER ---------------- */
@@ -226,31 +274,59 @@ function confirmRemoveWorker(id){
   document.getElementById('removeWorkerName').textContent = w.name;
   NexusApp.openModal('modal-removeworker');
 }
-function removeWorker(){
+async function removeWorker(){
   if(!pendingRemoveId) return;
   const w = WORKERS.find(x=>x.id===pendingRemoveId);
   if(!w) return;
-  WORKERS = WORKERS.filter(x=>x.id!==pendingRemoveId);
-  persistWorkers();
+  const id = pendingRemoveId;
+  WORKERS = WORKERS.filter(x=>x.id!==id);
   NexusApp.closeModal('modal-removeworker');
   NexusApp.closeDrawer('workerDrawer');
   renderWorkerGrid();
   NexusApp.toast(w.name + ' removed from the roster', 'info');
   pendingRemoveId = null;
+
+  if(SagoBackend?.isConfigured()){
+    const { error } = await SagoBackend.getClient().from('workers').delete().eq('id', id);
+    if(error) NexusApp.toast('Could not delete on server: ' + error.message, 'error');
+  } else {
+    persistWorkers();
+  }
 }
 
 /* ---------------- NEW WORKER MODAL ---------------- */
 function openNewWorkerModal(){ NexusApp.openModal('modal-newworker'); }
-function submitNewWorker(e){
+async function submitNewWorker(e){
   e.preventDefault();
   const name = document.getElementById('nw-name').value.trim();
+  const phone = document.getElementById('nw-phone').value.trim();
   const role = document.getElementById('nw-role').value;
   if(!name){ NexusApp.toast('Please enter a worker name','error'); return; }
 
   const colors = ['#6D5DF6','#3B82F6','#7C3AED','#4F46E5','#5B5CF6'];
+  const color = colors[Math.floor(Math.random()*colors.length)];
+  const id = 'W-' + (2001 + WORKERS.length + Math.floor(Math.random()*90));
+
+  if(SagoBackend?.isConfigured()){
+    const { error } = await SagoBackend.getClient().from('workers').insert({
+      id, name, role, department:'Production', avatar_color: color, phone: phone || null, status:'Active',
+      skills:[role], warnings:[], achievements:[], joined_date: new Date().toISOString().slice(0,10),
+    });
+    if(error){ NexusApp.toast('Could not add worker: ' + error.message, 'error'); return; }
+    WORKERS.unshift({
+      id, name, role, department:'Production', color, phone, dailyOutput:0, attendanceRate:100, status:'Active',
+      skills:[role], joined: new Date().toISOString().slice(0,10), warnings:[], achievements:[],
+      productionHistory:[0,0,0,0,0,0,0], attendanceLog: Array(30).fill('present'), documents:[], payslips:[],
+    });
+    NexusApp.closeModal('modal-newworker');
+    renderWorkerGrid();
+    NexusApp.toast(name + ' added to the roster', 'success');
+    e.target.reset();
+    return;
+  }
+
   WORKERS.unshift({
-    id: 'W-' + (2001 + WORKERS.length + Math.floor(Math.random()*90)),
-    name, role, department:'Production', color: colors[Math.floor(Math.random()*colors.length)],
+    id, name, role, department:'Production', color, phone,
     dailyOutput: 0, attendanceRate: 100, status:'Active',
     skills:[role], joined: new Date().toISOString().slice(0,10),
     warnings:[], achievements:[], productionHistory:[0,0,0,0,0,0,0],
@@ -264,11 +340,21 @@ function submitNewWorker(e){
   e.target.reset();
 }
 
+let workersDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
+  if(workersDidInit) return;
+  workersDidInit = true;
+
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('workers.html', session);
-  seedWorkers();
+
+  if(SagoBackend?.isConfigured()){
+    await loadWorkersFromBackend();
+  } else {
+    seedWorkers();
+  }
+
   wireWorkerToolbar();
   renderWorkerGrid();
 

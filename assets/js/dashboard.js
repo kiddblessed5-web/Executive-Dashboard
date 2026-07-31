@@ -231,6 +231,27 @@ function initFab(){
   document.addEventListener('click', (e) => { if(!e.target.closest('.fab-wrap')) fabMenu.classList.remove('open'); });
 }
 
+/* ---------------- CLOCK OFF ---------------- */
+async function renderClockButton(){
+  const status = await ShiftStatus.checkAutoRestart();
+  const btn = document.getElementById('clockOffBtn');
+  const label = document.getElementById('clockOffBtnText');
+  if(!status){ btn.style.display = 'none'; return; }
+  btn.style.display = 'inline-flex';
+  label.textContent = status.is_running ? 'Clock Off' : 'Clocked Off — resumes 8AM';
+  btn.classList.toggle('btn-danger', status.is_running);
+  btn.classList.toggle('btn-secondary', !status.is_running);
+  btn.disabled = !status.is_running;
+}
+async function handleClockToggle(){
+  const btn = document.getElementById('clockOffBtn');
+  btn.disabled = true;
+  const { error } = await ShiftStatus.clockOff();
+  if(error){ NexusApp.toast('Could not clock off: ' + (error.message||error), 'error'); btn.disabled = false; return; }
+  NexusApp.toast('Shift clocked off — Workflow will pause and resume automatically at 8:00 AM', 'success');
+  renderClockButton();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const session = await NexusApp.requireAuth();
   if(!session) return;
@@ -238,6 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if(SagoBackend?.isConfigured()){
     await loadDashboardFromBackend();
+    renderClockButton();
   }
 
   renderKPIs();

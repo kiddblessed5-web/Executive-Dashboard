@@ -19,7 +19,7 @@ function seedUsers(){
   if(saved){ USERS = JSON.parse(saved); return; }
 
   const base = [
-    { name:'Alex Kimani', role:'Super Admin', email:'alex.kimani@sagerocreations.com', status:'Active', lastActive:'Active now' },
+    { name:'SAGERO', role:'Super Admin', email:'sagero@sagerocreations.com', status:'Active', lastActive:'Active now' },
     { name:'Wei Zhang', role:'Chinese Manager', email:'wei.zhang@sagerocreations.com', status:'Active', lastActive:'2 hours ago' },
     { name:'Li Chen', role:'Chinese Manager', email:'li.chen@sagerocreations.com', status:'Active', lastActive:'1 day ago' },
     { name:'Feng Yun', role:'Chinese Manager', email:'feng.yun@sagerocreations.com', status:'Active', lastActive:'3 hours ago' },
@@ -38,6 +38,23 @@ function seedUsers(){
   persistUsers();
 }
 function persistUsers(){ localStorage.setItem('nexus_user_roles', JSON.stringify(USERS)); }
+
+/* ============================================================
+   BACKEND MODE — real accounts (see backend_schema_phase4.sql).
+   "Invite" stays local-only even here: creating a real account
+   needs Supabase's admin API (service-role key), which can't
+   safely run from client-side JS. Real people join by signing up
+   at the login page; this page then manages their role/status.
+============================================================ */
+async function loadUsersFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('profiles').select('*').order('created_at');
+  if(error){ NexusApp.toast('Could not load users: ' + error.message, 'error'); USERS = []; return; }
+  USERS = (data || []).map(p => ({
+    id: p.id, name: p.full_name, email: p.email || '(no email on file)', role: p.role,
+    status: p.status || 'Active', lastActive: p.is_online ? 'Active now' : 'Offline',
+  }));
+}
 
 /* ---------------- KPIs ---------------- */
 function renderKPIs(){
@@ -101,29 +118,41 @@ function changeRole(id, role){
   const u = USERS.find(x=>x.id===id);
   if(!u) return;
   u.role = role;
-  persistUsers();
   renderKPIs();
   renderTable();
   NexusApp.toast(`${u.name}\u2019s role changed to ${role}`, 'success');
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('profiles').update({ role }).eq('id', id).then(({ error }) => {
+      if(error) NexusApp.toast('Could not save role change: ' + error.message, 'error');
+    });
+  } else { persistUsers(); }
 }
 function suspendUser(id){
   const u = USERS.find(x=>x.id===id);
   if(!u) return;
   u.status = 'Suspended';
-  persistUsers();
   renderKPIs();
   renderTable();
   NexusApp.toast(`${u.name} suspended`, 'error');
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('profiles').update({ status:'Suspended' }).eq('id', id).then(({ error }) => {
+      if(error) NexusApp.toast('Could not save: ' + error.message, 'error');
+    });
+  } else { persistUsers(); }
 }
 function reactivateUser(id){
   const u = USERS.find(x=>x.id===id);
   if(!u) return;
   u.status = 'Active';
   u.lastActive = 'Active now';
-  persistUsers();
   renderKPIs();
   renderTable();
   NexusApp.toast(`${u.name} reactivated`, 'success');
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('profiles').update({ status:'Active' }).eq('id', id).then(({ error }) => {
+      if(error) NexusApp.toast('Could not save: ' + error.message, 'error');
+    });
+  } else { persistUsers(); }
 }
 function resendInvite(id){
   const u = USERS.find(x=>x.id===id);
@@ -134,10 +163,14 @@ function removeUser(id){
   const u = USERS.find(x=>x.id===id);
   if(!u) return;
   USERS = USERS.filter(x=>x.id!==id);
-  persistUsers();
   renderKPIs();
   renderTable();
   NexusApp.toast(`${u.name} removed from workspace`, 'info');
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('profiles').delete().eq('id', id).then(({ error }) => {
+      if(error) NexusApp.toast('Could not remove on server: ' + error.message, 'error');
+    });
+  } else { persistUsers(); }
 }
 
 /* ---------------- INVITE MODAL ---------------- */
@@ -148,6 +181,13 @@ function submitInvite(e){
   const email = document.getElementById('inv-email').value.trim();
   const role = document.getElementById('inv-role').value;
   if(!name || !email){ NexusApp.toast('Enter a name and email', 'error'); return; }
+
+  if(SagoBackend?.isConfigured()){
+    NexusApp.closeModal('modal-invite');
+    e.target.reset();
+    NexusApp.toast(`Real accounts are created by signing up at the login page \u2014 have ${name} sign up with ${email}, then set their role here`, 'info');
+    return;
+  }
 
   USERS.unshift({ id:'U-'+(4001+USERS.length+Math.floor(Math.random()*90)), name, email, role, status:'Invited', lastActive:'Never signed in' });
   persistUsers();
@@ -168,11 +208,21 @@ function wireToolbar(){
   document.getElementById('filterStatus').addEventListener('change', e => { filters.status = e.target.value; renderTable(); });
 }
 
+let rolesDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
+  if(rolesDidInit) return;
+  rolesDidInit = true;
+
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('roles.html', session);
-  seedUsers();
+
+  if(SagoBackend?.isConfigured()){
+    await loadUsersFromBackend();
+  } else {
+    seedUsers();
+  }
+
   populateFilters();
   wireToolbar();
   renderKPIs();

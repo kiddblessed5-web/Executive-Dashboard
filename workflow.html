@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Workflow — Sagero Creations</title>
+<title>Workflow — SAGERO Creations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/img/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/img/favicon-180.png">
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
   .wf-stats-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:20px; }
@@ -18,6 +21,8 @@
 
   .live-banner{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
   .live-dot{ width:9px; height:9px; border-radius:50%; background:var(--success); animation:pulseDot 1.3s infinite; }
+  .live-dot.stopped{ background:var(--ink-faint); animation:none; }
+  .live-banner.stopped span{ color:var(--ink-faint) !important; }
   .live-banner span{ font-size:12px; font-weight:700; color:var(--success); }
   .shift-timer{ margin-left:auto; font-family:'Inter Tight'; font-size:13px; font-weight:700; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
 
@@ -61,21 +66,21 @@
   @media (max-width:1080px){ .wf-stats-row{ grid-template-columns:repeat(2,1fr); } }
 </style>
 </head>
-<body>
+<body class="auth-checking">
 
 <div class="app-shell">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-mark">SC</div>
-      <div class="brand-text"><span class="brand-name">Sagero</span><span class="brand-sub">CREATIONS</span></div>
+      <div class="brand-mark"><img src="assets/img/logo-mark.png" alt="SAGERO Creations"></div>
+      <div class="brand-text"><span class="brand-name">SAGERO</span><span class="brand-sub">CREATIONS</span></div>
       <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
     </div>
     <nav class="sidebar-scroll" id="sidebarNav"></nav>
     <div class="sidebar-footer">
       <div class="dropdown-wrap">
         <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
-          <div class="user-avatar" id="userChipAvatar">AK</div>
-          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <div class="user-avatar" id="userChipAvatar">SA</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">SAGERO</div><div class="user-role" id="userChipRole">Production Manager</div></div>
           <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
         </div>
         <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
@@ -92,7 +97,7 @@
     <div class="topbar">
       <div class="topbar-left">
         <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
-        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Sagero</span><i class="ri-arrow-right-s-line"></i><span>Production</span><i class="ri-arrow-right-s-line"></i><b>Workflow</b></div>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>SAGERO</span><i class="ri-arrow-right-s-line"></i><span>Production</span><i class="ri-arrow-right-s-line"></i><b>Workflow</b></div>
       </div>
       <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
       <div class="topbar-right">
@@ -111,11 +116,11 @@
     <div class="content">
       <div class="section-head fade-up">
         <div>
-          <div class="live-banner"><span class="live-dot"></span><span>LIVE PRODUCTION</span></div>
+          <div class="live-banner" id="liveBanner"><span class="live-dot" id="liveDot"></span><span id="liveBannerText">LIVE PRODUCTION</span></div>
           <div class="section-title">Workflow</div>
           <div class="section-sub">Drag batches across stages, allocate workers, and track cycle time in real time.</div>
         </div>
-        <div class="shift-timer"><i class="ri-timer-line"></i>Shift running <b id="shiftTimer">00:00:00</b></div>
+        <div class="shift-timer"><i class="ri-timer-line"></i><span id="shiftTimerLabel">Shift running</span> <b id="shiftTimer">00:00:00</b></div>
       </div>
 
       <div class="wf-stats-row fade-up">
@@ -150,6 +155,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/shift-status.js"></script>
 <script src="assets/js/app.js"></script>
 <script src="assets/js/workflow.js"></script>
 </body>

@@ -19,7 +19,7 @@ const WF_WORKER_POOL = [
   { name:'Collins Odhiambo', color:'#4F46E5' }, { name:'Faith Auma', color:'#5B5CF6' },
 ];
 
-const WF_MODELS = ['Y18','Y28','V30','Y36','X100','Y17s'];
+const WF_MODELS = ['Y17s','Y18','Y18t','Y28','Y36','Y50t','Y100','Y200','Y300','Y300 Plus','V30','V40','V50','V50 Pro','V50 Lite','V70','V70 Elite','X100','X200','X200 Ultra','X300','X300 Pro','X300 Ultra','T3','T4'];
 
 let wfBatches = [];
 let wfAssignments = {};   // stage -> [workerNames]
@@ -273,6 +273,28 @@ function renderStats(){
   document.getElementById('statBottleneck').textContent = bottleneck.count > 0 ? bottleneck.stage : '—';
 }
 
+let wfShiftRunning = true;
+
+function applyShiftStatus(status){
+  if(!status) return;
+  wfShiftRunning = status.is_running;
+  wfShiftStart = status.shift_started_at || wfShiftStart;
+  document.getElementById('liveBanner')?.classList.toggle('stopped', !wfShiftRunning);
+  document.getElementById('liveDot')?.classList.toggle('stopped', !wfShiftRunning);
+  const bannerText = document.getElementById('liveBannerText');
+  if(bannerText) bannerText.textContent = wfShiftRunning ? 'LIVE PRODUCTION' : 'SHIFT STOPPED';
+  const label = document.getElementById('shiftTimerLabel');
+  if(label) label.textContent = wfShiftRunning ? 'Shift running' : 'Stopped — resumes 8AM';
+}
+
+function subscribeShiftStatusRealtime(sb){
+  sb.channel('sagero-shift-status')
+    .on('postgres_changes', { event:'UPDATE', schema:'public', table:'shift_status' }, (payload) => {
+      applyShiftStatus(payload.new);
+    })
+    .subscribe();
+}
+
 function wfTickTimers(){
   document.querySelectorAll('.wf-timer').forEach(el => {
     const since = new Date(el.dataset.since).getTime();
@@ -282,6 +304,7 @@ function wfTickTimers(){
     el.textContent = mm+':'+ss;
     el.classList.toggle('slow', diff > 30*60000);
   });
+  if(!wfShiftRunning) return; // freeze the shift clock while stopped, rather than counting down/up incorrectly
   const shiftDiff = Date.now() - new Date(wfShiftStart).getTime();
   const h = String(Math.floor(shiftDiff/3600000)).padStart(2,'0');
   const m = String(Math.floor((shiftDiff%3600000)/60000)).padStart(2,'0');
@@ -338,6 +361,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     wfShiftStart = new Date().toISOString();
     wfUnitsToday = 4820;
     subscribeWfRealtime(SagoBackend.getClient());
+
+    const status = await ShiftStatus.checkAutoRestart();
+    applyShiftStatus(status);
+    subscribeShiftStatusRealtime(SagoBackend.getClient());
   } else {
     wfSeed();
   }

@@ -6,7 +6,7 @@
    works standalone.
 ============================================================ */
 
-const RPT_MODELS = ['Vivo Y18','Vivo Y28','Vivo V30','Vivo Y36','Vivo X100','Vivo Y17s'];
+const RPT_MODELS = ['Y17s','Y18','Y18t','Y28','Y36','Y50t','Y100','Y200','Y300','Y300 Plus','V30','V40','V50','V50 Pro','V50 Lite','V70','V70 Elite','X100','X200','X200 Ultra','X300','X300 Pro','X300 Ultra','T3','T4'];
 const RPT_MANAGERS = ['Wei Zhang','Li Chen','Feng Yun','Chao Liu'];
 const RPT_WORKERS = [
   { id:'W-2001', name:'Grace Achieng', role:'Unboxing', color:'#6D5DF6' },

@@ -13,8 +13,8 @@
    nothing breaks by leaving this unconfigured.
 ============================================================ */
 
-const SUPABASE_URL = 'https://ejqtclcsambsouxoxagk.supabase.co';       // e.g. https://xyzcompany.supabase.co
-const SUPABASE_ANON_KEY = 'sb_publishable_usxYs0k8w2V3PROye2cw7A__S43Dfoz';       // Project Settings → API → anon public
+const SUPABASE_URL = 'https://olzrvgoirrtdqmwsaxsq.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_ygGwfuDUPYDPg9hPDSGbWg_TNfRNXmB';
 
 const SagoBackend = (() => {
   const configured = SUPABASE_URL !== 'YOUR_SUPABASE_PROJECT_URL'
@@ -36,17 +36,22 @@ const SagoBackend = (() => {
 
   function isConfigured(){ return configured; }
 
+  const LOAD_FAIL_ERROR = { message:'Could not connect to the server — check your internet connection and try again' };
+
   /* ---------------- AUTH ---------------- */
   async function signUp(email, password, fullName){
     const sb = getClient();
+    if(!sb) return { data:null, error: LOAD_FAIL_ERROR };
     return sb.auth.signUp({ email, password, options:{ data:{ full_name: fullName } } });
   }
   async function signInWithPassword(email, password){
     const sb = getClient();
+    if(!sb) return { data:null, error: LOAD_FAIL_ERROR };
     return sb.auth.signInWithPassword({ email, password });
   }
   async function signInWithOAuth(provider){
     const sb = getClient();
+    if(!sb) return { data:null, error: LOAD_FAIL_ERROR };
     return sb.auth.signInWithOAuth({ provider, options:{ redirectTo: window.location.origin + '/index.html' } });
   }
   async function signOut(){
@@ -61,6 +66,7 @@ const SagoBackend = (() => {
   }
   async function getProfile(userId){
     const sb = getClient();
+    if(!sb) return null;
     const { data, error } = await sb.from('profiles').select('*').eq('id', userId).single();
     if(error){ console.error('getProfile error', error); return null; }
     return data;

@@ -45,6 +45,8 @@ drop policy if exists "Signed-in users can create conversations" on conversation
 
 drop policy if exists "Members can view membership rows for their conversations" on conversation_members;
 drop policy if exists "Signed-in users can add members" on conversation_members;
+drop policy if exists "Members can remove their own membership" on conversation_members;
+drop policy if exists "Members can update their own last_read_at" on conversation_members;
 
 drop policy if exists "Members can read messages in their conversations" on messages;
 drop policy if exists "Members can send messages in their conversations" on messages;
@@ -58,7 +60,7 @@ drop policy if exists "Users can remove their own reactions" on message_reaction
 create policy "Members can view their conversations" on conversations for select using (
   is_conversation_member(id, auth.uid())
 );
-create policy "Signed-in users can create conversations" on conversations for insert with check (auth.role() = 'authenticated');
+create policy "Signed-in users can create conversations" on conversations for insert to authenticated with check (true);
 
 -- conversation_members no longer self-references — it just checks
 -- "is the requesting user a member of ANY conversation this row
@@ -67,7 +69,7 @@ create policy "Signed-in users can create conversations" on conversations for in
 create policy "Members can view membership rows for their conversations" on conversation_members for select using (
   is_conversation_member(conversation_id, auth.uid())
 );
-create policy "Signed-in users can add members" on conversation_members for insert with check (auth.role() = 'authenticated');
+create policy "Signed-in users can add members" on conversation_members for insert to authenticated with check (true);
 create policy "Members can remove their own membership" on conversation_members for delete using (auth.uid() = user_id);
 
 create policy "Members can read messages in their conversations" on messages for select using (

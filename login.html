@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign in — Sagero Creations</title>
+<title>Sign in — SAGERO Creations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/img/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/img/favicon-180.png">
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
   body.login-body{
@@ -32,7 +35,8 @@
   .auth-visual::before{ width:280px; height:280px; background:#8B7CFB; top:-80px; right:-80px; animation: floatBlob 9s ease-in-out infinite; }
   .auth-visual::after{ width:220px; height:220px; background:#3B82F6; bottom:-60px; left:-60px; animation: floatBlob 11s ease-in-out infinite reverse; }
   @keyframes floatBlob{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(20px) scale(1.08); } }
-  .auth-visual-mark{ width:42px; height:42px; border-radius:13px; background:rgba(255,255,255,0.18); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; font-size:20px; position:relative; z-index:2; }
+  .auth-visual-mark{ width:42px; height:42px; border-radius:13px; background:rgba(255,255,255,0.18); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; z-index:2; }
+  .auth-visual-mark img{ width:100%; height:100%; object-fit:contain; padding:6px; }
   .auth-visual-copy{ position:relative; z-index:2; }
   .auth-visual-copy .eyebrow{ font-size:12.5px; font-weight:600; opacity:.85; margin-bottom:10px; letter-spacing:.04em;}
   .auth-visual-copy h2{ font-family:'Inter Tight'; font-size:26px; font-weight:800; line-height:1.3; letter-spacing:-0.01em; }
@@ -41,7 +45,8 @@
   .auth-visual-stats div span{ font-size:11.5px; opacity:.8; }
 
   .auth-form{ flex:1; padding:52px 48px; display:flex; flex-direction:column; justify-content:center; }
-  .auth-form .form-mark{ width:34px; height:34px; border-radius:10px; background:var(--grad); display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; margin-bottom:18px; }
+  .auth-form .form-mark{ width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:18px; overflow:hidden; }
+  .auth-form .form-mark img{ width:100%; height:100%; object-fit:contain; }
   .auth-form h1{ font-family:'Inter Tight'; font-size:25px; font-weight:800; letter-spacing:-0.01em; margin-bottom:6px; }
   .auth-form p.lead{ font-size:13.5px; color:var(--ink-faint); margin-bottom:26px; line-height:1.5; }
 
@@ -56,13 +61,29 @@
   .demo-banner{ display:flex; align-items:center; gap:6px; justify-content:center; font-size:10.5px; font-weight:700; color:var(--ink-faint); background:var(--grad-soft); border-radius:20px; padding:5px 12px; margin:0 auto 18px; width:fit-content; }
 
   @media (max-width:820px){ .auth-visual{ display:none; } .auth-form{ padding:40px 28px; } }
+
+  .login-preloader{
+    position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+    background: linear-gradient(160deg, #6D5DF6 0%, #4F46E5 45%, #3B82F6 100%);
+    opacity:0; pointer-events:none; transition:opacity .35s ease;
+  }
+  .login-preloader.show{ opacity:1; pointer-events:all; }
+  .login-preloader-mark{
+    width:64px; height:64px; border-radius:20px; background:rgba(255,255,255,0.16); backdrop-filter:blur(6px);
+    display:flex; align-items:center; justify-content:center; color:#fff; font-size:30px;
+    animation: preloaderPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes preloaderPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.08); } }
+  .login-preloader-name{ color:#fff; font-family:'Inter Tight'; font-weight:800; font-size:14px; letter-spacing:.08em; opacity:.92; }
+  .login-preloader-bar{ width:160px; height:3px; border-radius:3px; background:rgba(255,255,255,0.25); overflow:hidden; }
+  .login-preloader-fill{ height:100%; width:0%; background:#fff; border-radius:3px; transition:width .8s cubic-bezier(.4,0,.2,1); }
 </style>
 </head>
 <body class="login-body">
 
   <div class="auth-wrap">
     <div class="auth-visual">
-      <div class="auth-visual-mark"><i class="ri-cpu-line"></i></div>
+      <div class="auth-visual-mark"><img src="assets/img/logo-mark.png" alt="SAGERO CREATIONS"></div>
       <div class="auth-visual-copy">
         <div class="eyebrow">SAGERO CREATIONS</div>
         <h2>Run the entire production floor from one screen — batches, workers, payroll and quality, in sync.</h2>
@@ -78,9 +99,9 @@
       <div class="demo-banner" id="modeBanner"><i class="ri-flask-line"></i>Restricted access — single admin account</div>
 
       <form id="loginForm" novalidate>
-        <div class="form-mark"><i class="ri-cpu-line"></i></div>
+        <div class="form-mark"><img src="assets/img/logo-mark.png" alt="SAGERO CREATIONS"></div>
         <h1>Welcome back</h1>
-        <p class="lead">Sign in to Sagero Creations to manage production, people and payroll.</p>
+        <p class="lead">Sign in to SAGERO Creations to manage production, people and payroll.</p>
 
         <div class="field" id="fld-email">
           <label>Work email</label>
@@ -115,19 +136,12 @@
 <script>
   if(localStorage.getItem('nexus_session')){ window.location.href = 'index.html'; }
 
-  // The one and only account. If you later connect Supabase (see
-  // backend_schema_phase1.sql), create a matching user with this
-  // exact email + password in Authentication → Users, and this
-  // page automatically switches to checking it for real instead
-  // of this local hardcoded pair.
-  const ALLOWED_EMAIL = 'kiddblessed5@gmail.com';
-  const ALLOWED_PASSWORD = 'Kimbachez3';
-  const ADMIN_NAME = 'Blessed Kidd';
-
   document.addEventListener('DOMContentLoaded', () => {
     const banner = document.getElementById('modeBanner');
     if(SagoBackend?.isConfigured()){
-      banner.innerHTML = '<i class="ri-shield-check-line"></i>Connected to Sagero Creations backend';
+      banner.innerHTML = '<i class="ri-shield-check-line"></i>Connected to SAGERO Creations backend';
+    } else {
+      banner.innerHTML = '<i class="ri-error-warning-line"></i>Backend not configured \u2014 see assets/js/supabase-client.js';
     }
   });
 
@@ -146,16 +160,6 @@
     field.classList.toggle('valid', valid);
   }
 
-  function initials(name){
-    return name.trim().split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase();
-  }
-
-  function createSession(name, email, role){
-    localStorage.setItem('nexus_session', JSON.stringify({
-      name, email, role: role || 'Super Admin', initials: initials(name || email)
-    }));
-  }
-
   function setLoading(isLoading){
     const btn = document.getElementById('loginBtn');
     const btnText = document.getElementById('loginBtnText');
@@ -163,6 +167,14 @@
     btnText.innerHTML = isLoading
       ? '<i class="ri-loader-4-line" style="animation:spin .7s linear infinite;"></i> Signing in…'
       : 'Sign in';
+  }
+
+  function playPreloaderThenRedirect(){
+    const overlay = document.getElementById('loginPreloader');
+    const fill = document.getElementById('preloaderFill');
+    overlay.classList.add('show');
+    requestAnimationFrame(() => { fill.style.width = '100%'; });
+    setTimeout(() => { window.location.href = 'index.html'; }, 850);
   }
 
   document.getElementById('loginForm').addEventListener('submit', async function(e){
@@ -173,35 +185,27 @@
     setFieldState('fld-email', emailOk);
     if(!emailOk){ NexusApp.toast('Enter a valid email address', 'error'); return; }
 
-    setLoading(true);
-
-    if(SagoBackend?.isConfigured()){
-      const { data, error } = await SagoBackend.signInWithPassword(email, pass);
-      setLoading(false);
-      if(error){
-        setFieldState('fld-password', false);
-        NexusApp.toast(error.message || 'Incorrect email or password', 'error');
-        return;
-      }
-      NexusApp.toast('Welcome back — redirecting…', 'success');
-      setTimeout(() => window.location.href = 'index.html', 500);
+    if(!SagoBackend?.isConfigured()){
+      NexusApp.toast('Backend not configured \u2014 see assets/js/supabase-client.js', 'error');
       return;
     }
 
-    // local fallback — single hardcoded account until Supabase is connected
-    setTimeout(() => {
-      setLoading(false);
-      const match = email.toLowerCase() === ALLOWED_EMAIL.toLowerCase() && pass === ALLOWED_PASSWORD;
-      if(!match){
-        setFieldState('fld-password', false);
-        NexusApp.toast('Incorrect email or password', 'error');
-        return;
-      }
-      createSession(ADMIN_NAME, ALLOWED_EMAIL, 'Super Admin');
-      NexusApp.toast('Welcome back — redirecting…', 'success');
-      setTimeout(() => window.location.href = 'index.html', 500);
-    }, 700);
+    setLoading(true);
+    const { data, error } = await SagoBackend.signInWithPassword(email, pass);
+    setLoading(false);
+    if(error){
+      setFieldState('fld-password', false);
+      NexusApp.toast(error.message || 'Incorrect email or password', 'error');
+      return;
+    }
+    playPreloaderThenRedirect();
   });
 </script>
+  <div class="login-preloader" id="loginPreloader">
+    <div class="login-preloader-mark"><i class="ri-cpu-line"></i></div>
+    <div class="login-preloader-name">SAGERO CREATIONS</div>
+    <div class="login-preloader-bar"><div class="login-preloader-fill" id="preloaderFill"></div></div>
+  </div>
+
 </body>
 </html>

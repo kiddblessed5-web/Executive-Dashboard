@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Warehouse — Sagero Creations</title>
+<title>Warehouse — SAGERO Creations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/img/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/img/favicon-180.png">
 <link rel="stylesheet" href="assets/css/style.css">
 <style>
   .kpi-row{ display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:18px; }
@@ -28,21 +31,21 @@
   @media (max-width:640px){ .kpi-row{ grid-template-columns:repeat(2,1fr); } }
 </style>
 </head>
-<body>
+<body class="auth-checking">
 
 <div class="app-shell">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-mark">SC</div>
-      <div class="brand-text"><span class="brand-name">Sagero</span><span class="brand-sub">CREATIONS</span></div>
+      <div class="brand-mark"><img src="assets/img/logo-mark.png" alt="SAGERO Creations"></div>
+      <div class="brand-text"><span class="brand-name">SAGERO</span><span class="brand-sub">CREATIONS</span></div>
       <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
     </div>
     <nav class="sidebar-scroll" id="sidebarNav"></nav>
     <div class="sidebar-footer">
       <div class="dropdown-wrap">
         <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
-          <div class="user-avatar" id="userChipAvatar">AK</div>
-          <div class="user-meta"><div class="user-name" id="userChipName">Alex Kimani</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <div class="user-avatar" id="userChipAvatar">SA</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">SAGERO</div><div class="user-role" id="userChipRole">Production Manager</div></div>
           <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
         </div>
         <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
@@ -59,7 +62,7 @@
     <div class="topbar">
       <div class="topbar-left">
         <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
-        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>Sagero</span><i class="ri-arrow-right-s-line"></i><span>Inventory</span><i class="ri-arrow-right-s-line"></i><b>Warehouse</b></div>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>SAGERO</span><i class="ri-arrow-right-s-line"></i><span>Inventory</span><i class="ri-arrow-right-s-line"></i><b>Warehouse</b></div>
       </div>
       <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
       <div class="topbar-right">
@@ -133,7 +136,7 @@
     </div>
     <div class="field"><label>Model</label>
       <select id="ns-model">
-        <option>Vivo Y18</option><option>Vivo Y28</option><option>Vivo V30</option><option>Vivo Y36</option><option>Vivo X100</option><option>Vivo Y17s</option>
+        <option>Y17s</option><option>Y18</option><option>Y18t</option><option>Y28</option><option>Y36</option><option>Y50t</option><option>Y100</option><option>Y200</option><option>Y300</option><option>Y300 Plus</option><option>V30</option><option>V40</option><option>V50</option><option>V50 Pro</option><option>V50 Lite</option><option>V70</option><option>V70 Elite</option><option>X100</option><option>X200</option><option>X200 Ultra</option><option>X300</option><option>X300 Pro</option><option>X300 Ultra</option><option>T3</option><option>T4</option>
       </select>
     </div>
     <div class="field"><label>Quantity</label><input type="number" id="ns-qty" min="1" placeholder="e.g. 60" required></div>

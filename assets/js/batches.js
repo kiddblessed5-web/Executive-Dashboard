@@ -8,7 +8,7 @@ const KANBAN_STAGES = ['Waiting','Assigned','Software','Quality Check','Packagin
 const MANAGERS = ['Wei Zhang','Li Chen','Feng Yun','Chao Liu'];
 const SALESMEN = ['Brian Mwangi','Faith Kerubo','Dennis Otieno','Ann Wambui'];
 const BRANDS = ['Vivo'];
-const MODELS = ['Y18','Y28','V30','Y36','X100','Y17s'];
+const MODELS = ['Y17s','Y18','Y18t','Y28','Y36','Y50t','Y100','Y200','Y300','Y300 Plus','V30','V40','V50','V50 Pro','V50 Lite','V70','V70 Elite','X100','X200','X200 Ultra','X300','X300 Pro','X300 Ultra','T3','T4'];
 const STATUS_COLOR = { 'On Track':'success', 'At Risk':'warning', 'Delayed':'danger', 'Completed':'info' };
 
 // The backend's single source-of-truth `stage` uses the full 8-step pipeline
@@ -164,6 +164,7 @@ function batchCardHTML(b){
   const color = STATUS_COLOR[b.status];
   return `
   <div class="batch-card" onclick="openBatchDrawer('${b.id}')">
+    <button class="batch-card-remove" data-tip="Remove batch" onclick="event.stopPropagation(); confirmRemoveBatch('${b.id}')"><i class="ri-close-line"></i></button>
     <div class="batch-card-top">
       <div>
         <div class="batch-id">${b.id}</div>
@@ -361,6 +362,33 @@ async function submitNewBatch(e){
 }
 
 /* ---------------- DRAWER ---------------- */
+/* ---------------- REMOVE BATCH ---------------- */
+let pendingRemoveBatchId = null;
+function confirmRemoveBatch(id){
+  const b = BATCHES.find(x=>x.id===id);
+  if(!b) return;
+  pendingRemoveBatchId = id;
+  document.getElementById('removeBatchName').textContent = id;
+  NexusApp.openModal('modal-removebatch');
+}
+async function removeBatch(){
+  if(!pendingRemoveBatchId) return;
+  const id = pendingRemoveBatchId;
+  BATCHES = BATCHES.filter(x=>x.id!==id);
+  NexusApp.closeModal('modal-removebatch');
+  NexusApp.closeDrawer('batchDrawer');
+  renderViews();
+  NexusApp.toast(id + ' removed', 'info');
+
+  if(SagoBackend?.isConfigured()){
+    const { error } = await SagoBackend.getClient().from('batches').delete().eq('id', id);
+    if(error) NexusApp.toast('Could not delete on server: ' + error.message, 'error');
+  } else {
+    persistBatches();
+  }
+  pendingRemoveBatchId = null;
+}
+
 function openBatchDrawer(id){
   const b = BATCHES.find(x => x.id === id);
   if(!b) return;

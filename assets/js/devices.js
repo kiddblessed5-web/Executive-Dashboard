@@ -4,23 +4,32 @@
    saved scan sessions, Excel / CSV export via SheetJS
 ============================================================ */
 
-const DEV_MODELS = ['Vivo Y18','Vivo Y28','Vivo V30','Vivo Y36','Vivo X100','Vivo Y17s'];
+const DEV_MODELS = ['Y17s','Y18','Y18t','Y28','Y36','Y50t','Y100','Y200','Y300','Y300 Plus','V30','V40','V50','V50 Pro','V50 Lite','V70','V70 Elite','X100','X200','X200 Ultra','X300','X300 Pro','X300 Ultra','T3','T4'];
 
 /* ---------------- STATE ---------------- */
 let sessionScans = [];      // current working scan session (not yet saved)
 let SAVED_LISTS = [];       // saved / exported sessions
 let cameraStream = null;
 let cameraDetectLoop = null;
-
-function loadState(){
-  const savedSession = localStorage.getItem('nexus_scan_session');
-  const savedLists = localStorage.getItem('nexus_scan_lists');
-  sessionScans = savedSession ? JSON.parse(savedSession) : [];
-  SAVED_LISTS = savedLists ? JSON.parse(savedLists) : seedSavedLists();
-  if(!savedLists) persistLists();
-}
 function persistSession(){ localStorage.setItem('nexus_scan_session', JSON.stringify(sessionScans)); }
 function persistLists(){ localStorage.setItem('nexus_scan_lists', JSON.stringify(SAVED_LISTS)); }
+
+/* ============================================================
+   BACKEND MODE — real, shared scan lists (see backend_schema_phase4.sql)
+============================================================ */
+async function loadListsFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data: lists, error } = await sb.from('inventory_scan_lists').select('*').eq('kind','device').order('created_at', { ascending:false });
+  if(error){ NexusApp.toast('Could not load saved lists: ' + error.message, 'error'); SAVED_LISTS = []; return; }
+  SAVED_LISTS = [];
+  for(const l of (lists || [])){
+    const { data: items } = await sb.from('inventory_scan_items').select('*').eq('list_id', l.id);
+    SAVED_LISTS.push({
+      id: l.id, name: l.name, model: l.model_or_category, batchRef: l.batch_ref, createdAt: l.created_at,
+      items: (items || []).map(i => ({ barcode: i.barcode, model: i.label, scannedAt: i.scanned_at })),
+    });
+  }
+}
 
 function seedSavedLists(){
   const now = Date.now();
@@ -179,18 +188,44 @@ function openSaveModal(){
   document.getElementById('sv-count').textContent = sessionScans.length + ' device' + (sessionScans.length===1?'':'s') + ' will be saved to this list';
   NexusApp.openModal('modal-savesession');
 }
-function submitSaveSession(e){
+async function submitSaveSession(e){
   e.preventDefault();
   const name = document.getElementById('sv-name').value.trim();
   const batchRef = document.getElementById('sv-batchref').value.trim();
   if(!name){ NexusApp.toast('Give this list a name', 'error'); return; }
+  const model = document.getElementById('scanModel').value;
+  const scans = [...sessionScans];
+
+  if(SagoBackend?.isConfigured()){
+    const sb = SagoBackend.getClient();
+    const session = await SagoBackend.getSession();
+    const { data: listRow, error: listErr } = await sb.from('inventory_scan_lists').insert({
+      kind:'device', name, model_or_category: model, batch_ref: batchRef || null, created_by: session?.user?.id || null,
+    }).select().single();
+    if(listErr){ NexusApp.toast('Could not save list: ' + listErr.message, 'error'); return; }
+
+    if(scans.length){
+      const { error: itemsErr } = await sb.from('inventory_scan_items').insert(
+        scans.map(s => ({ list_id: listRow.id, barcode: s.barcode, label: s.model }))
+      );
+      if(itemsErr) NexusApp.toast('List saved, but some items failed to save: ' + itemsErr.message, 'error');
+    }
+
+    SAVED_LISTS.unshift({ id: listRow.id, name, model, batchRef: batchRef || null, createdAt: listRow.created_at, items: scans });
+    sessionScans = [];
+    NexusApp.closeModal('modal-savesession');
+    renderSessionTable();
+    renderKPIs();
+    renderSavedLists();
+    NexusApp.toast(`Saved "${name}" with ${scans.length} devices`, 'success');
+    return;
+  }
 
   const list = {
     id: 'list' + Date.now(),
-    name, batchRef: batchRef || null,
-    model: document.getElementById('scanModel').value,
+    name, batchRef: batchRef || null, model,
     createdAt: new Date().toISOString(),
-    items: [...sessionScans],
+    items: scans,
   };
   SAVED_LISTS.unshift(list);
   persistLists();
@@ -222,12 +257,18 @@ function renderSavedLists(){
       </div>
     </div>`).join('') || `<div class="empty-state"><i class="ri-inbox-line"></i><b>No saved lists yet</b><span>Scan some devices above and save your first list.</span></div>`;
 }
-function deleteList(id){
+async function deleteList(id){
   SAVED_LISTS = SAVED_LISTS.filter(l => l.id !== id);
-  persistLists();
   renderSavedLists();
   renderKPIs();
   NexusApp.toast('List deleted', 'info');
+
+  if(SagoBackend?.isConfigured()){
+    const { error } = await SagoBackend.getClient().from('inventory_scan_lists').delete().eq('id', id);
+    if(error) NexusApp.toast('Could not delete on server: ' + error.message, 'error');
+  } else {
+    persistLists();
+  }
 }
 
 /* ---------------- VIEW LIST DRAWER ---------------- */
@@ -303,11 +344,28 @@ function wireSearch(){
 }
 
 /* ---------------- INIT ---------------- */
+let devDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
+  if(devDidInit) return;
+  devDidInit = true;
+
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('devices.html', session);
-  loadState();
+
+  // the in-progress scan session is always kept locally (a per-device
+  // draft/recovery safety net) regardless of backend mode
+  const savedSession = localStorage.getItem('nexus_scan_session');
+  sessionScans = savedSession ? JSON.parse(savedSession) : [];
+
+  if(SagoBackend?.isConfigured()){
+    await loadListsFromBackend();
+  } else {
+    const savedLists = localStorage.getItem('nexus_scan_lists');
+    SAVED_LISTS = savedLists ? JSON.parse(savedLists) : seedSavedLists();
+    if(!savedLists) persistLists();
+  }
+
   wireScanInput();
   wireSearch();
   if(!cameraSupported()){

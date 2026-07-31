@@ -3,7 +3,7 @@
 ============================================================ */
 
 const QC_INSPECTORS = ['Kevin Otieno', 'Mercy Njoki', 'Ruth Wanjiku', 'Collins Odhiambo'];
-const QC_MODELS = ['Vivo Y18','Vivo Y28','Vivo V30','Vivo Y36','Vivo X100','Vivo Y17s'];
+const QC_MODELS = ['Y17s','Y18','Y18t','Y28','Y36','Y50t','Y100','Y200','Y300','Y300 Plus','V30','V40','V50','V50 Pro','V50 Lite','V70','V70 Elite','X100','X200','X200 Ultra','X300','X300 Pro','X300 Ultra','T3','T4'];
 const DEFECT_TYPES = ['Screen', 'Battery', 'Software', 'Casing', 'Camera', 'Other'];
 
 const QC_STATUS_BADGE = { 'Pending':'warning', 'Passed':'success', 'Failed':'danger', 'Approved':'info', 'Rejected':'danger' };
@@ -49,6 +49,20 @@ function seedDefects(){
   return shuffled.map(type => ({ type, count: 1 + Math.floor(Math.random()*6) }));
 }
 function persistInspections(){ localStorage.setItem('nexus_qc_inspections', JSON.stringify(INSPECTIONS)); }
+
+/* ============================================================
+   BACKEND MODE — real inspections (see backend_schema_phase4.sql)
+============================================================ */
+async function loadInspectionsFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('qc_inspections').select('*').order('inspection_date', { ascending:false });
+  if(error){ NexusApp.toast('Could not load inspections: ' + error.message, 'error'); INSPECTIONS = []; return; }
+  INSPECTIONS = (data || []).map(row => ({
+    id: row.id, batchId: row.batch_id, model: row.model, qty: row.qty, inspector: row.inspector,
+    date: row.inspection_date, status: row.status, approvalState: row.approval_state,
+    severity: row.severity, defects: row.defects || [], photos: row.photos || [], notes: row.notes || '',
+  }));
+}
 
 function fmtDate(iso){ return new Date(iso).toLocaleDateString('en-GB',{ day:'2-digit', month:'short', year:'numeric' }); }
 function isToday(iso){ return new Date(iso).toDateString() === new Date().toDateString(); }
@@ -260,19 +274,36 @@ function submitInspection(decision){
   item.severity = decision === 'Failed' ? (defects.reduce((s,d)=>s+d.count,0) > 8 ? 'High' : defects.reduce((s,d)=>s+d.count,0) > 3 ? 'Medium' : 'Low') : null;
   item.approvalState = decision === 'Failed' ? 'pending' : null;
 
-  persistInspections();
   NexusApp.closeDrawer('qcDrawer');
   NexusApp.toast(`${item.batchId} marked as ${decision}`, decision==='Passed'?'success':'error');
   renderAll();
+
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('qc_inspections').update({
+      status: item.status, defects: item.defects, photos: item.photos, notes: item.notes,
+      severity: item.severity, approval_state: item.approvalState,
+    }).eq('id', item.id).then(({ error }) => {
+      if(error) NexusApp.toast('Could not save inspection: ' + error.message, 'error');
+    });
+  } else {
+    persistInspections();
+  }
 }
 
 function decideApproval(id, decision){
   const item = INSPECTIONS.find(x=>x.id===id);
   if(!item) return;
   item.approvalState = decision;
-  persistInspections();
   NexusApp.toast(`${item.batchId} ${decision.toLowerCase()}`, decision==='Approved'?'success':'error');
   renderAll();
+
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('qc_inspections').update({ approval_state: decision }).eq('id', id).then(({ error }) => {
+      if(error) NexusApp.toast('Could not save decision: ' + error.message, 'error');
+    });
+  } else {
+    persistInspections();
+  }
 }
 
 /* ---------------- EXPORT ---------------- */
@@ -302,11 +333,21 @@ function renderAll(){
   renderList();
 }
 
+let qcDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
+  if(qcDidInit) return;
+  qcDidInit = true;
+
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('quality.html', session);
-  seedInspections();
+
+  if(SagoBackend?.isConfigured()){
+    await loadInspectionsFromBackend();
+  } else {
+    seedInspections();
+  }
+
   wireToolbar();
   renderAll();
 });

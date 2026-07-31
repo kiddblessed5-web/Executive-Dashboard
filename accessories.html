@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Devices — SAGERO Creations</title>
+<title>Accessories — SAGERO Creations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
@@ -19,17 +19,16 @@
   .kpi-label{ font-size:11.5px; color:var(--ink-faint); font-weight:600; }
 
   .scan-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px; }
-
   .scan-setup-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
 
   .scan-input-row{ display:flex; gap:10px; margin-bottom:6px; }
-  #scanInput{
+  #accScanInput{
     flex:1; border:2px solid var(--border); border-radius:14px; padding:14px 16px; font-size:15px; font-family:'Inter Tight';
     font-weight:700; letter-spacing:.02em; outline:none; background:var(--card); color:var(--ink); transition:.15s var(--ease);
   }
-  #scanInput:focus{ border-color:var(--primary); box-shadow:0 0 0 4px rgba(109,93,246,0.14); }
-  #scanInput.flash-success{ animation: flashGreen .5s ease; }
-  #scanInput.flash-error{ animation: flashRed .5s ease; }
+  #accScanInput:focus{ border-color:var(--primary); box-shadow:0 0 0 4px rgba(109,93,246,0.14); }
+  #accScanInput.flash-success{ animation: flashGreen .5s ease; }
+  #accScanInput.flash-error{ animation: flashRed .5s ease; }
   @keyframes flashGreen{ 0%{ background:rgba(22,163,74,0.18); } 100%{ background:var(--card); } }
   @keyframes flashRed{ 0%{ background:rgba(239,68,68,0.18); } 100%{ background:var(--card); } }
   .scan-hint{ font-size:11.5px; color:var(--ink-faint); font-weight:600; display:flex; align-items:center; gap:6px; margin-bottom:16px; }
@@ -92,68 +91,70 @@
     <div class="topbar">
       <div class="topbar-left">
         <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
-        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>SAGERO</span><i class="ri-arrow-right-s-line"></i><span>Inventory</span><i class="ri-arrow-right-s-line"></i><b>Devices</b></div>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>SAGERO</span><i class="ri-arrow-right-s-line"></i><span>Inventory</span><i class="ri-arrow-right-s-line"></i><b>Accessories</b></div>
       </div>
       <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
       <div class="topbar-right">
         <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
-        <button class="btn btn-secondary btn-sm" onclick="exportAllListsXLSX()"><i class="ri-file-excel-2-line"></i>Export all</button>
+        <button class="btn btn-secondary btn-sm" onclick="accExportAllListsXLSX()"><i class="ri-file-excel-2-line"></i>Export all</button>
       </div>
     </div>
 
     <div class="content">
       <div class="section-head fade-up">
-        <div><div class="section-title">Devices</div><div class="section-sub">Scan phones in, save the batch, and export it as a spreadsheet.</div></div>
+        <div><div class="section-title">Accessories</div><div class="section-sub">Scan accessories in as they arrive, save the batch, and export it as a spreadsheet.</div></div>
       </div>
 
       <div class="kpi-row fade-up">
-        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--grad-soft); color:var(--primary-3);"><i class="ri-cellphone-line"></i></div><div><div class="kpi-value" id="kpiTotal">0</div><div class="kpi-label">Total devices tracked</div></div></div>
-        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--success-soft); color:var(--success);"><i class="ri-qr-scan-2-line"></i></div><div><div class="kpi-value" id="kpiToday">0</div><div class="kpi-label">Scanned today</div></div></div>
-        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--info-soft); color:var(--info);"><i class="ri-smartphone-line"></i></div><div><div class="kpi-value" id="kpiModels">0</div><div class="kpi-label">Models tracked</div></div></div>
-        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--warning-soft); color:var(--warning);"><i class="ri-folder-zip-line"></i></div><div><div class="kpi-value" id="kpiLists">0</div><div class="kpi-label">Saved lists</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--grad-soft); color:var(--primary-3);"><i class="ri-headphone-line"></i></div><div><div class="kpi-value" id="accKpiTotal">0</div><div class="kpi-label">Total items tracked</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--success-soft); color:var(--success);"><i class="ri-qr-scan-2-line"></i></div><div><div class="kpi-value" id="accKpiToday">0</div><div class="kpi-label">Scanned today</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--info-soft); color:var(--info);"><i class="ri-price-tag-3-line"></i></div><div><div class="kpi-value" id="accKpiCategories">0</div><div class="kpi-label">Categories tracked</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--warning-soft); color:var(--warning);"><i class="ri-folder-zip-line"></i></div><div><div class="kpi-value" id="accKpiLists">0</div><div class="kpi-label">Saved lists</div></div></div>
       </div>
 
       <div class="scan-grid fade-up">
         <div class="card">
-          <div class="section-head"><div><div class="section-title">Scan-in Station</div><div class="section-sub">Use a USB/Bluetooth barcode scanner, or your camera</div></div></div>
+          <div class="section-head"><div><div class="section-title">Scan-in Station</div><div class="section-sub">Use a USB/Bluetooth barcode scanner, or your camera to scan the QR/barcode</div></div></div>
 
           <div class="scan-setup-row">
-            <div class="field" style="margin-bottom:0;"><label>Model for this session</label>
-              <select id="scanModel">
-                <option>Y17s</option><option>Y18</option><option>Y18t</option><option>Y28</option><option>Y36</option><option>Y50t</option><option>Y100</option><option>Y200</option><option>Y300</option><option>Y300 Plus</option><option>V30</option><option>V40</option><option>V50</option><option>V50 Pro</option><option>V50 Lite</option><option>V70</option><option>V70 Elite</option><option>X100</option><option>X200</option><option>X200 Ultra</option><option>X300</option><option>X300 Pro</option><option>X300 Ultra</option><option>T3</option><option>T4</option>
+            <div class="field" style="margin-bottom:0;"><label>Category</label>
+              <select id="accCategory">
+                <option>Phone Case</option><option>Screen Protector</option><option>Charger</option><option>Charging Cable</option>
+                <option>Earphones</option><option>Power Bank</option><option>Memory Card</option><option>Bluetooth Speaker</option>
+                <option>Phone Stand</option><option>Other</option>
               </select>
             </div>
-            <div class="field" style="margin-bottom:0;"><label>Linked batch (optional)</label><input type="text" id="scanBatchRef" placeholder="e.g. BX-1042"></div>
+            <div class="field" style="margin-bottom:0;"><label>Item name</label><input type="text" id="accItemName" placeholder="e.g. Silicone Case - Black"></div>
           </div>
 
           <div class="scan-input-row">
-            <input type="text" id="scanInput" placeholder="Click here, then scan or type a barcode / IMEI and press Enter" autocomplete="off">
-            <button class="btn btn-primary" id="addScanBtn"><i class="ri-add-line"></i>Add</button>
+            <input type="text" id="accScanInput" placeholder="Click here, then scan or type a barcode/QR code and press Enter" autocomplete="off">
+            <button class="btn btn-primary" id="accAddScanBtn"><i class="ri-add-line"></i>Add</button>
           </div>
           <div class="scan-hint"><i class="ri-information-line"></i>This field stays focused for hardware scanners — each scan adds a row automatically.</div>
 
           <div class="camera-toggle-row">
-            <button class="btn btn-secondary btn-sm" id="startCameraBtn" onclick="startCameraScan()"><i class="ri-camera-line"></i>Scan with camera</button>
-            <button class="btn btn-danger btn-sm" id="stopCameraBtn" onclick="stopCameraScan()" style="display:none;"><i class="ri-stop-circle-line"></i>Stop camera</button>
+            <button class="btn btn-secondary btn-sm" id="accStartCameraBtn" onclick="accStartCameraScan()"><i class="ri-camera-line"></i>Scan with camera</button>
+            <button class="btn btn-danger btn-sm" id="accStopCameraBtn" onclick="accStopCameraScan()" style="display:none;"><i class="ri-stop-circle-line"></i>Stop camera</button>
           </div>
-          <div class="camera-wrap" id="cameraWrap">
-            <video id="cameraPreview" muted playsinline></video>
+          <div class="camera-wrap" id="accCameraWrap">
+            <video id="accCameraPreview" muted playsinline></video>
             <div class="camera-reticle"></div>
           </div>
         </div>
 
         <div class="card">
           <div class="session-head">
-            <div><div class="section-title" style="font-size:15px;">Current Session</div><div class="section-sub" id="sessionCount">0 scanned this session</div></div>
+            <div><div class="section-title" style="font-size:15px;">Current Session</div><div class="section-sub" id="accSessionCount">0 scanned this session</div></div>
             <div style="display:flex; gap:8px;">
-              <button class="btn btn-secondary btn-sm" id="clearSessionBtn" onclick="clearSession()"><i class="ri-eraser-line"></i>Clear</button>
-              <button class="btn btn-primary btn-sm" id="saveSessionBtn" onclick="openSaveModal()"><i class="ri-save-line"></i>Save list</button>
+              <button class="btn btn-secondary btn-sm" id="accClearSessionBtn" onclick="accClearSession()"><i class="ri-eraser-line"></i>Clear</button>
+              <button class="btn btn-primary btn-sm" id="accSaveSessionBtn" onclick="accOpenSaveModal()"><i class="ri-save-line"></i>Save list</button>
             </div>
           </div>
           <div style="overflow-x:auto; max-height:320px; overflow-y:auto;">
             <table>
-              <thead><tr><th>Barcode / IMEI</th><th>Model</th><th>Scanned at</th><th></th></tr></thead>
-              <tbody id="sessionTableBody"></tbody>
+              <thead><tr><th>Barcode</th><th>Item</th><th>Scanned at</th><th></th></tr></thead>
+              <tbody id="accSessionTableBody"></tbody>
             </table>
           </div>
         </div>
@@ -161,47 +162,47 @@
 
       <div class="card fade-up">
         <div class="section-head"><div><div class="section-title">Saved Lists</div><div class="section-sub">Every scan session you've saved, ready to export.</div></div></div>
-        <div class="toolbar-search"><i class="ri-search-line"></i><input id="listSearch" placeholder="Search saved lists…"></div>
-        <div id="savedListsWrap"></div>
+        <div class="toolbar-search"><i class="ri-search-line"></i><input id="accListSearch" placeholder="Search saved lists…"></div>
+        <div id="accSavedListsWrap"></div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- SAVE SESSION MODAL -->
-<div class="overlay" id="overlay-modal-savesession" onclick="NexusApp.closeModal('modal-savesession')"></div>
-<div class="modal" id="modal-savesession">
-  <div class="modal-head"><h3>Save scan list</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-savesession')"><i class="ri-close-line"></i></button></div>
-  <p style="font-size:12px; color:var(--ink-faint); margin-bottom:14px;" id="sv-count"></p>
-  <form onsubmit="submitSaveSession(event)">
-    <div class="field"><label>List name</label><input type="text" id="sv-name" required></div>
-    <div class="field"><label>Batch reference (optional)</label><input type="text" id="sv-batchref" placeholder="e.g. BX-1042"></div>
+<div class="overlay" id="overlay-modal-acc-savesession" onclick="NexusApp.closeModal('modal-acc-savesession')"></div>
+<div class="modal" id="modal-acc-savesession">
+  <div class="modal-head"><h3>Save scan list</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-acc-savesession')"><i class="ri-close-line"></i></button></div>
+  <p style="font-size:12px; color:var(--ink-faint); margin-bottom:14px;" id="acc-sv-count"></p>
+  <form onsubmit="accSubmitSaveSession(event)">
+    <div class="field"><label>List name</label><input type="text" id="acc-sv-name" required></div>
+    <div class="field"><label>Batch reference (optional)</label><input type="text" id="acc-sv-batchref" placeholder="e.g. ORD-7788"></div>
     <div class="modal-actions">
-      <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-savesession')">Cancel</button>
+      <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-acc-savesession')">Cancel</button>
       <button type="submit" class="btn btn-primary"><i class="ri-save-line"></i>Save list</button>
     </div>
   </form>
 </div>
 
 <!-- VIEW LIST DRAWER -->
-<div class="overlay" id="drawer-overlay" onclick="NexusApp.closeDrawer('viewListDrawer')"></div>
-<div class="drawer" id="viewListDrawer">
+<div class="overlay" id="drawer-overlay" onclick="NexusApp.closeDrawer('accViewListDrawer')"></div>
+<div class="drawer" id="accViewListDrawer">
   <div class="drawer-head">
     <div>
-      <div id="vlName" style="font-family:'Inter Tight'; font-size:16px; font-weight:800;"></div>
-      <div id="vlMeta" style="font-size:11.5px; color:var(--ink-faint); font-weight:600; margin-top:3px;"></div>
+      <div id="accVlName" style="font-family:'Inter Tight'; font-size:16px; font-weight:800;"></div>
+      <div id="accVlMeta" style="font-size:11.5px; color:var(--ink-faint); font-weight:600; margin-top:3px;"></div>
     </div>
-    <button class="modal-close" onclick="NexusApp.closeDrawer('viewListDrawer')"><i class="ri-close-line"></i></button>
+    <button class="modal-close" onclick="NexusApp.closeDrawer('accViewListDrawer')"><i class="ri-close-line"></i></button>
   </div>
   <div class="drawer-body">
     <div style="display:flex; gap:8px; margin-bottom:18px;">
-      <button class="btn btn-secondary btn-sm" onclick="exportListCSV(window.currentViewList)"><i class="ri-file-text-line"></i>Export CSV</button>
-      <button class="btn btn-primary btn-sm" onclick="exportListXLSX(window.currentViewList)"><i class="ri-file-excel-2-line"></i>Export Excel</button>
+      <button class="btn btn-secondary btn-sm" onclick="accExportListCSV(window.accCurrentViewList)"><i class="ri-file-text-line"></i>Export CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="accExportListXLSX(window.accCurrentViewList)"><i class="ri-file-excel-2-line"></i>Export Excel</button>
     </div>
     <div style="overflow-x:auto;">
       <table>
-        <thead><tr><th>Barcode / IMEI</th><th>Model</th><th>Scanned at</th></tr></thead>
-        <tbody id="vlTableBody"></tbody>
+        <thead><tr><th>Barcode</th><th>Item</th><th>Scanned at</th></tr></thead>
+        <tbody id="accVlTableBody"></tbody>
       </table>
     </div>
   </div>
@@ -211,6 +212,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
-<script src="assets/js/devices.js"></script>
+<script src="assets/js/accessories.js"></script>
 </body>
 </html>

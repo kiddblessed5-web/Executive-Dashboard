@@ -10,20 +10,29 @@ function setSettingsTab(tab){
 
 /* ---------------- COMPANY ---------------- */
 function loadCompany(){
-  const saved = localStorage.getItem('nexus_settings_company');
-  const c = saved ? JSON.parse(saved) : {
-    name:'Sagero Creations', industry:'Electronics Processing & Refurbishment',
+  const defaults = {
+    name:'SAGERO Creations', industry:'Electronics Processing & Refurbishment',
     address:'Industrial Area, Nairobi, Kenya', timezone:'Africa/Nairobi (GMT+3)',
     currency:'KES', dailyWage:600
   };
-  document.getElementById('cmp-name').value = c.name;
-  document.getElementById('cmp-industry').value = c.industry;
-  document.getElementById('cmp-address').value = c.address;
-  document.getElementById('cmp-timezone').value = c.timezone;
-  document.getElementById('cmp-currency').value = c.currency;
-  document.getElementById('cmp-wage').value = c.dailyWage;
+  function applyCompany(c){
+    document.getElementById('cmp-name').value = c.name;
+    document.getElementById('cmp-industry').value = c.industry;
+    document.getElementById('cmp-address').value = c.address;
+    document.getElementById('cmp-timezone').value = c.timezone;
+    document.getElementById('cmp-currency').value = c.currency;
+    document.getElementById('cmp-wage').value = c.dailyWage;
+  }
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('app_settings').select('*').eq('key','company').single().then(({ data, error }) => {
+      applyCompany(data?.value || defaults);
+    });
+    return;
+  }
+  const saved = localStorage.getItem('nexus_settings_company');
+  applyCompany(saved ? JSON.parse(saved) : defaults);
 }
-function saveCompany(){
+async function saveCompany(){
   const c = {
     name: document.getElementById('cmp-name').value,
     industry: document.getElementById('cmp-industry').value,
@@ -32,6 +41,12 @@ function saveCompany(){
     currency: document.getElementById('cmp-currency').value,
     dailyWage: document.getElementById('cmp-wage').value,
   };
+  if(SagoBackend?.isConfigured()){
+    const { error } = await SagoBackend.getClient().from('app_settings').upsert({ key:'company', value:c, updated_at:new Date().toISOString() });
+    if(error){ NexusApp.toast('Could not save: ' + error.message, 'error'); return; }
+    NexusApp.toast('Company details saved', 'success');
+    return;
+  }
   localStorage.setItem('nexus_settings_company', JSON.stringify(c));
   NexusApp.toast('Company details saved', 'success');
 }
@@ -126,22 +141,42 @@ const PERMISSIONS = [
 ];
 let permMatrix = {};
 function loadPermissions(){
+  function computeDefaults(){
+    const m = {};
+    ROLES.forEach(r => {
+      m[r.id] = {};
+      PERMISSIONS.forEach((p,i) => {
+        if(r.id==='superadmin') m[r.id][p] = true;
+        else if(r.id==='viewer') m[r.id][p] = p==='View Dashboard' || p==='View Reports';
+        else if(r.id==='worker') m[r.id][p] = p==='View Dashboard';
+        else m[r.id][p] = i % (ROLES.indexOf(r)+2) === 0 || p==='View Dashboard';
+      });
+    });
+    return m;
+  }
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('app_settings').select('*').eq('key','permissions').single().then(({ data, error }) => {
+      permMatrix = data?.value || computeDefaults();
+      if(!data?.value) persistPermissions();
+      renderPermissionsMatrix();
+    });
+    return;
+  }
   const saved = localStorage.getItem('nexus_settings_permissions');
   if(saved){ permMatrix = JSON.parse(saved); return renderPermissionsMatrix(); }
-  permMatrix = {};
-  ROLES.forEach(r => {
-    permMatrix[r.id] = {};
-    PERMISSIONS.forEach((p,i) => {
-      if(r.id==='superadmin') permMatrix[r.id][p] = true;
-      else if(r.id==='viewer') permMatrix[r.id][p] = p==='View Dashboard' || p==='View Reports';
-      else if(r.id==='worker') permMatrix[r.id][p] = p==='View Dashboard';
-      else permMatrix[r.id][p] = i % (ROLES.indexOf(r)+2) === 0 || p==='View Dashboard';
-    });
-  });
+  permMatrix = computeDefaults();
   persistPermissions();
   renderPermissionsMatrix();
 }
-function persistPermissions(){ localStorage.setItem('nexus_settings_permissions', JSON.stringify(permMatrix)); }
+function persistPermissions(){
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('app_settings').upsert({ key:'permissions', value:permMatrix, updated_at:new Date().toISOString() }).then(({ error }) => {
+      if(error) NexusApp.toast('Could not save permissions: ' + error.message, 'error');
+    });
+    return;
+  }
+  localStorage.setItem('nexus_settings_permissions', JSON.stringify(permMatrix));
+}
 
 function renderPermissionsMatrix(){
   const head = `<tr><th style="min-width:180px;">Permission</th>${ROLES.map(r=>`<th data-role-col="${r.id}" style="text-align:center;">${r.name}</th>`).join('')}</tr>`;
@@ -188,7 +223,7 @@ function loadSessions(){
   const saved = localStorage.getItem('nexus_sessions_list');
   SESSIONS = saved ? JSON.parse(saved) : [
     { id:'s1', device:'Chrome on macOS', location:'Nairobi, Kenya', lastActive:'Active now', current:true },
-    { id:'s2', device:'Sagero mobile app · iPhone', location:'Nairobi, Kenya', lastActive:'2 hours ago', current:false },
+    { id:'s2', device:'SAGERO mobile app · iPhone', location:'Nairobi, Kenya', lastActive:'2 hours ago', current:false },
     { id:'s3', device:'Chrome on Windows', location:'Mombasa, Kenya', lastActive:'3 days ago', current:false },
   ];
   renderSessions();
@@ -310,11 +345,11 @@ function copyRevealedKey(){
 
 /* ---------------- AUDIT LOG PREVIEW ---------------- */
 const AUDIT_ENTRIES = [
-  { icon:'ri-money-dollar-circle-line', text:'Alex Kimani approved payroll for Week of Jul 7 – 12', time:'2 hours ago' },
+  { icon:'ri-money-dollar-circle-line', text:'SAGERO approved payroll for Week of Jul 7 – 12', time:'2 hours ago' },
   { icon:'ri-smartphone-line', text:'Wei Zhang created batch BX-1092', time:'5 hours ago' },
   { icon:'ri-user-line', text:'HR Desk updated worker record for Grace Achieng', time:'Yesterday' },
   { icon:'ri-shield-check-line', text:'Kevin Otieno marked batch BX-1039 as Failed inspection', time:'Yesterday' },
-  { icon:'ri-settings-4-line', text:'Alex Kimani updated notification preferences', time:'2 days ago' },
+  { icon:'ri-settings-4-line', text:'SAGERO updated notification preferences', time:'2 days ago' },
   { icon:'ri-lock-2-line', text:'System: new API key "Reporting integration" generated', time:'3 days ago' },
   { icon:'ri-team-line', text:'HR Desk added worker James Mwangi', time:'4 days ago' },
 ];

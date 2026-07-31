@@ -182,6 +182,7 @@ const NexusApp = (() => {
     ]},
     { group:'Inventory', items:[
       { label:'Devices', icon:'ri-cellphone-line', page:'devices.html' },
+      { label:'Accessories', icon:'ri-headphone-line', page:'accessories.html' },
       { label:'Warehouse', icon:'ri-building-4-line', page:'warehouse.html' },
     ]},
     { group:'', items:[
@@ -395,6 +396,24 @@ const NexusApp = (() => {
   }
 
   /* ---------------- INIT ---------------- */
+  /* ---------------- IDLE TIMEOUT ---------------- */
+  const IDLE_LIMIT_MS = 15 * 60 * 1000; // 15 minutes
+  let lastActivityAt = Date.now();
+  let idleCheckHandle = null;
+  function initIdleLogout(){
+    if(idleCheckHandle) return; // already running (e.g. if initShell somehow ran twice)
+    ['mousemove','keydown','click','scroll','touchstart'].forEach(evt => {
+      document.addEventListener(evt, () => { lastActivityAt = Date.now(); }, { passive:true });
+    });
+    idleCheckHandle = setInterval(() => {
+      if(Date.now() - lastActivityAt >= IDLE_LIMIT_MS){
+        clearInterval(idleCheckHandle);
+        toast('You\u2019ve been signed out after 15 minutes of inactivity', 'info');
+        setTimeout(() => logout(), 1200);
+      }
+    }, 15000);
+  }
+
   function initShell(activePage, session){
     initTheme();
     applyDensity();
@@ -404,6 +423,8 @@ const NexusApp = (() => {
     initRipple();
     initCommandPalette();
     initTooltips();
+    initIdleLogout();
+    document.body.classList.remove('auth-checking'); // session confirmed — safe to reveal the page now
     if(session){
       const nameEl = document.getElementById('userChipName');
       const roleEl = document.getElementById('userChipRole');
