@@ -6,6 +6,69 @@
 
 const NexusApp = (() => {
 
+  /* ---------------- SERVICE WORKER (PWA) ---------------- */
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {
+        // registration failing (e.g. unsupported browser, running from
+        // a file:// path during local testing) shouldn't break the app
+      });
+    });
+  }
+
+  /* ---------------- INSTALL PROMPT ---------------- */
+  let deferredInstallPrompt = null;
+  const INSTALL_DISMISS_KEY = 'sagero_install_dismissed_at';
+  const INSTALL_DISMISS_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000; // don't re-nag for a week after a dismiss
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); // stop the browser's default mini-infobar so we control the moment/look
+    deferredInstallPrompt = e;
+    maybeShowInstallBanner();
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    hideInstallBanner();
+  });
+
+  function maybeShowInstallBanner(){
+    if(!deferredInstallPrompt) return;
+    if(window.matchMedia('(display-mode: standalone)').matches) return; // already installed/running as an app
+    const dismissedAt = parseInt(localStorage.getItem(INSTALL_DISMISS_KEY) || '0', 10);
+    if(Date.now() - dismissedAt < INSTALL_DISMISS_SNOOZE_MS) return;
+    if(document.getElementById('installBanner')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'installBanner';
+    banner.className = 'install-banner';
+    banner.innerHTML = `
+      <div class="install-banner-icon"><img src="assets/img/icon-192.png" alt=""></div>
+      <div class="install-banner-text"><b>Install SAGERO Creations</b><span>Add it to your home screen for quick, full-screen access.</span></div>
+      <button class="btn btn-secondary btn-sm" id="installDismissBtn">Not now</button>
+      <button class="btn btn-primary btn-sm" id="installConfirmBtn">Install</button>
+    `;
+    document.body.appendChild(banner);
+    requestAnimationFrame(() => banner.classList.add('show'));
+
+    document.getElementById('installConfirmBtn').addEventListener('click', async () => {
+      hideInstallBanner();
+      if(!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice; // resolves once the person accepts or dismisses the native dialog
+      deferredInstallPrompt = null;
+    });
+    document.getElementById('installDismissBtn').addEventListener('click', () => {
+      localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
+      hideInstallBanner();
+    });
+  }
+  function hideInstallBanner(){
+    const banner = document.getElementById('installBanner');
+    if(!banner) return;
+    banner.classList.remove('show');
+    setTimeout(() => banner.remove(), 300);
+  }
+
   /* ---------------- AUTH GUARD ---------------- */
   const SESSION_CACHE_KEY = 'sagero_session_cache';
   const SESSION_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — long enough that clicking through the app feels instant, short enough to pick up role/profile changes reasonably soon
