@@ -276,6 +276,7 @@ function submitInspection(decision){
 
   NexusApp.closeDrawer('qcDrawer');
   NexusApp.toast(`${item.batchId} marked as ${decision}`, decision==='Passed'?'success':'error');
+  NexusApp.logAudit('Quality Control', `${item.batchId} (${item.model}) marked ${decision} by QC`);
   renderAll();
 
   if(SagoBackend?.isConfigured()){
@@ -295,6 +296,7 @@ function decideApproval(id, decision){
   if(!item) return;
   item.approvalState = decision;
   NexusApp.toast(`${item.batchId} ${decision.toLowerCase()}`, decision==='Approved'?'success':'error');
+  NexusApp.logAudit('Quality Control', `${item.batchId} rework decision: ${decision}`);
   renderAll();
 
   if(SagoBackend?.isConfigured()){

@@ -341,6 +341,7 @@ async function submitNewBatch(e){
     BATCHES.unshift(mapDbBatchToLocal(data));
     NexusApp.closeModal('modal-newbatch');
     NexusApp.toast('Batch ' + id + ' created','success');
+    NexusApp.logAudit('Production', `Batch ${id} created — ${qty} × ${model}`);
     currentPage = 1;
     renderViews();
     e.target.reset();
@@ -358,6 +359,7 @@ async function submitNewBatch(e){
   persistBatches();
   NexusApp.closeModal('modal-newbatch');
   NexusApp.toast('Batch ' + id + ' created','success');
+    NexusApp.logAudit('Production', `Batch ${id} created — ${qty} × ${model}`);
   currentPage = 1;
   renderViews();
   e.target.reset();
@@ -381,6 +383,7 @@ async function removeBatch(){
   NexusApp.closeDrawer('batchDrawer');
   renderViews();
   NexusApp.toast(id + ' removed', 'info');
+  NexusApp.logAudit('Production', `Batch ${id} was removed`);
 
   if(SagoBackend?.isConfigured()){
     const { error } = await SagoBackend.getClient().from('batches').delete().eq('id', id);

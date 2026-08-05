@@ -71,6 +71,12 @@
   .decision-row{ display:flex; gap:10px; margin-top:20px; }
 
   @media (max-width:1080px){ .kpi-row{ grid-template-columns:repeat(2,1fr); } .qc-grid{ grid-template-columns:1fr; } }
+  @media (max-width:640px){
+    .qc-tabs{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .qc-tab{ flex-shrink:0; white-space:nowrap; }
+    .qc-toolbar{ flex-direction:column; align-items:stretch; }
+    .qc-toolbar > *{ width:100%; }
+  }
 </style>
 </head>
 <body class="auth-checking">

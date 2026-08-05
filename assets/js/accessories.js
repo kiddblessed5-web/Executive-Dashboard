@@ -310,6 +310,35 @@ function accWireSearch(){
 }
 
 /* ---------------- INIT ---------------- */
+/* ---------------- QUICK ADD (no barcode) ---------------- */
+function accOpenQuickAddModal(){ NexusApp.openModal('modal-acc-quickadd'); }
+async function accSubmitQuickAdd(e){
+  e.preventDefault();
+  const category = document.getElementById('qa-category').value;
+  const itemName = document.getElementById('qa-item').value.trim();
+  const qty = parseInt(document.getElementById('qa-qty').value, 10);
+  if(!itemName || !qty || qty < 1){ NexusApp.toast('Enter an item name and a valid quantity', 'error'); return; }
+
+  if(!SagoBackend?.isConfigured()){
+    NexusApp.toast('Manual stock entry needs the backend connected \u2014 see assets/js/supabase-client.js', 'error');
+    return;
+  }
+
+  const sb = SagoBackend.getClient();
+  const { data: existing } = await sb.from('accessories_stock').select('*').eq('category', category).eq('item_name', itemName).single().then(r=>r, ()=>({data:null}));
+
+  const newQty = (existing?.qty || 0) + qty;
+  const { error } = await sb.from('accessories_stock').upsert(
+    { category, item_name: itemName, qty: newQty, updated_at: new Date().toISOString() },
+    { onConflict: 'category,item_name' }
+  );
+  if(error){ NexusApp.toast('Could not add stock: ' + error.message, 'error'); return; }
+
+  NexusApp.closeModal('modal-acc-quickadd');
+  NexusApp.toast(`Added ${qty} × ${itemName} \u2014 now ${newQty} in stock`, 'success');
+  e.target.reset();
+}
+
 let accDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
   if(accDidInit) return;

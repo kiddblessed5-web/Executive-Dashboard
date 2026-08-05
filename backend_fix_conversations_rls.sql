@@ -64,21 +64,21 @@ alter table messages enable row level security;
 alter table message_reactions enable row level security;
 
 create policy "Members can view their conversations" on conversations for select using (
-  is_conversation_member(id, auth.uid())
+  is_conversation_member(id, auth.uid()) or created_by = auth.uid()
 );
-create policy "Signed-in users can create conversations" on conversations for insert to authenticated with check (true);
+create policy "Signed-in users can create conversations" on conversations for insert with check (auth.uid() is not null);
 
 create policy "Members can view membership rows for their conversations" on conversation_members for select using (
   is_conversation_member(conversation_id, auth.uid())
 );
-create policy "Signed-in users can add members" on conversation_members for insert to authenticated with check (true);
+create policy "Signed-in users can add members" on conversation_members for insert with check (auth.uid() is not null);
 create policy "Members can remove their own membership" on conversation_members for delete using (auth.uid() = user_id);
 create policy "Members can update their own last_read_at" on conversation_members for update using (auth.uid() = user_id);
 
 create policy "Members can read messages in their conversations" on messages for select using (
   is_conversation_member(conversation_id, auth.uid())
 );
-create policy "Members can send messages in their conversations" on messages for insert to authenticated with check (
+create policy "Members can send messages in their conversations" on messages for insert with check (
   auth.uid() = sender_id and is_conversation_member(conversation_id, auth.uid())
 );
 create policy "Senders can update their own messages" on messages for update using (auth.uid() = sender_id);
@@ -86,7 +86,7 @@ create policy "Senders can update their own messages" on messages for update usi
 create policy "Members can read reactions" on message_reactions for select using (
   exists (select 1 from messages msg where msg.id = message_id and is_conversation_member(msg.conversation_id, auth.uid()))
 );
-create policy "Signed-in users can react" on message_reactions for insert to authenticated with check (auth.uid() = user_id);
+create policy "Signed-in users can react" on message_reactions for insert with check (auth.uid() = user_id);
 create policy "Users can remove their own reactions" on message_reactions for delete using (auth.uid() = user_id);
 
 -- Re-run the diagnostic from Step 1 after this to confirm the

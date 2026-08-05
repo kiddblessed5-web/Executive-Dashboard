@@ -147,6 +147,7 @@
       <div class="settings-shell fade-up">
         <div class="settings-nav">
           <div class="settings-nav-item active" data-tab="company"><i class="ri-building-4-line"></i>Company</div>
+          <div class="settings-nav-item" data-tab="attendance"><i class="ri-fingerprint-line"></i>Attendance</div>
           <div class="settings-nav-item" data-tab="appearance"><i class="ri-palette-line"></i>Appearance</div>
           <div class="settings-nav-item" data-tab="notifications"><i class="ri-notification-3-line"></i>Notifications</div>
           <div class="settings-nav-item" data-tab="roles"><i class="ri-user-star-line"></i>Roles</div>
@@ -174,6 +175,33 @@
             </div>
             <div class="field" style="max-width:220px;"><label>Standard daily wage (KES)</label><input type="number" id="cmp-wage"></div>
             <button class="btn btn-primary" onclick="saveCompany()"><i class="ri-save-line"></i>Save changes</button>
+          </div>
+
+          <!-- ATTENDANCE -->
+          <div class="settings-panel" data-panel="attendance">
+            <div class="settings-panel-title">Attendance</div>
+            <div class="settings-panel-sub">How late check-ins are determined, and where workers are allowed to check in from.</div>
+
+            <div class="field" style="max-width:220px;"><label>Late check-in cutoff</label><input type="time" id="att-cutoff" value="08:30"></div>
+            <p style="font-size:12px; color:var(--ink-faint); margin-top:-8px; margin-bottom:20px;">Anyone who checks in after this time is automatically marked late.</p>
+
+            <div class="field" style="display:flex; align-items:center; gap:8px;">
+              <input type="checkbox" id="att-geo-enabled" style="width:16px;height:16px;">
+              <label for="att-geo-enabled" style="margin:0;">Only allow check-in from the workplace</label>
+            </div>
+            <p style="font-size:12px; color:var(--ink-faint); margin-top:-4px; margin-bottom:16px;">
+              Uses the browser's location to block check-ins from far away. Note: this depends on device GPS accuracy (typically accurate to 10–50m outdoors, less reliable indoors) and can't fully prevent a determined person from spoofing their location — it's a reasonable deterrent, not an ironclad guarantee.
+            </p>
+
+            <div class="form-2col">
+              <div class="field"><label>Workplace latitude</label><input type="number" step="any" id="att-geo-lat" placeholder="e.g. -1.286389"></div>
+              <div class="field"><label>Workplace longitude</label><input type="number" step="any" id="att-geo-lng" placeholder="e.g. 36.817223"></div>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="useCurrentLocationForGeofence()" style="margin-bottom:16px;"><i class="ri-map-pin-line"></i>Use my current location</button>
+
+            <div class="field" style="max-width:220px;"><label>Allowed radius (meters)</label><input type="number" id="att-geo-radius" value="200" min="20"></div>
+
+            <button class="btn btn-primary" onclick="saveAttendanceSettings()"><i class="ri-save-line"></i>Save changes</button>
           </div>
 
           <!-- APPEARANCE -->

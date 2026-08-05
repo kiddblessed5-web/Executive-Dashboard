@@ -67,24 +67,48 @@ function renderKPIs(){
 }
 
 /* ---------------- SCAN INPUT (hardware scanner + manual entry) ---------------- */
+function addScanSilent(barcode){
+  barcode = barcode.trim();
+  if(!barcode) return { ok:false, reason:'empty' };
+  const dupeInSession = sessionScans.some(s => s.barcode === barcode);
+  const dupeInLists = SAVED_LISTS.some(l => l.items.some(i => i.barcode === barcode));
+  if(dupeInSession || dupeInLists) return { ok:false, reason:'duplicate' };
+  const model = document.getElementById('scanModel').value;
+  sessionScans.unshift({ barcode, model, scannedAt: new Date().toISOString() });
+  return { ok:true };
+}
 function addScan(barcode){
   barcode = barcode.trim();
   if(!barcode) return;
-
-  const dupeInSession = sessionScans.some(s => s.barcode === barcode);
-  const dupeInLists = SAVED_LISTS.some(l => l.items.some(i => i.barcode === barcode));
-  if(dupeInSession || dupeInLists){
-    NexusApp.toast('Barcode ' + barcode + ' has already been scanned', 'error');
+  const result = addScanSilent(barcode);
+  if(!result.ok){
+    NexusApp.toast(result.reason==='duplicate' ? 'Barcode ' + barcode + ' has already been scanned' : 'Enter a barcode first', 'error');
     flashScanInput(false);
     return;
   }
-
-  const model = document.getElementById('scanModel').value;
-  sessionScans.unshift({ barcode, model, scannedAt: new Date().toISOString() });
   persistSession();
   renderSessionTable();
   renderKPIs();
   flashScanInput(true);
+}
+/* A single 2D scan on a carton label can encode multiple individual
+   IMEIs at once (Vivo's "2D IMEI" master-carton labels — one code
+   per unit inside, joined by \r or \n). Splits and adds them all. */
+function addMultiScan(rawValue){
+  const parts = rawValue.split(/[\r\n]+/).map(s=>s.trim()).filter(Boolean);
+  if(parts.length <= 1){ addScan(rawValue); return; }
+  let added = 0, dupes = 0;
+  parts.forEach(code => { const r = addScanSilent(code); if(r.ok) added++; else if(r.reason==='duplicate') dupes++; });
+  persistSession();
+  renderSessionTable();
+  renderKPIs();
+  if(added > 0){
+    NexusApp.toast(`Carton scan: added ${added} device${added===1?'':'s'}${dupes?` (${dupes} already scanned)`:''}`, 'success');
+    flashScanInput(true);
+  } else {
+    NexusApp.toast('All codes in that carton scan were already scanned', 'error');
+    flashScanInput(false);
+  }
 }
 function flashScanInput(success){
   const el = document.getElementById('scanInput');
@@ -93,13 +117,43 @@ function flashScanInput(success){
   el.classList.add(success ? 'flash-success' : 'flash-error');
 }
 
+let scanBuffer = [];
+let scanBufferTimer = null;
+function flushScanBuffer(){
+  const segments = scanBuffer;
+  scanBuffer = [];
+  if(segments.length === 0) return;
+  if(segments.length === 1){ addScan(segments[0]); return; }
+  // multiple Enter-separated pieces arrived within the buffering window —
+  // this is a carton's 2D code, add every IMEI it contained
+  let added = 0, dupes = 0;
+  segments.forEach(code => { const r = addScanSilent(code); if(r.ok) added++; else if(r.reason==='duplicate') dupes++; });
+  persistSession();
+  renderSessionTable();
+  renderKPIs();
+  if(added > 0){
+    NexusApp.toast(`Carton scan: added ${added} device${added===1?'':'s'}${dupes?` (${dupes} already scanned)`:''}`, 'success');
+    flashScanInput(true);
+  } else {
+    NexusApp.toast('All codes in that carton scan were already scanned', 'error');
+    flashScanInput(false);
+  }
+}
 function wireScanInput(){
   const input = document.getElementById('scanInput');
   input.addEventListener('keydown', (e) => {
     if(e.key === 'Enter'){
       e.preventDefault();
-      addScan(input.value);
+      const val = input.value;
       input.value = '';
+      if(val.trim()) scanBuffer.push(val.trim());
+      clearTimeout(scanBufferTimer);
+      // wait briefly for more segments to land — a carton's 2D code arrives
+      // as several rapid Enter-separated pieces from a hardware scanner;
+      // a normal single scan only ever produces one piece, so this delay
+      // is imperceptible for the common case and just lets a carton scan
+      // finish arriving before we decide what we got.
+      scanBufferTimer = setTimeout(flushScanBuffer, 150);
     }
   });
   input.focus();
@@ -133,7 +187,7 @@ async function startCameraScan(){
       try{
         const codes = await detector.detect(video);
         if(codes.length){
-          addScan(codes[0].rawValue);
+          addMultiScan(codes[0].rawValue);
         }
       }catch(err){ /* detection frame errors are expected intermittently, ignore */ }
     }, 600);
@@ -344,6 +398,46 @@ function wireSearch(){
 }
 
 /* ---------------- INIT ---------------- */
+/* ---------------- CUSTOM MODELS ---------------- */
+async function loadCustomModels(){
+  if(!SagoBackend?.isConfigured()) return;
+  const { data, error } = await SagoBackend.getClient().from('device_models').select('*').order('name');
+  if(error) return;
+  const select = document.getElementById('scanModel');
+  (data || []).forEach(row => {
+    if([...select.options].some(o=>o.value===row.name)) return; // already in the built-in list
+    const opt = document.createElement('option');
+    opt.textContent = row.name;
+    select.appendChild(opt);
+  });
+}
+function openAddModelModal(){ NexusApp.openModal('modal-addmodel'); }
+async function submitNewModel(e){
+  e.preventDefault();
+  const name = document.getElementById('am-name').value.trim();
+  if(!name){ NexusApp.toast('Enter a model name', 'error'); return; }
+  const select = document.getElementById('scanModel');
+  if([...select.options].some(o=>o.value===name)){
+    NexusApp.toast(name + ' is already in the list', 'error');
+    select.value = name;
+    NexusApp.closeModal('modal-addmodel');
+    return;
+  }
+
+  if(SagoBackend?.isConfigured()){
+    const { error } = await SagoBackend.getClient().from('device_models').insert({ name });
+    if(error){ NexusApp.toast('Could not add model: ' + error.message, 'error'); return; }
+  }
+
+  const opt = document.createElement('option');
+  opt.textContent = name;
+  select.appendChild(opt);
+  select.value = name;
+  NexusApp.closeModal('modal-addmodel');
+  NexusApp.toast(name + ' added to the model list', 'success');
+  e.target.reset();
+}
+
 let devDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
   if(devDidInit) return;
@@ -360,6 +454,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if(SagoBackend?.isConfigured()){
     await loadListsFromBackend();
+    await loadCustomModels();
   } else {
     const savedLists = localStorage.getItem('nexus_scan_lists');
     SAVED_LISTS = savedLists ? JSON.parse(savedLists) : seedSavedLists();

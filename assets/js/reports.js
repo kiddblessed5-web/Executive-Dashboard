@@ -7,8 +7,8 @@
 ============================================================ */
 
 const RPT_MODELS = ['Y17s','Y18','Y18t','Y28','Y36','Y50t','Y100','Y200','Y300','Y300 Plus','V30','V40','V50','V50 Pro','V50 Lite','V70','V70 Elite','X100','X200','X200 Ultra','X300','X300 Pro','X300 Ultra','T3','T4'];
-const RPT_MANAGERS = ['Wei Zhang','Li Chen','Feng Yun','Chao Liu'];
-const RPT_WORKERS = [
+let RPT_MANAGERS = ['Wei Zhang','Li Chen','Feng Yun','Chao Liu'];
+let RPT_WORKERS = [
   { id:'W-2001', name:'Grace Achieng', role:'Unboxing', color:'#6D5DF6' },
   { id:'W-2002', name:'Kevin Otieno', role:'Software Install', color:'#3B82F6' },
   { id:'W-2003', name:'Mercy Njoki', role:'Quality Check', color:'#7C3AED' },
@@ -29,7 +29,18 @@ function fmtDateISO(d){ return d.toISOString().slice(0,10); }
 /* ---------------- DATA SOURCES (real if present, seeded fallback otherwise) ---------------- */
 let PROD_DATA = [], ATT_DATA = {}, PAYROLL_RUNS = {}, WORKER_STATS = [], QC_DATA = [];
 
-function loadAllData(){
+async function loadAllData(){
+  if(SagoBackend?.isConfigured()){
+    const sb = SagoBackend.getClient();
+    await Promise.all([
+      loadProductionFromBackend(sb),
+      loadAttendanceFromBackend(sb),
+      loadPayrollFromBackend(sb),
+      loadWorkerStatsFromBackend(sb),
+      loadQCFromBackend(sb),
+    ]);
+    return;
+  }
   loadProduction();
   loadAttendance();
   loadPayroll();
@@ -37,6 +48,66 @@ function loadAllData(){
   loadQC();
 }
 
+/* ============================================================
+   BACKEND MODE — every report reads from the same real tables
+   the rest of the app writes to (batches, attendance, payroll_runs,
+   workers, qc_inspections). No fabricated numbers.
+============================================================ */
+async function loadProductionFromBackend(sb){
+  const { data, error } = await sb.from('batches').select('*').order('received_date', { ascending:false });
+  if(error){ NexusApp.toast('Could not load production data: ' + error.message, 'error'); PROD_DATA = []; return; }
+  PROD_DATA = (data || []).map(b => ({ id:b.id, model:b.model, qty:b.qty, manager:b.manager || 'Unassigned', status:b.status, progress:b.progress }));
+  const realManagers = [...new Set(PROD_DATA.map(b=>b.manager).filter(m=>m && m!=='Unassigned'))];
+  if(realManagers.length) RPT_MANAGERS = realManagers;
+}
+async function loadAttendanceFromBackend(sb){
+  const { data, error } = await sb.from('attendance').select('*');
+  if(error){ NexusApp.toast('Could not load attendance data: ' + error.message, 'error'); ATT_DATA = {}; return; }
+  ATT_DATA = {};
+  (data || []).forEach(row => {
+    if(!ATT_DATA[row.work_date]) ATT_DATA[row.work_date] = {};
+    ATT_DATA[row.work_date][row.worker_id] = { status: row.status };
+  });
+}
+async function loadPayrollFromBackend(sb){
+  const { data, error } = await sb.from('payroll_runs').select('*');
+  if(error){ NexusApp.toast('Could not load payroll data: ' + error.message, 'error'); PAYROLL_RUNS = {}; return; }
+  PAYROLL_RUNS = {};
+  (data || []).forEach(r => {
+    PAYROLL_RUNS[r.period_type + ':' + r.period_key] = {
+      periodType: r.period_type, label: r.label, total: Number(r.total), workers: r.workers_paid, runDate: r.run_at, status: r.status,
+    };
+  });
+}
+async function loadWorkerStatsFromBackend(sb){
+  const { data, error } = await sb.from('workers').select('*');
+  if(error){ NexusApp.toast('Could not load worker data: ' + error.message, 'error'); WORKER_STATS = []; return; }
+  const { data: attRows } = await sb.from('attendance').select('*');
+  const days = Array.from({length:30}, (_,i) => { const d = new Date(); d.setDate(d.getDate()-i); return fmtDateISO(d); });
+  WORKER_STATS = (data || []).map(w => {
+    const myAtt = (attRows || []).filter(a => a.worker_id === w.id);
+    const workedDays = myAtt.filter(a => days.includes(a.work_date) && (a.status==='present'||a.status==='late')).length;
+    return {
+      id: w.id, name: w.name, role: w.role, color: w.avatar_color || '#6D5DF6',
+      dailyOutput: 0, // no real per-worker daily unit-output log exists yet — shown as 0 rather than a fabricated number
+      attendanceRate: Math.round(workedDays / 30 * 100),
+      status: w.status,
+    };
+  });
+  RPT_WORKERS = WORKER_STATS.map(w => ({ id:w.id, name:w.name, role:w.role, color:w.color }));
+}
+async function loadQCFromBackend(sb){
+  const { data, error } = await sb.from('qc_inspections').select('*');
+  if(error){ NexusApp.toast('Could not load QC data: ' + error.message, 'error'); QC_DATA = []; return; }
+  QC_DATA = (data || []).map(row => ({
+    id: row.id, batchId: row.batch_id, model: row.model, qty: row.qty, inspector: row.inspector,
+    status: row.status, severity: row.severity, defects: row.defects || [],
+  }));
+}
+
+/* ============================================================
+   LOCAL DEMO MODE — only used when no backend is connected
+============================================================ */
 function loadProduction(){
   const saved = localStorage.getItem('nexus_batches');
   if(saved){ PROD_DATA = JSON.parse(saved); return; }
@@ -423,11 +494,15 @@ function exportReportPDF(){
 }
 
 /* ---------------- INIT ---------------- */
+let reportsDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
+  if(reportsDidInit) return;
+  reportsDidInit = true;
+
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('reports.html', session);
-  loadAllData();
+  await loadAllData();
   populateModelFilter();
   initDateRange();
   document.getElementById('dateFrom').addEventListener('change', onDateChange);

@@ -121,6 +121,7 @@ function changeRole(id, role){
   renderKPIs();
   renderTable();
   NexusApp.toast(`${u.name}\u2019s role changed to ${role}`, 'success');
+  NexusApp.logAudit('Security', `${u.name}'s role changed to ${role}`);
   if(SagoBackend?.isConfigured()){
     SagoBackend.getClient().from('profiles').update({ role }).eq('id', id).then(({ error }) => {
       if(error) NexusApp.toast('Could not save role change: ' + error.message, 'error');
@@ -134,6 +135,7 @@ function suspendUser(id){
   renderKPIs();
   renderTable();
   NexusApp.toast(`${u.name} suspended`, 'error');
+  NexusApp.logAudit('Security', `${u.name}'s account was suspended`);
   if(SagoBackend?.isConfigured()){
     SagoBackend.getClient().from('profiles').update({ status:'Suspended' }).eq('id', id).then(({ error }) => {
       if(error) NexusApp.toast('Could not save: ' + error.message, 'error');
@@ -148,6 +150,7 @@ function reactivateUser(id){
   renderKPIs();
   renderTable();
   NexusApp.toast(`${u.name} reactivated`, 'success');
+  NexusApp.logAudit('Security', `${u.name}'s account was reactivated`);
   if(SagoBackend?.isConfigured()){
     SagoBackend.getClient().from('profiles').update({ status:'Active' }).eq('id', id).then(({ error }) => {
       if(error) NexusApp.toast('Could not save: ' + error.message, 'error');
@@ -166,6 +169,7 @@ function removeUser(id){
   renderKPIs();
   renderTable();
   NexusApp.toast(`${u.name} removed from workspace`, 'info');
+  NexusApp.logAudit('Security', `${u.name} was removed from the workspace`);
   if(SagoBackend?.isConfigured()){
     SagoBackend.getClient().from('profiles').delete().eq('id', id).then(({ error }) => {
       if(error) NexusApp.toast('Could not remove on server: ' + error.message, 'error');

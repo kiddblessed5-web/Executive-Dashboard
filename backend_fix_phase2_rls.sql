@@ -39,7 +39,7 @@ drop policy if exists "Authenticated users can write batches" on batches;
 drop policy if exists "Authenticated users can update batches" on batches;
 drop policy if exists "Authenticated users can delete batches" on batches;
 create policy "Authenticated users can read batches" on batches for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can write batches" on batches for insert to authenticated with check (true);
+create policy "Authenticated users can write batches" on batches for insert with check (auth.uid() is not null);
 create policy "Authenticated users can update batches" on batches for update using (auth.role() = 'authenticated');
 create policy "Authenticated users can delete batches" on batches for delete using (auth.role() = 'authenticated');
 
@@ -48,7 +48,7 @@ drop policy if exists "Authenticated users can write shift assignments" on shift
 drop policy if exists "Authenticated users can update shift assignments" on shift_assignments;
 drop policy if exists "Authenticated users can delete shift assignments" on shift_assignments;
 create policy "Authenticated users can read shift assignments" on shift_assignments for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can write shift assignments" on shift_assignments for insert to authenticated with check (true);
+create policy "Authenticated users can write shift assignments" on shift_assignments for insert with check (auth.uid() is not null);
 create policy "Authenticated users can update shift assignments" on shift_assignments for update using (auth.role() = 'authenticated');
 create policy "Authenticated users can delete shift assignments" on shift_assignments for delete using (auth.role() = 'authenticated');
 
@@ -57,7 +57,7 @@ drop policy if exists "Authenticated users can write attendance" on attendance;
 drop policy if exists "Authenticated users can update attendance" on attendance;
 drop policy if exists "Authenticated users can delete attendance" on attendance;
 create policy "Authenticated users can read attendance" on attendance for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can write attendance" on attendance for insert to authenticated with check (true);
+create policy "Authenticated users can write attendance" on attendance for insert with check (auth.uid() is not null);
 create policy "Authenticated users can update attendance" on attendance for update using (auth.role() = 'authenticated');
 create policy "Authenticated users can delete attendance" on attendance for delete using (auth.role() = 'authenticated');
 

@@ -4,22 +4,22 @@
    auto-calculates base pay, overtime, bonuses & deductions.
 ============================================================ */
 
-const PR_ROSTER = [
-  { id:'W-2001', name:'Grace Achieng', role:'Unboxing', color:'#6D5DF6' },
-  { id:'W-2002', name:'Kevin Otieno', role:'Software Install', color:'#3B82F6' },
-  { id:'W-2003', name:'Mercy Njoki', role:'Quality Check', color:'#7C3AED' },
-  { id:'W-2004', name:'Samuel Kiprono', role:'Resealing', color:'#4F46E5' },
-  { id:'W-2005', name:'Peter Mutua', role:'Packaging', color:'#5B5CF6' },
-  { id:'W-2006', name:'Joy Chebet', role:'Unboxing', color:'#3B82F6' },
-  { id:'W-2007', name:'Dennis Kamau', role:'Software Install', color:'#6D5DF6' },
-  { id:'W-2008', name:'Ruth Wanjiku', role:'Quality Check', color:'#7C3AED' },
-  { id:'W-2009', name:'Collins Odhiambo', role:'Resealing', color:'#4F46E5' },
-  { id:'W-2010', name:'Faith Auma', role:'Packaging', color:'#5B5CF6' },
-  { id:'W-2011', name:'Brian Ochieng', role:'Unboxing', color:'#6D5DF6' },
-  { id:'W-2012', name:'Esther Nyambura', role:'Software Install', color:'#3B82F6' },
+let PR_ROSTER = [
+  { id:'W-2001', name:'Grace Achieng', role:'Unboxing', color:'#6D5DF6', salary:600 },
+  { id:'W-2002', name:'Kevin Otieno', role:'Software Install', color:'#3B82F6', salary:600 },
+  { id:'W-2003', name:'Mercy Njoki', role:'Quality Check', color:'#7C3AED', salary:600 },
+  { id:'W-2004', name:'Samuel Kiprono', role:'Resealing', color:'#4F46E5', salary:600 },
+  { id:'W-2005', name:'Peter Mutua', role:'Packaging', color:'#5B5CF6', salary:600 },
+  { id:'W-2006', name:'Joy Chebet', role:'Unboxing', color:'#3B82F6', salary:600 },
+  { id:'W-2007', name:'Dennis Kamau', role:'Software Install', color:'#6D5DF6', salary:600 },
+  { id:'W-2008', name:'Ruth Wanjiku', role:'Quality Check', color:'#7C3AED', salary:600 },
+  { id:'W-2009', name:'Collins Odhiambo', role:'Resealing', color:'#4F46E5', salary:600 },
+  { id:'W-2010', name:'Faith Auma', role:'Packaging', color:'#5B5CF6', salary:600 },
+  { id:'W-2011', name:'Brian Ochieng', role:'Unboxing', color:'#6D5DF6', salary:600 },
+  { id:'W-2012', name:'Esther Nyambura', role:'Software Install', color:'#3B82F6', salary:600 },
 ];
 
-const DAILY_RATE = 600;
+const DAILY_RATE = 600; // fallback only, used if a worker somehow has no salary set
 const OVERTIME_RATE = 100; // per hour
 const LATE_DEDUCTION = 100; // per late day
 
@@ -27,6 +27,20 @@ function initials(name){ return name.split(' ').map(p=>p[0]).slice(0,2).join('')
 function fmtDate(d){ return d.toISOString().slice(0,10); }
 function money(n){ return 'KES ' + Math.round(n).toLocaleString(); }
 function isSunday(dateStr){ return new Date(dateStr+'T00:00:00').getDay() === 0; }
+
+/* ============================================================
+   BACKEND MODE — real roster, pulled from the same `workers`
+   table the Workers page manages (including each worker's real
+   daily wage, instead of one flat rate for everyone).
+============================================================ */
+async function loadRosterFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('workers').select('*').eq('status','Active').order('created_at');
+  if(error){ NexusApp.toast('Could not load worker roster: ' + error.message, 'error'); return; }
+  PR_ROSTER = (data || []).map(row => ({
+    id: row.id, name: row.name, role: row.role, color: row.avatar_color, salary: row.salary || DAILY_RATE,
+  }));
+}
 
 /* ---------------- SEEDED RANDOM (stable per worker+period) ---------------- */
 function strHash(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h<<5)-h+str.charCodeAt(i); h|=0; } return Math.abs(h); }
@@ -132,7 +146,8 @@ function calcWorkerPay(worker, periodKey, dates){
     if(rec && rec.status === 'late') daysLate++;
   });
 
-  const basePay = daysWorked * DAILY_RATE;
+  const dailyRate = worker.salary || DAILY_RATE;
+  const basePay = daysWorked * dailyRate;
   const otRoll = seededRandom(strHash(worker.id+periodKey+'ot'));
   const overtimeHours = otRoll > 0.55 ? Math.round(otRoll*6) : 0;
   const overtimePay = overtimeHours * OVERTIME_RATE;
@@ -199,6 +214,7 @@ async function runPayroll(){
     if(error){ NexusApp.toast('Could not save payroll run: ' + error.message, 'error'); btn.disabled = false; return; }
     PAYROLL_RUNS[runKey()] = record;
     NexusApp.toast(`Payroll processed — ${money(total)} paid to ${payroll.length} workers`, 'success');
+    NexusApp.logAudit('Payroll', `Payroll run for ${record.label} — ${money(total)} paid to ${payroll.length} workers`);
     renderAll();
     return;
   }
@@ -207,6 +223,7 @@ async function runPayroll(){
     PAYROLL_RUNS[runKey()] = record;
     persistRuns();
     NexusApp.toast(`Payroll processed — ${money(total)} paid to ${payroll.length} workers`, 'success');
+    NexusApp.logAudit('Payroll', `Payroll run for ${record.label} — ${money(total)} paid to ${payroll.length} workers`);
     renderAll();
   }, 1100);
 }
@@ -355,7 +372,7 @@ function openPayslip(workerId){
   document.getElementById('psStatus').innerHTML = paid ? `<i class="ri-checkbox-circle-fill"></i> Paid` : `<i class="ri-time-line"></i> Pending`;
   document.getElementById('psStatus').className = 'badge ' + (paid ? 'badge-success' : 'badge-warning');
 
-  document.getElementById('psDaysWorked').textContent = p.daysWorked + ' days × ' + money(DAILY_RATE);
+  document.getElementById('psDaysWorked').textContent = p.daysWorked + ' days × ' + money(p.worker.salary || DAILY_RATE);
   document.getElementById('psBasePay').textContent = money(p.basePay);
   document.getElementById('psOvertime').textContent = p.overtimeHours + ' hrs × ' + money(OVERTIME_RATE);
   document.getElementById('psOvertimePay').textContent = money(p.overtimePay);
@@ -436,6 +453,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   NexusApp.initShell('payroll.html', session);
 
   if(SagoBackend?.isConfigured()){
+    await loadRosterFromBackend();
     await loadAttendanceSourceFromBackend();
   } else {
     loadAttendanceSource();

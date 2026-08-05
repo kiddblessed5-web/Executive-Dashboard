@@ -180,6 +180,7 @@
     <div class="field"><label>Assigned role</label>
       <select id="nw-role"><option>Unboxing</option><option>Software Install</option><option>Quality Check</option><option>Resealing</option><option>Packaging</option></select>
     </div>
+    <div class="field"><label>Daily wage (KES)</label><input type="number" id="nw-salary" min="0" step="50" placeholder="e.g. 600"></div>
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-newworker')">Cancel</button>
       <button type="submit" class="btn btn-primary">Add worker</button>
@@ -261,7 +262,12 @@
     </div>
 
     <div class="wd-tabpanel" data-panel="documents">
-      <div class="subhead">Documents on file</div>
+      <div class="subhead" style="display:flex; align-items:center; justify-content:space-between;">
+        <span>Documents on file</span>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('wdDocUpload').click()"><i class="ri-upload-2-line"></i>Upload</button>
+      </div>
+      <input type="file" id="wdDocUpload" style="display:none;" onchange="handleWorkerDocUpload(event)">
+      <div id="wdDocumentsProgress" style="display:none; height:3px; background:var(--grad-soft); border-radius:3px; margin-bottom:10px; overflow:hidden;"><div style="height:100%; width:40%; background:var(--grad); animation:pulseDot 1s ease-in-out infinite;"></div></div>
       <div id="wdDocuments"></div>
     </div>
   </div>

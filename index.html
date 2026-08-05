@@ -25,8 +25,8 @@
 
   .dash-grid{ display:grid; grid-template-columns:1.5fr 1fr; gap:18px; margin-bottom:18px; }
   .dash-grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin-bottom:18px; }
-  .chart-tabs{ display:flex; gap:6px; background:var(--grad-soft); padding:4px; border-radius:5px; }
-  .chart-tab{ padding:6px 12px; font-size:11.5px; font-weight:700; border-radius:5px; color:var(--ink-soft); }
+  .chart-tabs{ display:flex; gap:6px; background:var(--grad-soft); padding:4px; border-radius:12px; }
+  .chart-tab{ padding:6px 12px; font-size:11.5px; font-weight:700; border-radius:9px; color:var(--ink-soft); }
   .chart-tab.active{ background:var(--card); color:var(--primary-3); box-shadow:var(--shadow-sm); }
 
   .activity-row{ display:flex; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
@@ -123,7 +123,7 @@
     <div class="content">
       <div class="section-head fade-up">
         <div>
-          <div class="section-title">SAGERO CREATIONS👋</div>
+          <div class="section-title">Good to see you, Alex 👋</div>
           <div class="section-sub">Here's what's happening across the production floor today.</div>
         </div>
         <div class="chart-tabs">
@@ -163,7 +163,7 @@
 
       <div class="dash-grid">
         <div class="card fade-up">
-          <div class="section-head"><div><div class="section-title">Top Workers</div><div class="section-sub">Ranked by units this week</div></div>
+          <div class="section-head"><div><div class="section-title">Top Workers</div><div class="section-sub">Ranked by attendance rate (last 30 days)</div></div>
             <button class="btn btn-ghost btn-sm" onclick="location.href='workers.html'">View all<i class="ri-arrow-right-line"></i></button>
           </div>
           <div id="topWorkersList"></div>

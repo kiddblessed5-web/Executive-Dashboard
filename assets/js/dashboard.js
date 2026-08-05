@@ -9,7 +9,6 @@ const DASH_DATA = {
     { label:'Completed', value:186, suffix:'', icon:'ri-checkbox-circle-line', delta:'+12.1%', up:true, color:'success' },
     { label:'Delayed', value:4, suffix:'', icon:'ri-time-line', delta:'-2', up:false, color:'warning' },
     { label:'Efficiency', value:94, suffix:'%', icon:'ri-flashlight-line', delta:'+1.6%', up:true, color:'primary' },
-    { label:'Revenue', value:412500, prefix:'KES ', icon:'ri-money-dollar-circle-line', delta:'+6.2%', up:true, color:'success' },
     { label:'Worker Attendance', value:96, suffix:'%', icon:'ri-team-line', delta:'+0.8%', up:true, color:'info' },
   ],
   activity: [
@@ -27,10 +26,10 @@ const DASH_DATA = {
     { title:'Quality audit — Warehouse B', due:'Fri, 11:00 AM', tag:'normal' },
   ],
   topWorkers: [
-    { name:'Grace Achieng', role:'Software Install', output:312, color:'#6D5DF6' },
-    { name:'Kevin Otieno', role:'Quality Check', output:289, color:'#3B82F6' },
-    { name:'Mercy Njoki', role:'Packaging', output:274, color:'#7C3AED' },
-    { name:'Samuel Kiprono', role:'Unboxing', output:251, color:'#4F46E5' },
+    { name:'Grace Achieng', role:'Software Install', output:98, color:'#6D5DF6' },
+    { name:'Kevin Otieno', role:'Quality Check', output:95, color:'#3B82F6' },
+    { name:'Mercy Njoki', role:'Packaging', output:91, color:'#7C3AED' },
+    { name:'Samuel Kiprono', role:'Unboxing', output:88, color:'#4F46E5' },
   ]
 };
 
@@ -51,6 +50,7 @@ async function loadDashboardFromBackend(){
   const { data: batches, error: bErr } = await sb.from('batches').select('*');
   if(bErr){ NexusApp.toast('Could not load dashboard data: ' + bErr.message, 'error'); return; }
 
+  const { data: workers } = await sb.from('workers').select('*').eq('status','Active');
   const today = new Date().toISOString().slice(0,10);
   const { data: attToday } = await sb.from('attendance').select('*').eq('work_date', today);
 
@@ -59,23 +59,36 @@ async function loadDashboardFromBackend(){
   const delayed = batches.filter(b => b.status === 'Delayed').length;
   const efficiency = batches.length ? Math.round((batches.length - delayed) / batches.length * 100) : 100;
   const totalQty = batches.reduce((s,b)=>s+b.qty, 0);
-  const rosterSize = 10; // matches the seeded roster size used on Attendance/Workers until those go multi-user aware
+  const rosterSize = (workers || []).length;
   const presentToday = (attToday || []).filter(r => r.status==='present' || r.status==='late').length;
-  const attendanceRate = Math.min(100, Math.round(presentToday / rosterSize * 100));
+  const attendanceRate = rosterSize ? Math.min(100, Math.round(presentToday / rosterSize * 100)) : 0;
 
   DASH_DATA.kpis[0].value = totalQty; // Today's Production — proxied from total tracked quantity, no daily production log yet
   DASH_DATA.kpis[1].value = active;
   DASH_DATA.kpis[2].value = completed;
   DASH_DATA.kpis[3].value = delayed;
   DASH_DATA.kpis[4].value = efficiency;
-  DASH_DATA.kpis[6].value = attendanceRate;
-  // kpis[5] Revenue stays illustrative — no pricing data source in this phase
+  DASH_DATA.kpis[5].value = attendanceRate; // Worker Attendance
 
   const recentBatches = [...batches].sort((a,b)=> new Date(b.updated_at)-new Date(a.updated_at)).slice(0,6);
   DASH_DATA.activity = recentBatches.map(b => {
     const last = (b.activity_log && b.activity_log[0]) || { text:'Updated', time:'recently' };
     return { icon:'ri-smartphone-line', color:'primary', text:`Batch <b>#${b.id}</b> — ${last.text}`, time: last.time };
   });
+
+  // Top Workers — ranked by real 30-day attendance rate (the only real
+  // per-worker metric available so far; there's no daily-output log yet,
+  // so we don't fabricate one).
+  const { data: attHistory } = await sb.from('attendance').select('*');
+  const days30 = Array.from({length:30}, (_,i) => { const d = new Date(); d.setDate(d.getDate()-i); return d.toISOString().slice(0,10); });
+  DASH_DATA.topWorkers = (workers || [])
+    .map(w => {
+      const myAtt = (attHistory || []).filter(a => a.worker_id === w.id && days30.includes(a.work_date));
+      const worked = myAtt.filter(a => a.status==='present' || a.status==='late').length;
+      return { name: w.name, role: w.role, output: Math.round(worked/30*100), color: w.avatar_color || '#6D5DF6' };
+    })
+    .sort((a,b) => b.output - a.output)
+    .slice(0, 4);
 
   const upcoming = batches.filter(b => b.finish_date && b.status !== 'Completed')
     .sort((a,b)=> new Date(a.finish_date)-new Date(b.finish_date)).slice(0,4);
@@ -141,7 +154,7 @@ function renderTopWorkers(){
       <div class="worker-rank-bar-wrap">
         <div class="worker-rank-bar" style="width:0%; background:${w.color};" data-w="${(w.output/max*100)}"></div>
       </div>
-      <span class="worker-rank-val">${w.output}</span>
+      <span class="worker-rank-val">${w.output}%</span>
     </div>`).join('');
   requestAnimationFrame(() => {
     setTimeout(() => {

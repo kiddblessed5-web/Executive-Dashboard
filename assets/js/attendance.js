@@ -2,7 +2,7 @@
    SAGERO CREATIONS — Attendance module
 ============================================================ */
 
-const ATT_ROSTER = [
+let ATT_ROSTER = [
   { id:'W-2001', name:'Grace Achieng', role:'Unboxing', color:'#6D5DF6' },
   { id:'W-2002', name:'Kevin Otieno', role:'Software Install', color:'#3B82F6' },
   { id:'W-2003', name:'Mercy Njoki', role:'Quality Check', color:'#7C3AED' },
@@ -17,7 +17,25 @@ const ATT_ROSTER = [
   { id:'W-2012', name:'Esther Nyambura', role:'Software Install', color:'#3B82F6' },
 ];
 
-const LATE_CUTOFF_MIN = 8 * 60 + 30; // 08:30
+/* ============================================================
+   BACKEND MODE — real roster, pulled from the same `workers`
+   table the Workers page manages. Starts empty until real
+   workers exist there — no fake people, no fake history.
+============================================================ */
+async function loadRosterFromBackend(){
+  const sb = SagoBackend.getClient();
+  const { data, error } = await sb.from('workers').select('*').eq('status','Active').order('created_at');
+  if(error){ NexusApp.toast('Could not load worker roster: ' + error.message, 'error'); ATT_ROSTER = []; return; }
+  ATT_ROSTER = (data || []).map(row => ({ id: row.id, name: row.name, role: row.role, color: row.avatar_color }));
+}
+
+let LATE_CUTOFF_MIN = 8 * 60 + 30; // 08:30 default, overridden by Settings if configured
+async function loadAttendanceCutoff(){
+  if(!SagoBackend?.isConfigured()) return;
+  const { data } = await SagoBackend.getClient().from('app_settings').select('*').eq('key','attendance').single().then(r=>r, ()=>({data:null}));
+  const cutoffStr = data?.value?.lateCutoffTime;
+  if(cutoffStr){ const [h,m] = cutoffStr.split(':').map(Number); LATE_CUTOFF_MIN = h*60+m; }
+}
 
 function initials(name){ return name.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase(); }
 function fmtDate(d){ return d.toISOString().slice(0,10); }
@@ -234,6 +252,7 @@ function dayRate(dateStr){
   const rec = ATT_DATA[dateStr];
   if(!rec) return null;
   const total = ATT_ROSTER.length;
+  if(total === 0) return 0;
   const present = Object.values(rec).filter(r => r.status==='present' || r.status==='late').length;
   return Math.round(present/total*100);
 }
@@ -360,6 +379,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   NexusApp.initShell('attendance.html', session);
 
   if(SagoBackend?.isConfigured()){
+    await loadAttendanceCutoff();
+    await loadRosterFromBackend();
     await loadAttendanceFromBackend();
     subscribeAttendanceRealtime(SagoBackend.getClient());
   } else {

@@ -153,6 +153,18 @@ function renderPipeline(){
     ${!isLast ? '<div class="pipe-connector"><i class="ri-arrow-right-s-line"></i></div>' : ''}`;
   }).join('');
 }
+async function createQcInspectionForBatch(batch){
+  const sb = SagoBackend.getClient();
+  const { data: existing } = await sb.from('qc_inspections').select('id').eq('batch_id', batch.id).single().then(r=>r, ()=>({data:null}));
+  if(existing) return; // this batch already has an inspection — don't create a duplicate if it's moved back and forth
+
+  const id = 'QC-' + (3001 + Math.floor(Math.random()*8990));
+  const { error } = await sb.from('qc_inspections').insert({
+    id, batch_id: batch.id, model: batch.model, qty: batch.qty, status:'Pending',
+  });
+  if(!error) NexusApp.toast(`Inspection ${id} created for ${batch.id} — waiting in the QC queue`, 'info');
+}
+
 function wfScrollToStage(stage){
   const col = document.querySelector(`.wf-col[data-stage="${stage}"]`);
   if(col && typeof col.scrollIntoView === 'function') col.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
@@ -206,6 +218,7 @@ function renderBoard(){
             SagoBackend.getClient().from('batches').update({ stage:newStage }).eq('id', id).then(({ error }) => {
               if(error) NexusApp.toast('Could not save stage change: ' + error.message, 'error');
             });
+            if(newStage === 'Quality Check') createQcInspectionForBatch(b);
           } else {
             wfPersistBatches();
           }

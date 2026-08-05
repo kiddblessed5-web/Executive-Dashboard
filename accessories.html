@@ -103,6 +103,7 @@
     <div class="content">
       <div class="section-head fade-up">
         <div><div class="section-title">Accessories</div><div class="section-sub">Scan accessories in as they arrive, save the batch, and export it as a spreadsheet.</div></div>
+        <button class="btn btn-primary btn-sm" onclick="accOpenQuickAddModal()"><i class="ri-add-line"></i>Add Accessory</button>
       </div>
 
       <div class="kpi-row fade-up">
@@ -213,5 +214,27 @@
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
 <script src="assets/js/accessories.js"></script>
+<!-- QUICK ADD ACCESSORY (no barcode needed) -->
+<div class="overlay" id="overlay-modal-acc-quickadd" onclick="NexusApp.closeModal('modal-acc-quickadd')"></div>
+<div class="modal" id="modal-acc-quickadd">
+  <div class="modal-head"><h3>Add accessory</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-acc-quickadd')"><i class="ri-close-line"></i></button></div>
+  <p style="font-size:12px; color:var(--ink-faint); margin-bottom:14px;">For items without a barcode, or to correct stock levels manually. Use the scan-in station above for barcoded items.</p>
+  <form onsubmit="accSubmitQuickAdd(event)">
+    <div class="field"><label>Category</label>
+      <select id="qa-category">
+        <option>Phone Case</option><option>Screen Protector</option><option>Charger</option><option>Charging Cable</option>
+        <option>Earphones</option><option>Power Bank</option><option>Memory Card</option><option>Bluetooth Speaker</option>
+        <option>Phone Stand</option><option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Item name</label><input type="text" id="qa-item" placeholder="e.g. Silicone Case - Black" required></div>
+    <div class="field"><label>Quantity to add</label><input type="number" id="qa-qty" min="1" value="1" required></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-acc-quickadd')">Cancel</button>
+      <button type="submit" class="btn btn-primary"><i class="ri-add-line"></i>Add to stock</button>
+    </div>
+  </form>
+</div>
+
 </body>
 </html>

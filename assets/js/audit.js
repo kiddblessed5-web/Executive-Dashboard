@@ -3,7 +3,7 @@
 ============================================================ */
 
 const AUDIT_USERS = ['SAGERO','Wei Zhang','Li Chen','HR Desk','Kevin Otieno','Grace Achieng','System'];
-const AUDIT_CATEGORIES = ['Production','People','Payroll','Messages','Quality Control','Inventory','Settings','Security'];
+const AUDIT_CATEGORIES = ['Production','People','Payroll','Messages','Quality Control','Inventory','Settings','Security','Orders'];
 
 const AUDIT_TEMPLATES = [
   { cat:'Production', icon:'ri-smartphone-line', text:u=>`${u} created batch BX-${1030+Math.floor(Math.random()*90)}` },
@@ -63,7 +63,7 @@ async function loadAuditLogFromBackend(){
 function categoryIcon(cat){
   const map = { Production:'ri-smartphone-line', People:'ri-user-add-line', Payroll:'ri-money-dollar-circle-line',
     Messages:'ri-chat-3-line', 'Quality Control':'ri-shield-check-line', Inventory:'ri-qr-scan-2-line',
-    Settings:'ri-settings-4-line', Security:'ri-login-box-line' };
+    Settings:'ri-settings-4-line', Security:'ri-login-box-line', Orders:'ri-shopping-bag-3-line' };
   return map[cat] || 'ri-information-line';
 }
 

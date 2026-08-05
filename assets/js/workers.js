@@ -74,7 +74,7 @@ async function loadWorkersFromBackend(){
     const attendanceRate = Math.round(presentDays / days.length * 100);
     return {
       id: row.id, name: row.name, role: row.role, department: row.department,
-      color: row.avatar_color, status: row.status, phone: row.phone,
+      color: row.avatar_color, status: row.status, phone: row.phone, salary: row.salary || 0,
       skills: row.skills || [], joined: row.joined_date,
       warnings: row.warnings || [], achievements: row.achievements || [],
       dailyOutput: 180 + Math.round(seededRandomW(row.id) * 140),
@@ -176,6 +176,7 @@ function openWorkerDrawer(id){
   document.getElementById('wdMeta').innerHTML = `
     <div><small>Worker ID</small><b>${w.id}</b></div>
     <div><small>Phone</small><b>${w.phone || 'Not on file'}</b></div>
+    <div><small>Daily wage</small><b>${w.salary ? 'KES ' + Number(w.salary).toLocaleString() : 'Not set'}</b></div>
     <div><small>Joined</small><b>${new Date(w.joined).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</b></div>
     <div><small>Daily output</small><b>${w.dailyOutput} units</b></div>
     <div><small>Attendance rate</small><b>${w.attendanceRate}%</b></div>`;
@@ -222,12 +223,7 @@ function openWorkerDrawer(id){
     </div>`).join('');
 
   // documents
-  document.getElementById('wdDocuments').innerHTML = w.documents.map(d => `
-    <div class="doc-row">
-      <div class="doc-icon"><i class="ri-file-text-line"></i></div>
-      <div><b>${d.name}</b><small>${d.type} · ${d.size}</small></div>
-      <button class="icon-btn" style="width:32px;height:32px;" onclick="downloadWorkerDoc('${w.name.replace(/'/g,"")}','${d.name.replace(/'/g,"")}')"><i class="ri-download-2-line"></i></button>
-    </div>`).join('');
+  loadWorkerDocuments(w.id);
 
   document.querySelectorAll('.wd-tab').forEach(t=>t.classList.remove('active'));
   document.querySelector('.wd-tab[data-tab="overview"]').classList.add('active');
@@ -237,14 +233,71 @@ function openWorkerDrawer(id){
   NexusApp.openDrawer('workerDrawer');
 }
 
-function downloadWorkerDoc(workerName, docName){
-  const blob = new Blob([`SAGERO Creations\n\nWorker: ${workerName}\nDocument: ${docName}\nGenerated: ${new Date().toLocaleString()}\n\nThis is a demo export.`], { type:'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = docName.replace(/\s+/g,'_') + '.txt';
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-  NexusApp.toast('Downloaded ' + docName, 'success');
+/* ---------------- REAL DOCUMENTS (Supabase Storage) ---------------- */
+function fmtFileSize(bytes){
+  if(!bytes) return '';
+  if(bytes < 1024*1024) return Math.round(bytes/1024) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+async function loadWorkerDocuments(workerId){
+  const wrap = document.getElementById('wdDocuments');
+  if(!SagoBackend?.isConfigured()){
+    wrap.innerHTML = `<div class="empty-state" style="padding:20px;"><i class="ri-cloud-off-line"></i><span>Document storage needs the backend connected</span></div>`;
+    return;
+  }
+  const { data, error } = await SagoBackend.getClient().from('worker_documents').select('*').eq('worker_id', workerId).order('uploaded_at', { ascending:false });
+  if(error){ wrap.innerHTML = `<div style="color:var(--danger); font-size:12px;">Could not load documents: ${error.message}</div>`; return; }
+  if(!data || data.length === 0){
+    wrap.innerHTML = `<div class="empty-state" style="padding:20px;"><i class="ri-file-text-line"></i><span>No documents uploaded yet</span></div>`;
+    return;
+  }
+  wrap.innerHTML = data.map(d => `
+    <div class="doc-row">
+      <div class="doc-icon"><i class="ri-file-text-line"></i></div>
+      <div><b>${d.name}</b><small>${fmtFileSize(d.size_bytes)} · ${new Date(d.uploaded_at).toLocaleDateString()}</small></div>
+      <button class="icon-btn" style="width:32px;height:32px;" data-tip="Download" onclick="downloadWorkerDoc('${d.id}','${d.storage_path}')"><i class="ri-download-2-line"></i></button>
+      <button class="icon-btn" style="width:32px;height:32px;" data-tip="Delete" onclick="deleteWorkerDoc('${d.id}','${d.storage_path}','${workerId}')"><i class="ri-delete-bin-line"></i></button>
+    </div>`).join('');
+}
+async function handleWorkerDocUpload(e){
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  const workerId = window.currentDrawerWorker;
+  if(!workerId) return;
+  if(!SagoBackend?.isConfigured()){ NexusApp.toast('Document upload needs the backend connected', 'error'); return; }
+
+  const MAX_MB = 15;
+  if(file.size > MAX_MB*1024*1024){ NexusApp.toast(`File too large — keep documents under ${MAX_MB}MB`, 'error'); return; }
+
+  document.getElementById('wdDocumentsProgress').style.display = 'block';
+  const sb = SagoBackend.getClient();
+  const path = `${workerId}/${Date.now()}-${file.name}`;
+  const { error: upErr } = await sb.storage.from('worker-documents').upload(path, file);
+  if(upErr){ NexusApp.toast('Upload failed: ' + upErr.message, 'error'); document.getElementById('wdDocumentsProgress').style.display = 'none'; return; }
+
+  const session = await SagoBackend.getSession();
+  const { error: dbErr } = await sb.from('worker_documents').insert({
+    worker_id: workerId, name: file.name, storage_path: path, size_bytes: file.size, uploaded_by: session?.user?.id || null,
+  });
+  document.getElementById('wdDocumentsProgress').style.display = 'none';
+  if(dbErr){ NexusApp.toast('Could not save document record: ' + dbErr.message, 'error'); return; }
+
+  NexusApp.toast(file.name + ' uploaded', 'success');
+  loadWorkerDocuments(workerId);
+}
+async function downloadWorkerDoc(docId, storagePath){
+  const { data, error } = await SagoBackend.getClient().storage.from('worker-documents').createSignedUrl(storagePath, 60);
+  if(error){ NexusApp.toast('Could not open document: ' + error.message, 'error'); return; }
+  window.open(data.signedUrl, '_blank');
+}
+async function deleteWorkerDoc(docId, storagePath, workerId){
+  const sb = SagoBackend.getClient();
+  await sb.storage.from('worker-documents').remove([storagePath]);
+  const { error } = await sb.from('worker_documents').delete().eq('id', docId);
+  if(error){ NexusApp.toast('Could not delete: ' + error.message, 'error'); return; }
+  NexusApp.toast('Document deleted', 'info');
+  loadWorkerDocuments(workerId);
 }
 
 function issueWarning(){
@@ -253,6 +306,7 @@ function issueWarning(){
   w.warnings.unshift({ text:'Manual warning issued by supervisor', date:'Just now' });
   w.status = 'Warning';
   NexusApp.toast('Warning issued to ' + w.name, 'warning');
+  NexusApp.logAudit('People', `${w.name} was issued a warning`);
   openWorkerDrawer(w.id);
   renderWorkerGrid();
 
@@ -284,6 +338,7 @@ async function removeWorker(){
   NexusApp.closeDrawer('workerDrawer');
   renderWorkerGrid();
   NexusApp.toast(w.name + ' removed from the roster', 'info');
+  NexusApp.logAudit('People', `${w.name} was removed from the roster`);
   pendingRemoveId = null;
 
   if(SagoBackend?.isConfigured()){
@@ -301,6 +356,7 @@ async function submitNewWorker(e){
   const name = document.getElementById('nw-name').value.trim();
   const phone = document.getElementById('nw-phone').value.trim();
   const role = document.getElementById('nw-role').value;
+  const salary = parseFloat(document.getElementById('nw-salary').value) || 0;
   if(!name){ NexusApp.toast('Please enter a worker name','error'); return; }
 
   const colors = ['#6D5DF6','#3B82F6','#7C3AED','#4F46E5','#5B5CF6'];
@@ -309,24 +365,25 @@ async function submitNewWorker(e){
 
   if(SagoBackend?.isConfigured()){
     const { error } = await SagoBackend.getClient().from('workers').insert({
-      id, name, role, department:'Production', avatar_color: color, phone: phone || null, status:'Active',
+      id, name, role, department:'Production', avatar_color: color, phone: phone || null, salary, status:'Active',
       skills:[role], warnings:[], achievements:[], joined_date: new Date().toISOString().slice(0,10),
     });
     if(error){ NexusApp.toast('Could not add worker: ' + error.message, 'error'); return; }
     WORKERS.unshift({
-      id, name, role, department:'Production', color, phone, dailyOutput:0, attendanceRate:100, status:'Active',
+      id, name, role, department:'Production', color, phone, salary, dailyOutput:0, attendanceRate:100, status:'Active',
       skills:[role], joined: new Date().toISOString().slice(0,10), warnings:[], achievements:[],
       productionHistory:[0,0,0,0,0,0,0], attendanceLog: Array(30).fill('present'), documents:[], payslips:[],
     });
     NexusApp.closeModal('modal-newworker');
     renderWorkerGrid();
     NexusApp.toast(name + ' added to the roster', 'success');
+    NexusApp.logAudit('People', `${name} was added to the roster as ${role}`);
     e.target.reset();
     return;
   }
 
   WORKERS.unshift({
-    id, name, role, department:'Production', color, phone,
+    id, name, role, department:'Production', color, phone, salary,
     dailyOutput: 0, attendanceRate: 100, status:'Active',
     skills:[role], joined: new Date().toISOString().slice(0,10),
     warnings:[], achievements:[], productionHistory:[0,0,0,0,0,0,0],

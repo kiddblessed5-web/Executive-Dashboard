@@ -9,6 +9,59 @@ function setSettingsTab(tab){
 }
 
 /* ---------------- COMPANY ---------------- */
+function loadAttendanceSettings(){
+  const defaults = { lateCutoffTime:'08:30', geofenceEnabled:false, geofenceLat:null, geofenceLng:null, geofenceRadiusM:200 };
+  function apply(s){
+    document.getElementById('att-cutoff').value = s.lateCutoffTime || '08:30';
+    document.getElementById('att-geo-enabled').checked = !!s.geofenceEnabled;
+    document.getElementById('att-geo-lat').value = s.geofenceLat ?? '';
+    document.getElementById('att-geo-lng').value = s.geofenceLng ?? '';
+    document.getElementById('att-geo-radius').value = s.geofenceRadiusM || 200;
+  }
+  if(SagoBackend?.isConfigured()){
+    SagoBackend.getClient().from('app_settings').select('*').eq('key','attendance').single().then(({ data }) => {
+      apply(data?.value || defaults);
+    });
+    return;
+  }
+  const saved = localStorage.getItem('nexus_settings_attendance');
+  apply(saved ? JSON.parse(saved) : defaults);
+}
+async function saveAttendanceSettings(){
+  const s = {
+    lateCutoffTime: document.getElementById('att-cutoff').value || '08:30',
+    geofenceEnabled: document.getElementById('att-geo-enabled').checked,
+    geofenceLat: parseFloat(document.getElementById('att-geo-lat').value) || null,
+    geofenceLng: parseFloat(document.getElementById('att-geo-lng').value) || null,
+    geofenceRadiusM: parseInt(document.getElementById('att-geo-radius').value, 10) || 200,
+  };
+  if(s.geofenceEnabled && (s.geofenceLat === null || s.geofenceLng === null)){
+    NexusApp.toast('Set the workplace location before enabling location-restricted check-in', 'error');
+    return;
+  }
+  if(SagoBackend?.isConfigured()){
+    const { error } = await SagoBackend.getClient().from('app_settings').upsert({ key:'attendance', value:s, updated_at:new Date().toISOString() });
+    if(error){ NexusApp.toast('Could not save: ' + error.message, 'error'); return; }
+    NexusApp.toast('Attendance settings saved', 'success');
+  NexusApp.logAudit('Settings', 'Attendance settings were updated');
+    return;
+  }
+  localStorage.setItem('nexus_settings_attendance', JSON.stringify(s));
+  NexusApp.toast('Attendance settings saved', 'success');
+  NexusApp.logAudit('Settings', 'Attendance settings were updated');
+}
+function useCurrentLocationForGeofence(){
+  if(!navigator.geolocation){ NexusApp.toast('Location isn\u2019t available in this browser', 'error'); return; }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      document.getElementById('att-geo-lat').value = pos.coords.latitude.toFixed(6);
+      document.getElementById('att-geo-lng').value = pos.coords.longitude.toFixed(6);
+      NexusApp.toast('Location captured \u2014 remember to save', 'success');
+    },
+    () => NexusApp.toast('Could not get your location \u2014 check permissions', 'error')
+  );
+}
+
 function loadCompany(){
   const defaults = {
     name:'SAGERO Creations', industry:'Electronics Processing & Refurbishment',
@@ -45,10 +98,12 @@ async function saveCompany(){
     const { error } = await SagoBackend.getClient().from('app_settings').upsert({ key:'company', value:c, updated_at:new Date().toISOString() });
     if(error){ NexusApp.toast('Could not save: ' + error.message, 'error'); return; }
     NexusApp.toast('Company details saved', 'success');
+  NexusApp.logAudit('Settings', 'Company details were updated');
     return;
   }
   localStorage.setItem('nexus_settings_company', JSON.stringify(c));
   NexusApp.toast('Company details saved', 'success');
+  NexusApp.logAudit('Settings', 'Company details were updated');
 }
 
 /* ---------------- APPEARANCE ---------------- */
@@ -377,6 +432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   NexusApp.initShell('settings.html', session);
   wireSettings();
   loadCompany();
+  loadAttendanceSettings();
   loadAppearance();
   loadNotifications();
   renderRoles();

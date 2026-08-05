@@ -210,15 +210,25 @@ async function sendMessage(){
 /* ---------------- CONVERSATIONS: create / select ---------------- */
 async function createDMConversation(personId){
   const sb = SagoBackend.getClient();
+  try{
+    const { data: authCheck } = await sb.auth.getSession();
+    console.log('[call debug] real session user id:', authCheck?.session?.user?.id, '| backendUserId var:', backendUserId, '| match:', authCheck?.session?.user?.id === backendUserId);
+  }catch(e){ console.log('[call debug] could not read session:', e.message); }
+
   const { data: newConv, error: convErr } = await sb.from('conversations').insert({ type:'dm', created_by: backendUserId }).select().single();
-  if(convErr){ NexusApp.toast('Could not start conversation: ' + convErr.message, 'error'); return null; }
+  if(convErr){
+    console.error('[createDMConversation] full error object:', JSON.stringify(convErr, null, 2));
+    NexusApp.toast(`Could not start conversation: ${convErr.message} | code:${convErr.code||'?'} | hint:${convErr.hint||'none'} | details:${convErr.details||'none'}`, 'error');
+    return null;
+  }
 
   const { error: memberErr } = await sb.from('conversation_members').insert([
     { conversation_id: newConv.id, user_id: backendUserId },
     { conversation_id: newConv.id, user_id: personId },
   ]);
   if(memberErr){
-    NexusApp.toast('Could not start conversation: ' + memberErr.message, 'error');
+    console.error('[createDMConversation] member insert full error object:', JSON.stringify(memberErr, null, 2));
+    NexusApp.toast(`Could not start conversation: ${memberErr.message} | code:${memberErr.code||'?'} | hint:${memberErr.hint||'none'}`, 'error');
     await sb.from('conversations').delete().eq('id', newConv.id); // clean up the orphaned shell rather than leaving a broken conversation behind
     return null;
   }
@@ -329,6 +339,7 @@ function renderConvListRow(convId){
 }
 function updateNotifBadge(){
   const total = Object.values(unreadCounts).reduce((s,n)=>s+n, 0);
+  NexusApp.setUnreadTotal(total); // keeps the sidebar badge accurate on every page, not just here
   const dot = document.querySelector('.icon-btn[data-tip="Notifications"] .icon-dot');
   if(dot) dot.style.display = total > 0 ? 'block' : 'none';
 
@@ -433,8 +444,8 @@ function renderAttachment(att){
   if(att.type === 'video'){
     return `<video src="${att.url}" class="att-video-real" controls preload="metadata"></video>`;
   }
-  if(att.type === 'file') return `<div class="att-file"><div class="att-file-icon"><i class="ri-file-text-line"></i></div><div><b>${att.name}</b><small>${att.size}</small></div><i class="ri-download-2-line att-file-dl"></i></div>`;
-  if(att.type === 'voice') return `<div class="att-voice" onclick="this.classList.toggle('playing')"><i class="ri-play-fill att-voice-icon"></i><div class="att-voice-wave">${Array.from({length:18}).map(()=>`<span style="height:${6+Math.round(Math.random()*16)}px"></span>`).join('')}</div><span class="att-voice-dur">${att.duration}</span></div>`;
+  if(att.type === 'file') return `<div class="att-file" onclick="window.open('${att.url}','_blank')" style="cursor:pointer;"><div class="att-file-icon"><i class="ri-file-text-line"></i></div><div><b>${att.name}</b><small>${att.size}</small></div><i class="ri-download-2-line att-file-dl"></i></div>`;
+  if(att.type === 'voice') return `<div class="att-voice"><i class="ri-mic-line att-voice-icon"></i><audio src="${att.url}" controls preload="metadata" style="height:32px; max-width:200px;"></audio><span class="att-voice-dur">${att.duration||''}</span></div>`;
   return '';
 }
 function scrollToBottom(){
@@ -594,17 +605,105 @@ function fmtFileSize(bytes){
   return (bytes/(1024*1024)).toFixed(1) + ' MB';
 }
 
-async function attachMock(type){
+/* ---------------- REAL FILE ATTACHMENT ---------------- */
+function triggerFileUpload(){
   document.getElementById('attachMenu').classList.remove('open');
   if(!activeConvId) return;
-  let attachment;
-  if(type==='file') attachment = { type:'file', name:'shift-report.pdf', size:'188 KB' };
-  if(type==='voice') attachment = { type:'voice', duration:'0:'+(10+Math.floor(Math.random()*40)) };
+  if(!SagoBackend?.isConfigured()){ NexusApp.toast('File sharing needs the backend connected', 'error'); return; }
+  document.getElementById('generalFileInput').value = '';
+  document.getElementById('generalFileInput').click();
+}
+async function handleGeneralFileSelected(e){
+  const file = e.target.files[0];
+  if(!file || !activeConvId) return;
+  const MAX_MB = 25;
+  if(file.size > MAX_MB*1024*1024){ NexusApp.toast(`That file is too large — keep files under ${MAX_MB}MB`, 'error'); return; }
+
+  const progressBar = document.getElementById('uploadProgressBar');
+  const progressFill = document.getElementById('uploadProgressFill');
+  progressBar.style.display = 'block'; progressFill.style.width = '20%';
+
+  try{
+    const sb = SagoBackend.getClient();
+    const path = `${activeConvId}/${Date.now()}-${file.name}`;
+    progressFill.style.width = '55%';
+    const { error: upErr } = await sb.storage.from('message-attachments').upload(path, file);
+    if(upErr){ NexusApp.toast('Upload failed: ' + upErr.message, 'error'); return; }
+    progressFill.style.width = '80%';
+    const { data: urlData } = sb.storage.from('message-attachments').getPublicUrl(path);
+    const attachment = { type:'file', url: urlData.publicUrl, name: file.name, size: fmtFileSize(file.size) };
+    await sendAttachmentMessage(attachment);
+    progressFill.style.width = '100%';
+  } finally {
+    setTimeout(() => { progressBar.style.display = 'none'; progressFill.style.width = '0%'; }, 300);
+  }
+}
+
+/* ---------------- REAL VOICE NOTE (MediaRecorder) ---------------- */
+let voiceRecorder = null, voiceChunks = [], voiceStream = null, voiceStartTime = null, voiceTimerHandle = null;
+async function startVoiceRecording(){
+  document.getElementById('attachMenu').classList.remove('open');
+  if(!activeConvId) return;
+  if(!SagoBackend?.isConfigured()){ NexusApp.toast('Voice notes need the backend connected', 'error'); return; }
+  if(!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){ NexusApp.toast('Voice recording isn\u2019t supported in this browser', 'error'); return; }
+
+  try{
+    voiceStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  }catch(err){
+    NexusApp.toast('Could not access microphone — check permissions', 'error');
+    return;
+  }
+  voiceChunks = [];
+  voiceRecorder = new MediaRecorder(voiceStream);
+  voiceRecorder.ondataavailable = (e) => { if(e.data.size > 0) voiceChunks.push(e.data); };
+  voiceRecorder.start();
+  voiceStartTime = Date.now();
+  document.getElementById('voiceRecordBanner').style.display = 'flex';
+  voiceTimerHandle = setInterval(() => {
+    const secs = Math.floor((Date.now()-voiceStartTime)/1000);
+    document.getElementById('voiceRecordTimer').textContent = Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0');
+  }, 500);
+}
+function cleanupVoiceRecording(){
+  clearInterval(voiceTimerHandle);
+  if(voiceStream) voiceStream.getTracks().forEach(t=>t.stop());
+  voiceRecorder = null; voiceStream = null; voiceChunks = [];
+  document.getElementById('voiceRecordBanner').style.display = 'none';
+}
+function cancelVoiceRecording(){
+  if(voiceRecorder && voiceRecorder.state !== 'inactive') voiceRecorder.stop();
+  cleanupVoiceRecording();
+  NexusApp.toast('Recording discarded', 'info');
+}
+async function stopAndSendVoiceRecording(){
+  if(!voiceRecorder || voiceRecorder.state === 'inactive') return;
+  const durationSecs = Math.floor((Date.now()-voiceStartTime)/1000);
+  const stopped = new Promise(resolve => { voiceRecorder.onstop = resolve; });
+  voiceRecorder.stop();
+  await stopped;
+
+  const blob = new Blob(voiceChunks, { type: voiceRecorder.mimeType || 'audio/webm' });
+  cleanupVoiceRecording();
+
+  if(blob.size === 0){ NexusApp.toast('Recording was empty', 'error'); return; }
+
+  const sb = SagoBackend.getClient();
+  const ext = (blob.type.split('/')[1] || 'webm').split(';')[0];
+  const path = `${activeConvId}/${Date.now()}-voice.${ext}`;
+  const { error: upErr } = await sb.storage.from('message-attachments').upload(path, blob, { contentType: blob.type });
+  if(upErr){ NexusApp.toast('Could not send voice note: ' + upErr.message, 'error'); return; }
+  const { data: urlData } = sb.storage.from('message-attachments').getPublicUrl(path);
+  const duration = Math.floor(durationSecs/60)+':'+String(durationSecs%60).padStart(2,'0');
+  await sendAttachmentMessage({ type:'voice', url: urlData.publicUrl, duration });
+}
+
+/* ---------------- SHARED: send a message carrying only an attachment ---------------- */
+async function sendAttachmentMessage(attachment){
   const sb = SagoBackend.getClient();
   const { data, error } = await sb.from('messages')
     .insert({ conversation_id: activeConvId, sender_id: backendUserId, body:'', attachment })
     .select().single();
-  if(error){ NexusApp.toast('Attachment failed: ' + error.message, 'error'); return; }
+  if(error){ NexusApp.toast('Could not send: ' + error.message, 'error'); return; }
 
   if(!MESSAGES[activeConvId]) MESSAGES[activeConvId] = [];
   if(!MESSAGES[activeConvId].some(m => m.id === data.id)){
@@ -613,7 +712,7 @@ async function attachMock(type){
     appendMessageDom(mapped);
     renderConvList();
   }
-  NexusApp.toast((type[0].toUpperCase()+type.slice(1)) + ' attached', 'success');
+  NexusApp.toast('Attached', 'success');
 }
 function toggleEmojiPicker(){
   const pop = document.getElementById('emojiPopover');

@@ -190,10 +190,10 @@ const NexusApp = (() => {
       { label:'Payroll', icon:'ri-money-dollar-circle-line', page:'payroll.html' },
     ]},
     { group:'Communication', items:[
-      { label:'Messages', icon:'ri-chat-3-line', page:'messages.html', badge:3 },
+      { label:'Messages', icon:'ri-chat-3-line', page:'messages.html' },
     ]},
     { group:'CRM', items:[
-      { label:'Customers', icon:'ri-contacts-book-line', page:'crm.html' },
+      { label:'Orders', icon:'ri-shopping-bag-3-line', page:'orders.html' },
     ]},
     { group:'Analytics', items:[
       { label:'Reports', icon:'ri-bar-chart-2-line', page:'reports.html' },
@@ -212,23 +212,43 @@ const NexusApp = (() => {
     ]},
   ];
 
+  const WORKER_ALLOWED_PAGES = ['messages.html', 'settings.html', 'help.html'];
+
   function renderSidebar(activePage){
     const scroll = document.getElementById('sidebarNav');
     if(!scroll) return;
+    const unreadTotal = parseInt(localStorage.getItem('sagero_unread_total') || '0', 10);
+    const session = JSON.parse(localStorage.getItem('nexus_session') || 'null');
+    const isWorker = session?.role === 'Worker';
     let html = '';
     NAV.forEach(section => {
+      const items = isWorker ? section.items.filter(item => WORKER_ALLOWED_PAGES.includes(item.page)) : section.items;
+      if(items.length === 0) return; // don't render an empty group header for a worker
       html += `<div class="nav-group">`;
       if(section.group) html += `<div class="nav-group-label">${section.group}</div>`;
-      section.items.forEach(item => {
+      items.forEach(item => {
         const active = item.page === activePage;
+        const badge = item.page === 'messages.html' ? unreadTotal : (item.badge || 0);
         html += `<a class="nav-item ${active?'active':''}" href="${item.page}" data-tip="${item.label}">
           <i class="${item.icon}"></i><span class="nav-label-text">${item.label}</span>
-          ${item.badge ? `<span class="nav-badge">${item.badge}</span>` : ''}
+          ${badge > 0 ? `<span class="nav-badge">${badge}</span>` : ''}
         </a>`;
       });
       html += `</div>`;
     });
     scroll.innerHTML = html;
+  }
+  function setUnreadTotal(count){
+    localStorage.setItem('sagero_unread_total', String(count));
+    const badgeEl = document.querySelector('.nav-item[href="messages.html"] .nav-badge');
+    const navItem = document.querySelector('.nav-item[href="messages.html"]');
+    if(!navItem) return;
+    if(count > 0){
+      if(badgeEl) badgeEl.textContent = count;
+      else navItem.insertAdjacentHTML('beforeend', `<span class="nav-badge">${count}</span>`);
+    } else if(badgeEl){
+      badgeEl.remove();
+    }
   }
 
   /* ---------------- COMMAND PALETTE ---------------- */
@@ -427,7 +447,7 @@ const NexusApp = (() => {
 
   /* ---------------- INIT ---------------- */
   /* ---------------- IDLE TIMEOUT ---------------- */
-  const IDLE_LIMIT_MS = 15 * 60 * 1000; // 15 minutes
+  const IDLE_LIMIT_MS = 6 * 60 * 1000; // 6 minutes
   let lastActivityAt = Date.now();
   let idleCheckHandle = null;
   function initIdleLogout(){
@@ -444,7 +464,96 @@ const NexusApp = (() => {
     }, 15000);
   }
 
+  /* ---------------- WORKER CHECK-IN ---------------- */
+  function timeToMinutes(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+  function fmtTimeNow(){ const d = new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+  function distanceMeters(lat1, lng1, lat2, lng2){
+    const R = 6371000; // Earth radius in meters
+    const toRad = d => d * Math.PI / 180;
+    const dLat = toRad(lat2-lat1), dLng = toRad(lng2-lng1);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  function getCurrentPosition(){
+    return new Promise((resolve, reject) => {
+      if(!navigator.geolocation){ reject(new Error('Location isn\u2019t available in this browser')); return; }
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve(pos),
+        err => reject(new Error(err.code === 1 ? 'Location permission denied' : 'Could not get your location')),
+        { enableHighAccuracy:true, timeout:10000 }
+      );
+    });
+  }
+
+  async function ensureCheckInButton(session){
+    if(session?.role !== 'Worker' || !SagoBackend?.isConfigured()) return;
+    const topbarRight = document.querySelector('.topbar-right');
+    if(!topbarRight || document.getElementById('workerCheckInBtn')) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary btn-sm';
+    btn.id = 'workerCheckInBtn';
+    btn.innerHTML = '<i class="ri-fingerprint-line"></i> Check In';
+    topbarRight.prepend(btn);
+
+    const sb = SagoBackend.getClient();
+    const authSession = await SagoBackend.getSession();
+    const { data: worker } = await sb.from('workers').select('*').eq('profile_id', authSession.user.id).single();
+    if(!worker){
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ri-error-warning-line"></i> Not linked to a worker profile';
+      btn.setAttribute('data-tip', 'Ask your admin to link your account on the Workers page');
+      return;
+    }
+
+    const { data: existing } = await sb.from('attendance').select('*').eq('worker_id', worker.id).eq('work_date', todayISO()).single().then(r=>r, ()=>({data:null}));
+    if(existing){
+      btn.disabled = true;
+      btn.classList.remove('btn-primary'); btn.classList.add('btn-secondary');
+      btn.innerHTML = `<i class="ri-checkbox-circle-line"></i> Checked in (${existing.status}) at ${existing.check_in || '—'}`;
+      return;
+    }
+
+    const { data: settingsRow } = await sb.from('app_settings').select('*').eq('key','attendance').single().then(r=>r, ()=>({data:null}));
+    const attSettings = settingsRow?.value || { lateCutoffTime:'08:30', geofenceEnabled:false };
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const originalLabel = btn.innerHTML;
+
+      if(attSettings.geofenceEnabled && attSettings.geofenceLat != null && attSettings.geofenceLng != null){
+        btn.innerHTML = '<i class="ri-loader-4-line" style="animation:spin .7s linear infinite;"></i> Confirming location…';
+        let pos;
+        try{ pos = await getCurrentPosition(); }
+        catch(err){ toast(err.message, 'error'); btn.disabled = false; btn.innerHTML = originalLabel; return; }
+        const dist = distanceMeters(pos.coords.latitude, pos.coords.longitude, attSettings.geofenceLat, attSettings.geofenceLng);
+        if(dist > (attSettings.geofenceRadiusM || 200)){
+          toast(`You're about ${Math.round(dist)}m from the workplace \u2014 check-in only works when you're there`, 'error');
+          btn.disabled = false; btn.innerHTML = originalLabel;
+          return;
+        }
+      }
+
+      const time = fmtTimeNow();
+      const cutoff = timeToMinutes(attSettings.lateCutoffTime || '08:30');
+      const status = timeToMinutes(time) > cutoff ? 'late' : 'present';
+      const { error } = await sb.from('attendance').upsert(
+        { worker_id: worker.id, worker_name: worker.name, work_date: todayISO(), status, check_in: time },
+        { onConflict: 'worker_id,work_date' }
+      );
+      if(error){ toast('Could not check in: ' + error.message, 'error'); btn.disabled = false; btn.innerHTML = originalLabel; return; }
+      toast(`Checked in — marked ${status}`, status==='late'?'warning':'success');
+      btn.classList.remove('btn-primary'); btn.classList.add('btn-secondary');
+      btn.innerHTML = `<i class="ri-checkbox-circle-line"></i> Checked in (${status}) at ${time}`;
+    };
+  }
+
   function initShell(activePage, session){
+    if(session?.role === 'Worker' && !WORKER_ALLOWED_PAGES.includes(activePage)){
+      window.location.href = 'messages.html';
+      return;
+    }
     initTheme();
     applyDensity();
     renderSidebar(activePage);
@@ -455,6 +564,7 @@ const NexusApp = (() => {
     initTooltips();
     initIdleLogout();
     document.body.classList.remove('auth-checking'); // session confirmed — safe to reveal the page now
+    ensureCheckInButton(session);
     if(session){
       const nameEl = document.getElementById('userChipName');
       const roleEl = document.getElementById('userChipRole');
@@ -465,10 +575,22 @@ const NexusApp = (() => {
     }
   }
 
+  /* ---------------- AUDIT LOG ---------------- */
+  async function logAudit(category, eventText){
+    if(!SagoBackend?.isConfigured()) return; // audit log is backend-only, nothing to write to locally
+    try{
+      const session = JSON.parse(localStorage.getItem('nexus_session') || 'null');
+      const authSession = await SagoBackend.getSession();
+      await SagoBackend.getClient().from('audit_log').insert({
+        actor_id: authSession?.user?.id || null, actor_name: session?.name || 'Unknown user', category, event_text: eventText,
+      });
+    }catch(e){ /* never let audit logging break the action that triggered it */ }
+  }
+
   return {
     requireAuth, logout, toggleTheme, toast, toggleDropdown,
     openModal, closeModal, openDrawer, closeDrawer,
     toggleSidebar, closeSidebar, toggleSidebarCollapse, openCmdk, closeCmdk, countUp, initShell, renderSidebar,
-    setAccent, applyAccent, ACCENT_PRESETS, debounce
+    setAccent, applyAccent, ACCENT_PRESETS, debounce, setUnreadTotal, logAudit
   };
 })();

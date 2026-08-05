@@ -58,9 +58,9 @@ drop policy if exists "Users can remove their own reactions" on message_reaction
 
 -- ---------------- Recreate them using the recursion-safe function ----------------
 create policy "Members can view their conversations" on conversations for select using (
-  is_conversation_member(id, auth.uid())
+  is_conversation_member(id, auth.uid()) or created_by = auth.uid()
 );
-create policy "Signed-in users can create conversations" on conversations for insert to authenticated with check (true);
+create policy "Signed-in users can create conversations" on conversations for insert with check (auth.uid() is not null);
 
 -- conversation_members no longer self-references — it just checks
 -- "is the requesting user a member of ANY conversation this row
@@ -69,7 +69,7 @@ create policy "Signed-in users can create conversations" on conversations for in
 create policy "Members can view membership rows for their conversations" on conversation_members for select using (
   is_conversation_member(conversation_id, auth.uid())
 );
-create policy "Signed-in users can add members" on conversation_members for insert to authenticated with check (true);
+create policy "Signed-in users can add members" on conversation_members for insert with check (auth.uid() is not null);
 create policy "Members can remove their own membership" on conversation_members for delete using (auth.uid() = user_id);
 
 create policy "Members can read messages in their conversations" on messages for select using (

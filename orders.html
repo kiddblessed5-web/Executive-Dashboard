@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orders — SAGERO Creations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="assets/img/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="assets/img/favicon-180.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-bottom:18px; }
+  .kpi-card{ display:flex; align-items:center; gap:14px; }
+  .kpi-icon{ width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .kpi-value{ font-family:'Inter Tight'; font-size:21px; font-weight:800; }
+  .kpi-label{ font-size:11.5px; color:var(--ink-faint); font-weight:600; }
+
+  .orders-toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .toolbar-search{ display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-pill); padding:10px 14px; min-width:220px; flex:1; }
+  .toolbar-search input{ border:none; outline:none; background:none; font-size:13px; font-family:inherit; color:var(--ink); width:100%; }
+  .toolbar-search i{ color:var(--ink-faint); }
+  select.pill-select{
+    appearance:none; -webkit-appearance:none; border:1px solid var(--border); cursor:pointer; background:var(--card);
+    border-radius:var(--radius-pill); padding:10px 30px 10px 14px; font-size:12.5px; font-weight:700; color:var(--ink); font-family:inherit;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 10px center; background-size:10px 10px;
+  }
+
+  .order-item-row{ display:grid; grid-template-columns:1fr 70px 100px 34px; gap:8px; margin-bottom:8px; align-items:center; }
+  .order-item-row input{ border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-size:12.5px; font-family:inherit; background:var(--card); color:var(--ink); }
+  .no-total-row{ display:flex; justify-content:space-between; align-items:center; padding:12px; background:var(--grad-soft); border-radius:12px; margin:12px 0; font-weight:800; }
+
+  .od-item-row{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:12.5px; }
+  .od-item-row:last-child{ border-bottom:none; }
+  .od-total-row{ display:flex; justify-content:space-between; padding:12px 0; margin-top:8px; border-top:2px solid var(--border); font-weight:800; font-size:15px; }
+
+  @media (max-width:1080px){ .kpi-row{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:640px){
+    .orders-toolbar{ flex-direction:column; align-items:stretch; }
+    .orders-toolbar > *{ width:100%; }
+    .order-item-row{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body class="auth-checking">
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark"><img src="assets/img/logo-mark.png" alt="SAGERO Creations"></div>
+      <div class="brand-text"><span class="brand-name">SAGERO</span><span class="brand-sub">CREATIONS</span></div>
+      <button class="sidebar-collapse-btn" data-tip="Collapse sidebar" onclick="NexusApp.toggleSidebarCollapse()"><i class="ri-arrow-left-s-line" id="collapseIcon"></i></button>
+    </div>
+    <nav class="sidebar-scroll" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <div class="dropdown-wrap">
+        <div class="user-chip" onclick="NexusApp.toggleDropdown('userMenu')">
+          <div class="user-avatar" id="userChipAvatar">SA</div>
+          <div class="user-meta"><div class="user-name" id="userChipName">SAGERO</div><div class="user-role" id="userChipRole">Production Manager</div></div>
+          <i class="ri-more-2-fill" style="color:var(--ink-faint)"></i>
+        </div>
+        <div class="dropdown-panel" id="userMenu" style="bottom:64px; left:14px; width:220px;">
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-user-line"></i>My profile</div>
+          <div class="dd-item" onclick="location.href='settings.html'"><i class="ri-settings-4-line"></i>Settings</div>
+          <div class="dd-divider"></div>
+          <div class="dd-item danger" onclick="NexusApp.logout()"><i class="ri-logout-box-line"></i>Log out</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" onclick="NexusApp.toggleSidebar()"><i class="ri-menu-line"></i></button>
+        <div class="breadcrumbs"><i class="ri-home-5-line"></i><span>SAGERO</span><i class="ri-arrow-right-s-line"></i><b>Orders</b></div>
+      </div>
+      <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
+      <div class="topbar-right">
+        <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
+        <button class="btn btn-secondary btn-sm" onclick="exportOrdersCSV()"><i class="ri-file-text-line"></i>CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportOrdersXLSX()"><i class="ri-file-excel-2-line"></i>Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="openNewOrderModal()"><i class="ri-add-line"></i>New Order</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section-head fade-up">
+        <div><div class="section-title">Orders</div><div class="section-sub">Orders you take manually now, and real orders from your website once it's live.</div></div>
+      </div>
+
+      <div class="kpi-row fade-up">
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--grad-soft); color:var(--primary-3);"><i class="ri-shopping-bag-3-line"></i></div><div><div class="kpi-value" id="kpiTotal">0</div><div class="kpi-label">Total orders</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--warning-soft); color:var(--warning);"><i class="ri-time-line"></i></div><div><div class="kpi-value" id="kpiPending">0</div><div class="kpi-label">Pending</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--success-soft); color:var(--success);"><i class="ri-money-dollar-circle-line"></i></div><div><div class="kpi-value" id="kpiRevenue">KES 0</div><div class="kpi-label">Revenue this month</div></div></div>
+        <div class="card kpi-card"><div class="kpi-icon" style="background:var(--info-soft); color:var(--info);"><i class="ri-scales-3-line"></i></div><div><div class="kpi-value" id="kpiAvg">KES 0</div><div class="kpi-label">Avg order value</div></div></div>
+      </div>
+
+      <div class="card fade-up">
+        <div class="section-head"><div><div class="section-title">All Orders</div><div class="section-sub" id="orderCount">Loading…</div></div></div>
+        <div class="orders-toolbar">
+          <div class="toolbar-search"><i class="ri-search-line"></i><input id="orderSearch" placeholder="Search by customer, order ID, or phone…"></div>
+          <select class="pill-select" id="filterStatus">
+            <option value="all">All status</option><option>Pending</option><option>Processing</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Payment</th><th>Placed</th></tr></thead>
+            <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW ORDER MODAL -->
+<div class="overlay" id="overlay-modal-neworder" onclick="NexusApp.closeModal('modal-neworder')"></div>
+<div class="modal" id="modal-neworder">
+  <div class="modal-head"><h3>New order</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-neworder')"><i class="ri-close-line"></i></button></div>
+  <form onsubmit="submitNewOrder(event)">
+    <div class="field"><label>Customer name</label><input type="text" id="no-name" placeholder="e.g. James Mwangi" required></div>
+    <div class="field"><label>Phone number</label><input type="tel" id="no-phone" placeholder="e.g. 0712 345 678"></div>
+    <div class="field"><label>Items</label>
+      <div id="orderItemsWrap"></div>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="addOrderItemRow()"><i class="ri-add-line"></i>Add item</button>
+    </div>
+    <div class="no-total-row"><span>Order total</span><span id="no-total-display">KES 0</span></div>
+    <div class="field"><label>Payment method</label>
+      <select id="no-payment"><option value="">Not specified</option><option>M-Pesa</option><option>Cash</option><option>Card</option><option>Bank Transfer</option></select>
+    </div>
+    <div class="field" style="display:flex; align-items:center; gap:8px;">
+      <input type="checkbox" id="no-paid" style="width:16px;height:16px;"><label for="no-paid" style="margin:0;">Already paid</label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-neworder')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Create order</button>
+    </div>
+  </form>
+</div>
+
+<!-- ORDER DETAIL DRAWER -->
+<div class="overlay" id="drawer-overlay" onclick="NexusApp.closeDrawer('orderDrawer')"></div>
+<div class="drawer" id="orderDrawer">
+  <div class="drawer-head">
+    <div>
+      <div id="odId" style="font-family:'Inter Tight'; font-size:16px; font-weight:800;"></div>
+      <div id="odCustomer" style="font-size:13px; font-weight:700; margin-top:2px;"></div>
+      <div id="odMeta" style="font-size:11.5px; color:var(--ink-faint); font-weight:600; margin-top:3px;"></div>
+    </div>
+    <button class="modal-close" onclick="NexusApp.closeDrawer('orderDrawer')"><i class="ri-close-line"></i></button>
+  </div>
+  <div class="drawer-body">
+    <div id="odItems"></div>
+    <div class="od-total-row"><span>Total</span><span id="odTotal">KES 0</span></div>
+
+    <div class="field" style="margin-top:20px;"><label>Order status</label>
+      <select id="odStatus"><option>Pending</option><option>Processing</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option></select>
+    </div>
+    <div class="field"><label>Payment status</label>
+      <select id="odPayStatus"><option>Unpaid</option><option>Paid</option><option>Refunded</option></select>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="odNotes" rows="3" placeholder="Delivery instructions, order notes…"></textarea></div>
+    <button class="btn btn-primary btn-block" onclick="saveOrderChanges()"><i class="ri-save-line"></i>Save changes</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/orders.js"></script>
+</body>
+</html>

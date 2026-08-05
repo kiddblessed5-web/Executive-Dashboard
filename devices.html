@@ -119,9 +119,12 @@
 
           <div class="scan-setup-row">
             <div class="field" style="margin-bottom:0;"><label>Model for this session</label>
-              <select id="scanModel">
-                <option>Y17s</option><option>Y18</option><option>Y18t</option><option>Y28</option><option>Y36</option><option>Y50t</option><option>Y100</option><option>Y200</option><option>Y300</option><option>Y300 Plus</option><option>V30</option><option>V40</option><option>V50</option><option>V50 Pro</option><option>V50 Lite</option><option>V70</option><option>V70 Elite</option><option>X100</option><option>X200</option><option>X200 Ultra</option><option>X300</option><option>X300 Pro</option><option>X300 Ultra</option><option>T3</option><option>T4</option>
-              </select>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <select id="scanModel" style="flex:1;">
+                  <option>Y17s</option><option>Y18</option><option>Y18t</option><option>Y28</option><option>Y36</option><option>Y50t</option><option>Y100</option><option>Y200</option><option>Y300</option><option>Y300 Plus</option><option>V30</option><option>V40</option><option>V50</option><option>V50 Pro</option><option>V50 Lite</option><option>V70</option><option>V70 Elite</option><option>X100</option><option>X200</option><option>X200 Ultra</option><option>X300</option><option>X300 Pro</option><option>X300 Ultra</option><option>T3</option><option>T4</option>
+                </select>
+                <button type="button" class="icon-btn" style="width:38px;height:38px;flex-shrink:0;" data-tip="Add a new model" onclick="openAddModelModal()"><i class="ri-add-line"></i></button>
+              </div>
             </div>
             <div class="field" style="margin-bottom:0;"><label>Linked batch (optional)</label><input type="text" id="scanBatchRef" placeholder="e.g. BX-1042"></div>
           </div>
@@ -212,5 +215,18 @@
 <script src="assets/js/supabase-client.js"></script>
 <script src="assets/js/app.js"></script>
 <script src="assets/js/devices.js"></script>
+<!-- ADD MODEL -->
+<div class="overlay" id="overlay-modal-addmodel" onclick="NexusApp.closeModal('modal-addmodel')"></div>
+<div class="modal" id="modal-addmodel">
+  <div class="modal-head"><h3>Add a new model</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-addmodel')"><i class="ri-close-line"></i></button></div>
+  <form onsubmit="submitNewModel(event)">
+    <div class="field"><label>Model name</label><input type="text" id="am-name" placeholder="e.g. Y400" required></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-addmodel')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Add model</button>
+    </div>
+  </form>
+</div>
+
 </body>
 </html>

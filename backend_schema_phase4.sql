@@ -31,11 +31,11 @@ alter table inventory_scan_lists enable row level security;
 alter table inventory_scan_items enable row level security;
 
 create policy "Authenticated users can read scan lists" on inventory_scan_lists for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can create scan lists" on inventory_scan_lists for insert to authenticated with check (true);
+create policy "Authenticated users can create scan lists" on inventory_scan_lists for insert with check (auth.uid() is not null);
 create policy "Authenticated users can delete scan lists" on inventory_scan_lists for delete using (auth.role() = 'authenticated');
 
 create policy "Authenticated users can read scan items" on inventory_scan_items for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can add scan items" on inventory_scan_items for insert to authenticated with check (true);
+create policy "Authenticated users can add scan items" on inventory_scan_items for insert with check (auth.uid() is not null);
 
 alter publication supabase_realtime add table inventory_scan_lists;
 alter publication supabase_realtime add table inventory_scan_items;
@@ -87,6 +87,21 @@ create policy "Users can delete their own attachments" on storage.objects
 
 
 -- ============================================================
+-- DEVICE MODELS — the base 25 Vivo models ship built into the
+-- dropdown in the page itself; this table only holds ones you
+-- add later via the "+" button, so everyone sees the same list.
+-- ============================================================
+create table if not exists device_models (
+  name text primary key,
+  created_at timestamptz not null default now()
+);
+alter table device_models enable row level security;
+create policy "Authenticated users can read device models" on device_models for select using (auth.role() = 'authenticated');
+create policy "Authenticated users can add device models" on device_models for insert with check (auth.uid() is not null);
+alter publication supabase_realtime add table device_models;
+
+
+-- ============================================================
 -- SHARED APP SETTINGS — a simple key/value store for workspace-
 -- wide settings that should be the same for everyone (company
 -- info, the permissions matrix). Personal/device preferences
@@ -101,7 +116,7 @@ create table if not exists app_settings (
 
 alter table app_settings enable row level security;
 create policy "Authenticated users can read app settings" on app_settings for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can write app settings" on app_settings for insert to authenticated with check (true);
+create policy "Authenticated users can write app settings" on app_settings for insert with check (auth.uid() is not null);
 create policy "Authenticated users can update app settings" on app_settings for update using (auth.role() = 'authenticated');
 alter publication supabase_realtime add table app_settings;
 
@@ -124,7 +139,7 @@ create index if not exists idx_audit_log_created on audit_log(created_at desc);
 
 alter table audit_log enable row level security;
 create policy "Authenticated users can read audit log" on audit_log for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can write audit log" on audit_log for insert to authenticated with check (true);
+create policy "Authenticated users can write audit log" on audit_log for insert with check (auth.uid() is not null);
 alter publication supabase_realtime add table audit_log;
 
 
@@ -161,7 +176,7 @@ create trigger trg_qc_updated_at before update on qc_inspections for each row ex
 
 alter table qc_inspections enable row level security;
 create policy "Authenticated users can read inspections" on qc_inspections for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can create inspections" on qc_inspections for insert to authenticated with check (true);
+create policy "Authenticated users can create inspections" on qc_inspections for insert with check (auth.uid() is not null);
 create policy "Authenticated users can update inspections" on qc_inspections for update using (auth.role() = 'authenticated');
 alter publication supabase_realtime add table qc_inspections;
 
@@ -188,6 +203,7 @@ create table if not exists workers (
   status text not null default 'Active' check (status in ('Active','Warning','Inactive')),
   avatar_color text not null default '#6D5DF6',
   phone text,
+  salary numeric(10,2) not null default 0,
   skills jsonb not null default '[]',
   warnings jsonb not null default '[]',
   achievements jsonb not null default '[]',
@@ -195,10 +211,13 @@ create table if not exists workers (
   created_at timestamptz not null default now()
 );
 alter table workers add column if not exists phone text; -- safe to run even if you already created this table
+alter table workers add column if not exists salary numeric(10,2) not null default 0;
+alter table workers add column if not exists profile_id uuid references profiles(id) on delete set null;
+create index if not exists idx_workers_profile on workers(profile_id);
 
 alter table workers enable row level security;
 create policy "Authenticated users can read workers" on workers for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can add workers" on workers for insert to authenticated with check (true);
+create policy "Authenticated users can add workers" on workers for insert with check (auth.uid() is not null);
 create policy "Authenticated users can update workers" on workers for update using (auth.role() = 'authenticated');
 create policy "Authenticated users can remove workers" on workers for delete using (auth.role() = 'authenticated');
 alter publication supabase_realtime add table workers;
@@ -213,7 +232,7 @@ create table if not exists accessories_stock (
 
 alter table accessories_stock enable row level security;
 create policy "Authenticated users can read accessory stock" on accessories_stock for select using (auth.role() = 'authenticated');
-create policy "Authenticated users can write accessory stock" on accessories_stock for insert to authenticated with check (true);
+create policy "Authenticated users can write accessory stock" on accessories_stock for insert with check (auth.uid() is not null);
 create policy "Authenticated users can update accessory stock" on accessories_stock for update using (auth.role() = 'authenticated');
 
 alter publication supabase_realtime add table accessories_stock;
