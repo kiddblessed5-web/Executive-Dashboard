@@ -16,7 +16,7 @@
      cached files get cleared out and everyone gets the new version.
 ============================================================ */
 
-const CACHE_VERSION = 'sagero-v1';
+const CACHE_VERSION = 'sagero-v2';
 const PRECACHE_URLS = [
   'accessories.html',
   'attendance.html',
