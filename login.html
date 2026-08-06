@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign in — SAGERO Creations</title>
+<script>
+  // First-ever visit landing here directly (a bookmark, a shared
+  // link) — send them through the welcome screen once first.
+  if(!localStorage.getItem('nexus_session') && !localStorage.getItem('sagero_seen_welcome')){
+    window.location.replace('welcome.html');
+  }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">

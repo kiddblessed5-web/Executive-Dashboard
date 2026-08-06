@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — SAGERO Creations</title>
+<script>
+  // First-ever visit, arriving via a normal browser tab (not the
+  // installed app) rather than the PWA's own start_url — send them
+  // through the welcome screen once, same as an installed-app visitor.
+  if(!localStorage.getItem('nexus_session') && !localStorage.getItem('sagero_seen_welcome')){
+    window.location.replace('welcome.html');
+  }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
@@ -128,7 +136,7 @@
     <div class="content">
       <div class="section-head fade-up">
         <div>
-          <div class="section-title">Good to see you, SAGERO 👋</div>
+          <div class="section-title">Good to see you, Alex 👋</div>
           <div class="section-sub">Here's what's happening across the production floor today.</div>
         </div>
         <div class="chart-tabs">
