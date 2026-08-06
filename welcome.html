@@ -6,6 +6,7 @@
 <title>SAGERO Creations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="assets/img/favicon-180.png">
 <link rel="manifest" href="manifest.json">
@@ -23,23 +24,46 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* ---------------- HERO ---------------- */
-  .hero{
-    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:32px 28px 8px; position:relative; overflow:hidden;
+  /* ---------------- DIAMOND TILE GRID ---------------- */
+  .diamond-wrap{
+    position:relative; width:100%; height:38vh; min-height:260px; max-height:360px;
+    overflow:hidden; background:linear-gradient(135deg,#6D5DF6,#4F46E5);
+    border-radius:0 0 28px 28px; flex-shrink:0;
   }
-  .hero-glow{
-    position:absolute; top:-20%; left:50%; transform:translateX(-50%); width:520px; height:520px; border-radius:50%;
-    background:radial-gradient(circle, rgba(109,93,246,0.16) 0%, rgba(109,93,246,0) 70%); pointer-events:none;
+  .diamond-grid{
+    position:absolute; top:50%; left:50%; width:200%; height:200%;
+    transform:translate(-50%,-50%) rotate(45deg);
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:4px;
   }
+  .diamond-tile{
+    background:rgba(255,255,255,0.98); display:flex; align-items:center; justify-content:center;
+    position:relative; opacity:0; transform:scale(.4);
+    animation: tilePop .6s cubic-bezier(.34,1.4,.64,1) forwards;
+  }
+  .diamond-tile i{
+    transform:rotate(-45deg); font-size:30px; color:#4F46E5;
+    display:inline-block; animation: tileFloat 3.6s ease-in-out infinite;
+  }
+  .diamond-tile:nth-child(even) i{ color:#DD2E2E; }
+  @keyframes tilePop{ to{ opacity:1; transform:scale(1); } }
+  @keyframes tileFloat{ 0%,100%{ transform:rotate(-45deg) translateY(0); } 50%{ transform:rotate(-45deg) translateY(-6px); } }
+
+  .diamond-wrap::after{
+    content:''; position:absolute; left:0; right:0; bottom:0; height:70px;
+    background:linear-gradient(transparent, #F6F8FC); pointer-events:none;
+  }
+
+  /* ---------------- HERO / CONTENT ---------------- */
+  .hero{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:22px 28px 8px; }
+
   .mark{
-    width:76px; height:76px; border-radius:22px; background:#fff; box-shadow:0 12px 32px -8px rgba(109,93,246,0.35), 0 2px 8px rgba(17,17,32,0.06);
-    display:flex; align-items:center; justify-content:center; margin-bottom:36px; position:relative; z-index:2;
+    width:64px; height:64px; border-radius:19px; background:#fff; box-shadow:0 12px 28px -8px rgba(109,93,246,0.35), 0 2px 8px rgba(17,17,32,0.06);
+    display:flex; align-items:center; justify-content:center; margin:-52px 0 26px; position:relative; z-index:2;
   }
   .mark img{ width:64%; height:64%; object-fit:contain; }
 
-  /* ---------------- SIGNATURE: production flow ---------------- */
-  .flow{ position:relative; z-index:2; width:100%; max-width:340px; margin-bottom:38px; }
+  /* ---------------- SIGNATURE: production flow (kept from before) ---------------- */
+  .flow{ width:100%; max-width:340px; margin-bottom:32px; }
   .flow-track{ position:relative; height:3px; background:#E4E7F5; border-radius:3px; overflow:hidden; }
   .flow-fill{ position:absolute; inset:0; width:40%; border-radius:3px; background:linear-gradient(90deg, #6D5DF6, #4F46E5); animation: flowMove 3.2s cubic-bezier(.65,0,.35,1) infinite; }
   @keyframes flowMove{
@@ -58,13 +82,13 @@
   .flow-labels span:first-child{ color:#4F46E5; }
 
   /* ---------------- COPY ---------------- */
-  .copy{ position:relative; z-index:2; text-align:center; max-width:360px; }
-  h1{ font-size:27px; font-weight:800; letter-spacing:-0.02em; line-height:1.15; }
+  .copy{ text-align:center; max-width:360px; }
+  h1{ font-size:26px; font-weight:800; letter-spacing:-0.02em; line-height:1.15; }
   h1 span{ display:block; background:linear-gradient(90deg,#6D5DF6,#4F46E5); -webkit-background-clip:text; background-clip:text; color:transparent; }
-  p.sub{ font-family:'Inter'; font-size:14.5px; line-height:1.55; color:#5B6072; margin-top:14px; font-weight:500; }
+  p.sub{ font-family:'Inter'; font-size:14px; line-height:1.55; color:#5B6072; margin-top:12px; font-weight:500; }
 
   /* ---------------- FOOTER ---------------- */
-  .footer{ padding:20px 28px calc(20px + env(safe-area-inset-bottom)); }
+  .footer{ padding:18px 28px calc(18px + env(safe-area-inset-bottom)); }
   .btn-start{
     width:100%; border:none; border-radius:16px; padding:16px; font-family:'Inter Tight'; font-size:15px; font-weight:700;
     color:#fff; background:linear-gradient(135deg,#6D5DF6,#4F46E5); box-shadow:0 10px 24px -8px rgba(79,70,229,0.5);
@@ -74,20 +98,34 @@
   .home-indicator{ width:120px; height:4px; border-radius:3px; background:#D8DBE8; margin:16px auto 4px; }
 
   @media (prefers-reduced-motion: reduce){
-    .flow-fill, .flow-chip{ animation:none; }
+    .flow-fill, .flow-chip, .diamond-tile i{ animation:none; }
+    .diamond-tile{ opacity:1; transform:scale(1); }
     .flow-fill{ width:100%; opacity:.5; }
   }
   @media (max-width:360px){
-    .hero{ padding:24px 22px 8px; }
+    .diamond-tile i{ font-size:24px; }
+    h1{ font-size:23px; }
     .flow-labels span{ font-size:9px; }
-    h1{ font-size:24px; }
   }
 </style>
 </head>
 <body>
 
+  <div class="diamond-wrap">
+    <div class="diamond-grid" id="diamondGrid">
+      <div class="diamond-tile" style="animation-delay:.05s;"><i class="ri-cellphone-line" style="animation-delay:0s;"></i></div>
+      <div class="diamond-tile" style="animation-delay:.15s;"><i class="ri-headphone-line" style="animation-delay:.4s;"></i></div>
+      <div class="diamond-tile" style="animation-delay:.25s;"><i class="ri-flashlight-line" style="animation-delay:.8s;"></i></div>
+      <div class="diamond-tile" style="animation-delay:.35s;"><i class="ri-shield-check-line" style="animation-delay:.2s;"></i></div>
+      <div class="diamond-tile" style="animation-delay:.45s;"><i class="ri-plug-line" style="animation-delay:.6s;"></i></div>
+      <div class="diamond-tile" style="animation-delay:.55s;"><i class="ri-bank-card-line" style="animation-delay:1s;"></i></div>
+      <div class="diamond-tile" style="animation-delay:.65s;"><i class="ri-cellphone-line" style="animation-delay:.3s;"></i></div>
+      <div class="diamond-tile" style="animation-delay:.75s;"><i class="ri-headphone-line" style="animation-delay:.7s;"></i></div>
+      <div class="diamond-tile" style="animation-delay:.85s;"><i class="ri-flashlight-line" style="animation-delay:.1s;"></i></div>
+    </div>
+  </div>
+
   <div class="hero">
-    <div class="hero-glow"></div>
     <div class="mark"><img src="assets/img/logo-mark.png" alt="SAGERO Creations"></div>
 
     <div class="flow">
@@ -108,14 +146,11 @@
   </div>
 
   <div class="footer">
-    <button class="btn-start" onclick="proceedToLogin()">Get started<i style="font-style:normal;">→</i></button>
+    <button class="btn-start" onclick="proceedToLogin()">Get started<i class="ri-arrow-right-line"></i></button>
     <div class="home-indicator"></div>
   </div>
 
 <script>
-  // Already signed in? Skip straight past this — the welcome screen
-  // is for first impressions, not something a daily user should sit
-  // through every time they open the app.
   if(localStorage.getItem('nexus_session')){
     window.location.href = 'index.html';
   }
@@ -125,8 +160,6 @@
     window.location.href = 'login.html';
   }
 
-  // If they've already seen this before, don't show it again on
-  // every launch — go straight to login.
   if(localStorage.getItem('sagero_seen_welcome')){
     window.location.href = 'login.html';
   }
