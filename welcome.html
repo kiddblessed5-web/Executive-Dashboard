@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SAGERO Creations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/img/favicon-180.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6D5DF6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SAGERO">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; overscroll-behavior:none; }
+  body{
+    font-family:'Inter Tight','Inter',system-ui,sans-serif; background:#F6F8FC; color:#171923;
+    display:flex; flex-direction:column; min-height:100vh; min-height:100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------------- HERO ---------------- */
+  .hero{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:32px 28px 8px; position:relative; overflow:hidden;
+  }
+  .hero-glow{
+    position:absolute; top:-20%; left:50%; transform:translateX(-50%); width:520px; height:520px; border-radius:50%;
+    background:radial-gradient(circle, rgba(109,93,246,0.16) 0%, rgba(109,93,246,0) 70%); pointer-events:none;
+  }
+  .mark{
+    width:76px; height:76px; border-radius:22px; background:#fff; box-shadow:0 12px 32px -8px rgba(109,93,246,0.35), 0 2px 8px rgba(17,17,32,0.06);
+    display:flex; align-items:center; justify-content:center; margin-bottom:36px; position:relative; z-index:2;
+  }
+  .mark img{ width:64%; height:64%; object-fit:contain; }
+
+  /* ---------------- SIGNATURE: production flow ---------------- */
+  .flow{ position:relative; z-index:2; width:100%; max-width:340px; margin-bottom:38px; }
+  .flow-track{ position:relative; height:3px; background:#E4E7F5; border-radius:3px; overflow:hidden; }
+  .flow-fill{ position:absolute; inset:0; width:40%; border-radius:3px; background:linear-gradient(90deg, #6D5DF6, #4F46E5); animation: flowMove 3.2s cubic-bezier(.65,0,.35,1) infinite; }
+  @keyframes flowMove{
+    0%{ width:8%; transform:translateX(0%); }
+    45%{ width:34%; }
+    100%{ width:8%; transform:translateX(1150%); }
+  }
+  .flow-chip{
+    position:absolute; top:50%; width:9px; height:9px; border-radius:50%; background:#4F46E5;
+    transform:translate(-50%,-50%); animation: chipMove 3.2s cubic-bezier(.65,0,.35,1) infinite;
+    box-shadow:0 0 0 4px rgba(109,93,246,0.15);
+  }
+  @keyframes chipMove{ 0%{ left:4%; opacity:0; } 8%{ opacity:1; } 92%{ opacity:1; } 100%{ left:98%; opacity:0; } }
+  .flow-labels{ display:flex; justify-content:space-between; margin-top:12px; }
+  .flow-labels span{ font-size:10px; font-weight:700; color:#9AA1B5; letter-spacing:.01em; }
+  .flow-labels span:first-child{ color:#4F46E5; }
+
+  /* ---------------- COPY ---------------- */
+  .copy{ position:relative; z-index:2; text-align:center; max-width:360px; }
+  h1{ font-size:27px; font-weight:800; letter-spacing:-0.02em; line-height:1.15; }
+  h1 span{ display:block; background:linear-gradient(90deg,#6D5DF6,#4F46E5); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  p.sub{ font-family:'Inter'; font-size:14.5px; line-height:1.55; color:#5B6072; margin-top:14px; font-weight:500; }
+
+  /* ---------------- FOOTER ---------------- */
+  .footer{ padding:20px 28px calc(20px + env(safe-area-inset-bottom)); }
+  .btn-start{
+    width:100%; border:none; border-radius:16px; padding:16px; font-family:'Inter Tight'; font-size:15px; font-weight:700;
+    color:#fff; background:linear-gradient(135deg,#6D5DF6,#4F46E5); box-shadow:0 10px 24px -8px rgba(79,70,229,0.5);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-start:active{ transform:scale(.98); }
+  .home-indicator{ width:120px; height:4px; border-radius:3px; background:#D8DBE8; margin:16px auto 4px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .flow-fill, .flow-chip{ animation:none; }
+    .flow-fill{ width:100%; opacity:.5; }
+  }
+  @media (max-width:360px){
+    .hero{ padding:24px 22px 8px; }
+    .flow-labels span{ font-size:9px; }
+    h1{ font-size:24px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="hero-glow"></div>
+    <div class="mark"><img src="assets/img/logo-mark.png" alt="SAGERO Creations"></div>
+
+    <div class="flow">
+      <div class="flow-track">
+        <div class="flow-fill"></div>
+        <div class="flow-chip" style="animation-delay:0s;"></div>
+        <div class="flow-chip" style="animation-delay:1.6s;"></div>
+      </div>
+      <div class="flow-labels">
+        <span>Unboxed</span><span>Software</span><span>QC</span><span>Resealed</span><span>Packaged</span>
+      </div>
+    </div>
+
+    <div class="copy">
+      <h1>Welcome to<span>SAGERO Creations</span></h1>
+      <p class="sub">From the first unbox to the final shipment — track production, run payroll, and stay connected with your team, all in one place.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <button class="btn-start" onclick="proceedToLogin()">Get started<i style="font-style:normal;">→</i></button>
+    <div class="home-indicator"></div>
+  </div>
+
+<script>
+  // Already signed in? Skip straight past this — the welcome screen
+  // is for first impressions, not something a daily user should sit
+  // through every time they open the app.
+  if(localStorage.getItem('nexus_session')){
+    window.location.href = 'index.html';
+  }
+
+  function proceedToLogin(){
+    localStorage.setItem('sagero_seen_welcome', '1');
+    window.location.href = 'login.html';
+  }
+
+  // If they've already seen this before, don't show it again on
+  // every launch — go straight to login.
+  if(localStorage.getItem('sagero_seen_welcome')){
+    window.location.href = 'login.html';
+  }
+</script>
+</body>
+</html>

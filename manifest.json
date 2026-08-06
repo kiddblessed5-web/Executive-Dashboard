@@ -2,7 +2,7 @@
   "name": "SAGERO Creations",
   "short_name": "SAGERO",
   "description": "Production, workforce, and payroll management for SAGERO Creations",
-  "start_url": "index.html",
+  "start_url": "welcome.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
