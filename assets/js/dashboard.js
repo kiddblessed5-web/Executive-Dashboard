@@ -265,10 +265,23 @@ async function handleClockToggle(){
   renderClockButton();
 }
 
+function renderGreeting(session){
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const displayName = session?.role === 'Super Admin' ? 'CEO' : (session?.name || '').trim().split(' ')[0] || '';
+  const el = document.getElementById('dashGreeting');
+  if(el) el.textContent = `${timeGreeting}${displayName ? ', ' + displayName : ''} \u{1F44B}`;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const session = await NexusApp.requireAuth();
   if(!session) return;
   NexusApp.initShell('index.html', session);
+  renderGreeting(session);
+  if(session?.role === 'Super Admin'){
+    const storeBtn = document.getElementById('visitStoreBtn');
+    if(storeBtn) storeBtn.style.display = 'inline-flex';
+  }
 
   if(SagoBackend?.isConfigured()){
     await loadDashboardFromBackend();

@@ -114,7 +114,7 @@ async function accStartCameraScan(){
     document.getElementById('accStartCameraBtn').style.display = 'none';
     document.getElementById('accStopCameraBtn').style.display = 'inline-flex';
 
-    const detector = new window.BarcodeDetector({ formats:['ean_13','code_128','upc_a','qr_code'] });
+    const detector = new window.BarcodeDetector({ formats:['data_matrix','qr_code','ean_13','code_128','upc_a'] });
     accCameraDetectLoop = setInterval(async () => {
       try{ const codes = await detector.detect(video); if(codes.length) accAddScan(codes[0].rawValue); }
       catch(err){ /* expected intermittent detection frame errors */ }
@@ -339,6 +339,108 @@ async function accSubmitQuickAdd(e){
   e.target.reset();
 }
 
+/* ---------------- STOREFRONT PRODUCTS ---------------- */
+let PRODUCTS = [];
+function money(n){ return 'KES ' + Math.round(n).toLocaleString(); }
+
+async function loadProducts(){
+  if(!SagoBackend?.isConfigured()){
+    document.getElementById('productsWrap').innerHTML = `<div class="empty-state"><i class="ri-store-2-line"></i><span>Product management needs the backend connected</span></div>`;
+    return;
+  }
+  const { data, error } = await SagoBackend.getClient().from('products').select('*').order('created_at', { ascending:false });
+  if(error){ NexusApp.toast('Could not load products: ' + error.message, 'error'); PRODUCTS = []; return; }
+  PRODUCTS = data || [];
+  renderProducts();
+}
+function renderProducts(){
+  const wrap = document.getElementById('productsWrap');
+  if(PRODUCTS.length === 0){
+    wrap.innerHTML = `<div class="empty-state"><i class="ri-store-2-line"></i><b>No products yet</b><span>Add your first product to start selling on the website.</span></div>`;
+    return;
+  }
+  wrap.innerHTML = PRODUCTS.map(p => `
+    <div class="saved-list-card">
+      <div class="saved-list-icon"><i class="${p.icon || 'ri-shopping-bag-3-line'}"></i></div>
+      <div class="saved-list-meta">
+        <b>${p.name} ${p.status==='Hidden' ? '<span style="color:var(--ink-faint);font-weight:600;">(hidden)</span>' : ''}</b>
+        <span>${money(p.price)}${p.compare_at_price ? ' <s style="opacity:.6;">'+money(p.compare_at_price)+'</s>' : ''} · ${p.category} · ${p.stock_qty} in stock</span>
+      </div>
+      <div class="saved-list-actions">
+        <button class="btn btn-secondary btn-sm" onclick="openEditProductModal('${p.id}')"><i class="ri-edit-line"></i>Edit</button>
+        <button class="icon-btn" style="width:34px;height:34px;" data-tip="Delete" onclick="deleteProduct('${p.id}')"><i class="ri-delete-bin-line"></i></button>
+      </div>
+    </div>`).join('');
+}
+function openAddProductModal(){
+  document.getElementById('productModalTitle').textContent = 'Add product';
+  document.getElementById('pr-id').value = '';
+  ['pr-name','pr-description','pr-price','pr-compare','pr-badge','pr-image'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pr-category').value = 'Phone Case';
+  document.getElementById('pr-stock').value = 0;
+  document.getElementById('pr-featured').checked = false;
+  document.getElementById('pr-bestseller').checked = false;
+  document.getElementById('pr-hidden').checked = false;
+  NexusApp.openModal('modal-product');
+}
+function openEditProductModal(id){
+  const p = PRODUCTS.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('productModalTitle').textContent = 'Edit product';
+  document.getElementById('pr-id').value = p.id;
+  document.getElementById('pr-name').value = p.name;
+  document.getElementById('pr-description').value = p.description || '';
+  document.getElementById('pr-price').value = p.price;
+  document.getElementById('pr-compare').value = p.compare_at_price || '';
+  document.getElementById('pr-category').value = p.category;
+  document.getElementById('pr-stock').value = p.stock_qty;
+  document.getElementById('pr-badge').value = p.badge || '';
+  document.getElementById('pr-image').value = p.image_url || '';
+  document.getElementById('pr-featured').checked = !!p.is_featured;
+  document.getElementById('pr-bestseller').checked = !!p.is_bestseller;
+  document.getElementById('pr-hidden').checked = p.status === 'Hidden';
+  NexusApp.openModal('modal-product');
+}
+async function submitProduct(e){
+  e.preventDefault();
+  const id = document.getElementById('pr-id').value;
+  const record = {
+    name: document.getElementById('pr-name').value.trim(),
+    description: document.getElementById('pr-description').value.trim() || null,
+    price: parseFloat(document.getElementById('pr-price').value) || 0,
+    compare_at_price: parseFloat(document.getElementById('pr-compare').value) || null,
+    category: document.getElementById('pr-category').value,
+    stock_qty: parseInt(document.getElementById('pr-stock').value, 10) || 0,
+    badge: document.getElementById('pr-badge').value.trim() || null,
+    image_url: document.getElementById('pr-image').value.trim() || null,
+    is_featured: document.getElementById('pr-featured').checked,
+    is_bestseller: document.getElementById('pr-bestseller').checked,
+    status: document.getElementById('pr-hidden').checked ? 'Hidden' : 'Active',
+  };
+  if(!record.name){ NexusApp.toast('Enter a product name', 'error'); return; }
+
+  const sb = SagoBackend.getClient();
+  if(id){
+    const { error } = await sb.from('products').update(record).eq('id', id);
+    if(error){ NexusApp.toast('Could not save: ' + error.message, 'error'); return; }
+    NexusApp.toast('Product updated', 'success');
+  } else {
+    const { error } = await sb.from('products').insert(record);
+    if(error){ NexusApp.toast('Could not add product: ' + error.message, 'error'); return; }
+    NexusApp.toast('Product added to the store', 'success');
+  }
+  NexusApp.closeModal('modal-product');
+  await loadProducts();
+}
+async function deleteProduct(id){
+  const p = PRODUCTS.find(x=>x.id===id);
+  if(!p) return;
+  const { error } = await SagoBackend.getClient().from('products').delete().eq('id', id);
+  if(error){ NexusApp.toast('Could not delete: ' + error.message, 'error'); return; }
+  NexusApp.toast(p.name + ' removed from the store', 'info');
+  await loadProducts();
+}
+
 let accDidInit = false;
 document.addEventListener('DOMContentLoaded', async () => {
   if(accDidInit) return;
@@ -368,5 +470,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   accRenderKPIs();
   accRenderSessionTable();
   accRenderSavedLists();
+  await loadProducts();
   window.addEventListener('beforeunload', accStopCameraScan);
 });

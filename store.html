@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAGERO Creations — Phone Accessories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<link rel="icon" type="image/png" href="assets/img/favicon-32.png" sizes="32x32">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'Inter Tight','Inter',system-ui,sans-serif; color:#171923; background:#fff; -webkit-font-smoothing:antialiased; }
+  a{ text-decoration:none; color:inherit; }
+  img{ max-width:100%; display:block; }
+  .wrap{ max-width:1200px; margin:0 auto; padding:0 24px; }
+  .btn{ border:none; border-radius:12px; padding:13px 26px; font-family:'Inter Tight'; font-weight:700; font-size:14px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+  .btn-primary{ color:#fff; background:linear-gradient(135deg,#6D5DF6,#4F46E5); box-shadow:0 8px 20px -6px rgba(79,70,229,0.4); }
+  .btn-dark{ background:#171923; color:#fff; }
+  .btn-outline{ background:#fff; color:#171923; border:1.5px solid #E4E7F5; }
+  .btn:active{ transform:scale(.98); }
+
+  /* ---------------- ANNOUNCEMENT BAR ---------------- */
+  .announce{ background:#171923; color:#fff; font-size:12.5px; font-weight:600; text-align:center; padding:9px 16px; }
+
+  /* ---------------- HEADER ---------------- */
+  header{ border-bottom:1px solid #EEF0F8; position:sticky; top:0; background:#fff; z-index:50; }
+  .header-inner{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; }
+  .logo{ display:flex; align-items:center; gap:10px; font-family:'Inter Tight'; font-weight:800; font-size:19px; }
+  .logo img{ width:34px; height:34px; }
+  nav.main-nav{ display:flex; gap:30px; font-size:14px; font-weight:600; color:#4B5065; }
+  nav.main-nav a:hover{ color:#4F46E5; }
+  .header-icons{ display:flex; align-items:center; gap:18px; font-size:19px; color:#171923; }
+  .header-icons button{ background:none; border:none; cursor:pointer; color:inherit; font-size:inherit; position:relative; display:flex; }
+  .cart-badge{ position:absolute; top:-7px; right:-8px; background:#4F46E5; color:#fff; font-size:10px; font-weight:800; width:17px; height:17px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .menu-toggle{ display:none; }
+
+  /* ---------------- HERO ---------------- */
+  .hero{ background:linear-gradient(135deg,#F3F1FF,#FDF2F2); padding:60px 0 70px; }
+  .hero-grid{ display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
+  .eyebrow{ color:#4F46E5; font-weight:800; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; margin-bottom:14px; }
+  .hero h1{ font-size:44px; font-weight:800; line-height:1.1; letter-spacing:-0.02em; margin-bottom:16px; }
+  .hero p{ font-family:'Inter'; font-size:15.5px; color:#5B6072; line-height:1.6; margin-bottom:26px; max-width:420px; }
+  .hero-actions{ display:flex; gap:12px; }
+  .hero-visual{ position:relative; height:380px; display:flex; align-items:center; justify-content:center; }
+  .hero-orb{ position:absolute; width:280px; height:280px; border-radius:50%; background:linear-gradient(135deg,#6D5DF6,#4F46E5); opacity:.14; filter:blur(10px); }
+  .hero-center-mark{ width:150px; height:150px; border-radius:36px; background:#fff; box-shadow:0 24px 60px -16px rgba(79,70,229,0.35); display:flex; align-items:center; justify-content:center; position:relative; z-index:2; }
+  .hero-center-mark img{ width:60%; }
+  .float-card{ position:absolute; background:#fff; border-radius:16px; padding:12px 14px; box-shadow:0 14px 34px -10px rgba(17,17,32,0.18); display:flex; align-items:center; gap:10px; z-index:3; }
+  .float-card .fc-icon{ width:38px; height:38px; border-radius:11px; background:var(--grad-soft,#F1EFFE); color:#4F46E5; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .float-card b{ font-size:12.5px; display:block; }
+  .float-card span{ font-size:11px; color:#5B6072; font-weight:600; }
+  .fc-1{ top:0; left:-10px; } .fc-2{ top:30px; right:-20px; } .fc-3{ bottom:20px; left:10px; } .fc-4{ bottom:0; right:0; }
+
+  /* ---------------- TRUST BADGES ---------------- */
+  .trust{ border-bottom:1px solid #EEF0F8; padding:26px 0; }
+  .trust-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+  .trust-item{ display:flex; align-items:center; gap:12px; }
+  .trust-item i{ font-size:24px; color:#4F46E5; }
+  .trust-item b{ display:block; font-size:13.5px; }
+  .trust-item span{ font-size:11.5px; color:#8A90A3; font-family:'Inter'; }
+
+  /* ---------------- SECTION HEAD ---------------- */
+  section{ padding:56px 0; }
+  .sec-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:28px; }
+  .sec-head h2{ font-size:24px; font-weight:800; letter-spacing:-0.01em; }
+  .sec-head a.view-all{ font-size:13px; font-weight:700; color:#4F46E5; }
+  .filter-bar{ display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap; }
+  .filter-bar select{ border:1.5px solid #E4E7F5; border-radius:10px; padding:9px 14px; font-family:inherit; font-size:13px; font-weight:600; background:#fff; cursor:pointer; }
+  .filter-checkbox{ display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; cursor:pointer; }
+  .filter-checkbox input{ width:15px; height:15px; }
+
+  /* ---------------- CATEGORIES ---------------- */
+  .cat-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:16px; }
+  .cat-tile{ text-align:center; cursor:pointer; }
+  .cat-tile-icon{ aspect-ratio:1; border-radius:18px; background:linear-gradient(135deg,#F3F1FF,#FDF2F2); display:flex; align-items:center; justify-content:center; font-size:30px; color:#4F46E5; margin-bottom:10px; transition:.2s; }
+  .cat-tile:hover .cat-tile-icon{ background:linear-gradient(135deg,#6D5DF6,#4F46E5); color:#fff; }
+  .cat-tile span{ font-size:12.5px; font-weight:700; }
+
+  /* ---------------- PRODUCT GRID ---------------- */
+  .product-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+  .product-card{ border:1px solid #EEF0F8; border-radius:18px; overflow:hidden; transition:.2s; }
+  .product-card:hover{ box-shadow:0 16px 34px -14px rgba(17,17,32,0.14); transform:translateY(-2px); }
+  .product-media{ aspect-ratio:1; background:linear-gradient(135deg,#F6F8FC,#F1EFFE); display:flex; align-items:center; justify-content:center; position:relative; }
+  .product-media img{ width:100%; height:100%; object-fit:cover; }
+  .product-media i{ font-size:52px; color:#C7CBE0; }
+  .product-badge{ position:absolute; top:10px; left:10px; background:#171923; color:#fff; font-size:10px; font-weight:800; padding:4px 9px; border-radius:20px; }
+  .product-badge.discount{ background:#DD2E2E; }
+  .product-wish{ position:absolute; top:10px; right:10px; width:30px; height:30px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 4px 10px rgba(0,0,0,0.08); }
+  .product-body{ padding:14px; }
+  .product-body b{ font-size:13.5px; display:block; margin-bottom:6px; line-height:1.3; }
+  .product-price{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .product-price .now{ font-weight:800; font-size:14.5px; color:#171923; }
+  .product-price .was{ font-size:12px; color:#B0B4C4; text-decoration:line-through; }
+  .add-cart-btn{ width:100%; border:none; background:#F6F8FC; color:#171923; font-weight:700; font-size:12.5px; padding:10px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .add-cart-btn:hover{ background:#171923; color:#fff; }
+
+  /* ---------------- FLASH SALE ---------------- */
+  .flash{ background:linear-gradient(135deg,#6D5DF6,#4F46E5); border-radius:24px; padding:44px 40px; color:#fff; display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap; }
+  .flash h2{ font-size:26px; font-weight:800; margin-bottom:8px; }
+  .flash p{ font-family:'Inter'; font-size:13.5px; opacity:.9; max-width:340px; }
+  .flash .btn{ margin-top:18px; }
+
+  /* ---------------- NEWSLETTER ---------------- */
+  .newsletter{ background:#F6F8FC; border-radius:24px; padding:44px; text-align:center; }
+  .newsletter h3{ font-size:20px; font-weight:800; margin-bottom:8px; }
+  .newsletter p{ font-family:'Inter'; font-size:13.5px; color:#5B6072; margin-bottom:20px; }
+  .newsletter-form{ display:flex; gap:10px; max-width:380px; margin:0 auto; }
+  .newsletter-form input{ flex:1; border:1.5px solid #E4E7F5; border-radius:12px; padding:12px 16px; font-family:inherit; font-size:13.5px; outline:none; }
+
+  /* ---------------- FOOTER ---------------- */
+  footer{ background:#12131E; color:#fff; padding:56px 0 0; margin-top:40px; }
+  .footer-grid{ display:grid; grid-template-columns:1.4fr 1fr 1fr 1.2fr; gap:36px; padding-bottom:40px; border-bottom:1px solid rgba(255,255,255,0.08); }
+  .footer-brand .logo{ color:#fff; margin-bottom:14px; }
+  .footer-brand p{ font-family:'Inter'; font-size:13px; color:#9BA0B5; line-height:1.6; max-width:280px; }
+  .footer-col h4{ font-size:13px; font-weight:800; margin-bottom:16px; letter-spacing:.02em; }
+  .footer-col a, .footer-col p{ display:block; font-family:'Inter'; font-size:13px; color:#9BA0B5; margin-bottom:11px; }
+  .footer-col a:hover{ color:#fff; }
+  .footer-contact-row{ display:flex; align-items:flex-start; gap:10px; margin-bottom:14px; }
+  .footer-contact-row i{ color:#8A7FFF; margin-top:2px; }
+  .footer-bottom{ display:flex; align-items:center; justify-content:space-between; padding:22px 0; font-size:12px; color:#767B8F; flex-wrap:wrap; gap:12px; }
+  .footer-social{ display:flex; gap:10px; }
+  .footer-social a{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.06); display:flex; align-items:center; justify-content:center; }
+  .payment-badges{ display:flex; gap:8px; }
+  .payment-badges span{ font-size:11px; font-weight:700; background:rgba(255,255,255,0.08); padding:5px 10px; border-radius:6px; }
+
+  /* ---------------- CART DRAWER ---------------- */
+  .cart-overlay{ position:fixed; inset:0; background:rgba(17,17,32,0.5); z-index:200; opacity:0; visibility:hidden; transition:.25s; }
+  .cart-overlay.open{ opacity:1; visibility:visible; }
+  .cart-drawer{ position:fixed; top:0; right:0; height:100vh; width:400px; max-width:92vw; background:#fff; z-index:201; transform:translateX(100%); transition:.3s; display:flex; flex-direction:column; }
+  .cart-drawer.open{ transform:translateX(0); }
+  .cart-head{ display:flex; align-items:center; justify-content:space-between; padding:20px 22px; border-bottom:1px solid #EEF0F8; }
+  .cart-head h3{ font-size:16px; font-weight:800; }
+  .cart-close{ background:none; border:none; font-size:20px; cursor:pointer; color:#8A90A3; }
+  .cart-items{ flex:1; overflow-y:auto; padding:16px 22px; }
+  .cart-item{ display:flex; gap:12px; padding:14px 0; border-bottom:1px solid #F3F4FA; }
+  .cart-item-icon{ width:56px; height:56px; border-radius:12px; background:#F6F8FC; display:flex; align-items:center; justify-content:center; font-size:22px; color:#4F46E5; flex-shrink:0; }
+  .cart-item-body{ flex:1; }
+  .cart-item-body b{ font-size:13px; display:block; }
+  .cart-item-body .price{ font-size:12.5px; color:#5B6072; margin-top:2px; }
+  .qty-stepper{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .qty-stepper button{ width:22px; height:22px; border-radius:6px; border:1px solid #E4E7F5; background:#fff; cursor:pointer; font-size:13px; }
+  .qty-stepper span{ font-size:12.5px; font-weight:700; min-width:16px; text-align:center; }
+  .cart-item-remove{ background:none; border:none; color:#B0B4C4; cursor:pointer; font-size:16px; }
+  .cart-empty{ text-align:center; padding:60px 20px; color:#8A90A3; }
+  .cart-empty i{ font-size:36px; margin-bottom:10px; display:block; }
+  .cart-footer{ padding:18px 22px; border-top:1px solid #EEF0F8; }
+  .cart-total-row{ display:flex; justify-content:space-between; font-weight:800; font-size:15px; margin-bottom:14px; }
+
+  /* ---------------- CHECKOUT MODAL ---------------- */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(17,17,32,0.5); z-index:300; opacity:0; visibility:hidden; transition:.2s; display:flex; align-items:center; justify-content:center; }
+  .modal-overlay.open{ opacity:1; visibility:visible; }
+  .checkout-modal{ background:#fff; border-radius:20px; width:420px; max-width:92vw; max-height:88vh; overflow-y:auto; padding:26px; }
+  .checkout-modal h3{ font-size:17px; font-weight:800; margin-bottom:18px; }
+  .co-field{ margin-bottom:14px; }
+  .co-field label{ font-size:12.5px; font-weight:700; display:block; margin-bottom:6px; }
+  .co-field input, .co-field select, .co-field textarea{ width:100%; border:1.5px solid #E4E7F5; border-radius:10px; padding:11px 13px; font-family:inherit; font-size:13.5px; outline:none; }
+  .co-summary{ background:#F6F8FC; border-radius:12px; padding:14px; margin-bottom:16px; font-size:12.5px; }
+  .co-summary-row{ display:flex; justify-content:space-between; padding:3px 0; }
+  .track-status{ background:#F6F8FC; border-radius:12px; padding:16px; }
+  .track-status-row{ display:flex; justify-content:space-between; font-size:12.5px; padding:5px 0; }
+  .status-pill{ font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; display:inline-block; }
+  .status-pill.Pending{ background:#FEF3C7; color:#92400E; }
+  .status-pill.Processing{ background:#DBEAFE; color:#1E40AF; }
+  .status-pill.Shipped{ background:#EDE9FE; color:#5B21B6; }
+  .status-pill.Delivered{ background:#D1FAE5; color:#065F46; }
+  .status-pill.Cancelled{ background:#FEE2E2; color:#991B1B; }
+  .product-wish.active{ color:#DD2E2E; }
+
+  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#171923; color:#fff; padding:13px 22px; border-radius:12px; font-size:13.5px; font-weight:600; z-index:400; opacity:0; transition:.25s; display:flex; align-items:center; gap:8px; }
+  .toast.show{ opacity:1; }
+  .toast.error{ background:#DD2E2E; }
+  .toast.success{ background:#17803D; }
+
+  @media (max-width:960px){
+    nav.main-nav, .header-icons .search-only{ display:none; }
+    .menu-toggle{ display:block; }
+    .hero-grid{ grid-template-columns:1fr; }
+    .hero-visual{ display:none; }
+    .trust-grid{ grid-template-columns:repeat(2,1fr); }
+    .cat-grid{ grid-template-columns:repeat(3,1fr); }
+    .product-grid{ grid-template-columns:repeat(2,1fr); }
+    .footer-grid{ grid-template-columns:1fr 1fr; }
+    .hero h1{ font-size:32px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="announce">Free delivery within Nairobi on orders over KES 3,000 &nbsp;•&nbsp; Genuine accessories, every time &nbsp;•&nbsp; Pay by M-Pesa on delivery</div>
+
+  <header>
+    <div class="wrap header-inner">
+      <div class="logo"><img src="assets/img/logo-mark.png" alt="SAGERO"> SAGERO</div>
+      <nav class="main-nav">
+        <a href="#home">Home</a>
+        <a href="#shop">Shop</a>
+        <a href="#categories">Categories</a>
+        <a href="#bestsellers">Best Sellers</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="header-icons">
+        <button class="search-only" data-tip="Search"><i class="ri-search-line"></i></button>
+        <button onclick="openTrackOrder()" data-tip="Track order"><i class="ri-truck-line"></i></button>
+        <button onclick="openWishlist()"><i class="ri-heart-line"></i><span class="cart-badge" id="wishlistBadge" style="display:none;">0</span></button>
+        <button onclick="openCart()"><i class="ri-shopping-bag-3-line"></i><span class="cart-badge" id="cartBadge" style="display:none;">0</span></button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero" id="home">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">Genuine Phone Accessories</div>
+        <h1>Everything Your Phone Needs, In One Place</h1>
+        <p>Cases, chargers, earphones, and more — quality-checked accessories from the team that refurbishes your phone.</p>
+        <div class="hero-actions">
+          <a href="#shop" class="btn btn-primary">Shop Now<i class="ri-arrow-right-line"></i></a>
+          <a href="#categories" class="btn btn-outline">Browse Categories</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-orb"></div>
+        <div class="hero-center-mark"><img src="assets/img/logo-mark.png" alt=""></div>
+        <div class="float-card fc-1"><div class="fc-icon"><i class="ri-shield-check-line"></i></div><div><b>Phone Cases</b><span>From KES 800</span></div></div>
+        <div class="float-card fc-2"><div class="fc-icon"><i class="ri-headphone-line"></i></div><div><b>Earphones</b><span>From KES 1,500</span></div></div>
+        <div class="float-card fc-3"><div class="fc-icon"><i class="ri-flashlight-line"></i></div><div><b>Chargers</b><span>From KES 900</span></div></div>
+        <div class="float-card fc-4"><div class="fc-icon"><i class="ri-battery-charge-line"></i></div><div><b>Power Banks</b><span>From KES 1,800</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="trust">
+    <div class="wrap trust-grid">
+      <div class="trust-item"><i class="ri-truck-line"></i><div><b>Fast Delivery</b><span>Within Nairobi &amp; beyond</span></div></div>
+      <div class="trust-item"><i class="ri-shield-check-line"></i><div><b>Secure Checkout</b><span>Pay by M-Pesa</span></div></div>
+      <div class="trust-item"><i class="ri-verified-badge-line"></i><div><b>Genuine Products</b><span>Quality checked</span></div></div>
+      <div class="trust-item"><i class="ri-customer-service-2-line"></i><div><b>Real Support</b><span>Message us anytime</span></div></div>
+    </div>
+  </div>
+
+  <section id="categories">
+    <div class="wrap">
+      <div class="sec-head"><h2>Shop by Category</h2></div>
+      <div class="cat-grid" id="categoryGrid"></div>
+    </div>
+  </section>
+
+  <section id="shop">
+    <div class="wrap">
+      <div class="sec-head"><h2>New Arrivals</h2></div>
+      <div class="filter-bar">
+        <select id="filterCategory" onchange="applyFiltersAndSort()">
+          <option value="all">All Categories</option>
+        </select>
+        <select id="filterSort" onchange="applyFiltersAndSort()">
+          <option value="newest">Newest First</option>
+          <option value="price_low">Price: Low to High</option>
+          <option value="price_high">Price: High to Low</option>
+        </select>
+        <label class="filter-checkbox"><input type="checkbox" id="filterDiscount" onchange="applyFiltersAndSort()"> On Sale Only</label>
+      </div>
+      <div class="product-grid" id="newArrivalsGrid"></div>
+    </div>
+  </section>
+
+  <section id="bestsellers" style="background:#FAFBFF;">
+    <div class="wrap">
+      <div class="sec-head"><h2>Best Sellers</h2></div>
+      <div class="product-grid" id="bestSellersGrid"></div>
+    </div>
+  </section>
+
+  <section id="flashsale" style="display:none;">
+    <div class="wrap">
+      <div class="flash">
+        <div>
+          <h2>Deals Right Now</h2>
+          <p>A few of our accessories are marked down — while stock lasts.</p>
+          <a href="#shop" class="btn btn-dark">Shop the Deals</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="newsletter">
+        <h3>Stay in the loop</h3>
+        <p>New arrivals and occasional deals — nothing else.</p>
+        <form class="newsletter-form" onsubmit="submitNewsletter(event)">
+          <input type="email" placeholder="Your email address" required>
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <footer id="contact">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="logo"><img src="assets/img/logo-mark.png" alt="SAGERO" style="width:32px;height:32px;"> SAGERO</div>
+          <p>Genuine phone accessories, sold by the same team that refurbishes and quality-checks your phone.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Shop</h4>
+          <a href="#shop">New Arrivals</a>
+          <a href="#bestsellers">Best Sellers</a>
+          <a href="#categories">Categories</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="#home">About Us</a>
+          <a href="#contact">Contact</a>
+        </div>
+        <div class="footer-col">
+          <h4>Get in Touch</h4>
+          <div class="footer-contact-row"><i class="ri-map-pin-line"></i><span>Nairobi, Kenya</span></div>
+          <div class="footer-contact-row"><i class="ri-mail-line"></i><span>hello@sagerocreations.com</span></div>
+          <div class="footer-contact-row"><i class="ri-phone-line"></i><span>Contact us via the store</span></div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© <span id="year"></span> SAGERO Creations. All rights reserved.</span>
+        <div class="payment-badges"><span>M-Pesa</span><span>Cash on Delivery</span></div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- CART DRAWER -->
+  <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+  <div class="cart-drawer" id="cartDrawer">
+    <div class="cart-head"><h3>Your Cart</h3><button class="cart-close" onclick="closeCart()"><i class="ri-close-line"></i></button></div>
+    <div class="cart-items" id="cartItemsWrap"></div>
+    <div class="cart-footer" id="cartFooter" style="display:none;">
+      <div class="cart-total-row"><span>Total</span><span id="cartTotal">KES 0</span></div>
+      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="openCheckout()">Checkout</button>
+    </div>
+  </div>
+
+  <!-- CHECKOUT MODAL -->
+  <div class="modal-overlay" id="checkoutOverlay" onclick="closeCheckout()"></div>
+  <div class="checkout-modal" id="checkoutModal" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:301; display:none;">
+    <h3>Complete your order</h3>
+    <div class="co-summary" id="checkoutSummary"></div>
+    <div class="co-field">
+      <label>Coupon code (optional)</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="co-coupon" placeholder="e.g. WELCOME10" style="text-transform:uppercase;">
+        <button type="button" class="btn btn-outline" style="padding:11px 16px; white-space:nowrap;" onclick="applyCoupon()">Apply</button>
+      </div>
+      <div id="couponFeedback" style="font-size:12px; margin-top:6px; font-weight:600;"></div>
+    </div>
+    <form onsubmit="submitOrder(event)">
+      <div class="co-field"><label>Full name</label><input type="text" id="co-name" required></div>
+      <div class="co-field"><label>Phone number</label><input type="tel" id="co-phone" placeholder="07XX XXX XXX" required></div>
+      <div class="co-field"><label>Email (optional)</label><input type="email" id="co-email"></div>
+      <div class="co-field"><label>Delivery notes (optional)</label><textarea id="co-notes" rows="2" placeholder="Delivery area, landmark, preferred time…"></textarea></div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;" id="checkoutSubmitBtn">Place Order</button>
+    </form>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- PRODUCT DETAIL -->
+  <div class="modal-overlay" id="detailOverlay" onclick="closeProductDetail()"></div>
+  <div class="checkout-modal" id="detailModal" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:301; display:none; width:520px;">
+    <button class="cart-close" onclick="closeProductDetail()" style="position:absolute; top:16px; right:16px;"><i class="ri-close-line"></i></button>
+    <div id="detailBody"></div>
+  </div>
+
+  <!-- WISHLIST DRAWER -->
+  <div class="cart-overlay" id="wishlistOverlay" onclick="closeWishlist()"></div>
+  <div class="cart-drawer" id="wishlistDrawer">
+    <div class="cart-head"><h3>Your Wishlist</h3><button class="cart-close" onclick="closeWishlist()"><i class="ri-close-line"></i></button></div>
+    <div class="cart-items" id="wishlistItemsWrap"></div>
+  </div>
+
+  <!-- TRACK ORDER -->
+  <div class="modal-overlay" id="trackOverlay" onclick="closeTrackOrder()"></div>
+  <div class="checkout-modal" id="trackModal" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:301; display:none;">
+    <h3>Track your order</h3>
+    <p style="font-family:'Inter'; font-size:12.5px; color:#5B6072; margin:-10px 0 16px;">Enter your order ID and the phone number you checked out with.</p>
+    <form onsubmit="trackOrder(event)">
+      <div class="co-field"><label>Order ID</label><input type="text" id="track-id" placeholder="e.g. ORD-7042" required></div>
+      <div class="co-field"><label>Phone number</label><input type="tel" id="track-phone" required></div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Track Order</button>
+    </form>
+    <div id="trackResult" style="margin-top:16px;"></div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="assets/js/supabase-client.js"></script>
+<script src="assets/js/store.js"></script>
+</body>
+</html>

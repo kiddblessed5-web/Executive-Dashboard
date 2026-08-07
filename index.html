@@ -117,6 +117,7 @@
       </div>
       <div class="topbar-search" onclick="NexusApp.openCmdk()"><i class="ri-search-line"></i><span>Search or jump to…</span><span class="kbd">⌘K</span></div>
       <div class="topbar-right">
+        <a href="store.html" target="_blank" class="btn btn-secondary btn-sm" id="visitStoreBtn" style="display:none;"><i class="ri-store-2-line"></i>Visit Store</a>
         <button class="icon-btn" data-tip="Toggle theme" onclick="NexusApp.toggleTheme()"><i id="themeToggleIcon" class="ri-moon-line"></i></button>
         <div class="dropdown-wrap">
           <button class="icon-btn" data-tip="Notifications" onclick="NexusApp.toggleDropdown('notifPanel')"><i class="ri-notification-3-line"></i><span class="icon-dot"></span></button>
@@ -136,7 +137,7 @@
     <div class="content">
       <div class="section-head fade-up">
         <div>
-          <div class="section-title">Good to see you, Alex 👋</div>
+          <div class="section-title" id="dashGreeting">Good to see you 👋</div>
           <div class="section-sub">Here's what's happening across the production floor today.</div>
         </div>
         <div class="chart-tabs">

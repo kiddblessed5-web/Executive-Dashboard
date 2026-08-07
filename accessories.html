@@ -171,8 +171,52 @@
         <div class="toolbar-search"><i class="ri-search-line"></i><input id="accListSearch" placeholder="Search saved lists…"></div>
         <div id="accSavedListsWrap"></div>
       </div>
+
+      <div class="card fade-up">
+        <div class="section-head">
+          <div><div class="section-title">Storefront Products</div><div class="section-sub">What actually shows on your public selling website — separate from internal stock tracking above.</div></div>
+          <button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><i class="ri-add-line"></i>Add Product</button>
+        </div>
+        <div id="productsWrap"></div>
+      </div>
     </div>
   </div>
+</div>
+
+<!-- ADD / EDIT PRODUCT -->
+<div class="overlay" id="overlay-modal-product" onclick="NexusApp.closeModal('modal-product')"></div>
+<div class="modal" id="modal-product" style="width:520px;">
+  <div class="modal-head"><h3 id="productModalTitle">Add product</h3><button class="modal-close" onclick="NexusApp.closeModal('modal-product')"><i class="ri-close-line"></i></button></div>
+  <form onsubmit="submitProduct(event)">
+    <input type="hidden" id="pr-id">
+    <div class="field"><label>Product name</label><input type="text" id="pr-name" required></div>
+    <div class="field"><label>Description</label><textarea id="pr-description" rows="2"></textarea></div>
+    <div class="form-2col">
+      <div class="field"><label>Price (KES)</label><input type="number" id="pr-price" min="0" step="1" required></div>
+      <div class="field"><label>Compare-at price (optional)</label><input type="number" id="pr-compare" min="0" step="1" placeholder="Original price if discounted"></div>
+    </div>
+    <div class="form-2col">
+      <div class="field"><label>Category</label>
+        <select id="pr-category">
+          <option>Phone Case</option><option>Screen Protector</option><option>Charger</option><option>Charging Cable</option>
+          <option>Earphones</option><option>Power Bank</option><option>Memory Card</option><option>Bluetooth Speaker</option>
+          <option>Phone Stand</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Stock quantity</label><input type="number" id="pr-stock" min="0" value="0"></div>
+    </div>
+    <div class="field"><label>Badge (optional)</label><input type="text" id="pr-badge" placeholder="e.g. New, Bestseller, -20%"></div>
+    <div class="field"><label>Image URL (optional — shows an icon until you add one)</label><input type="url" id="pr-image" placeholder="https://..."></div>
+    <div class="field" style="display:flex; gap:18px;">
+      <label style="display:flex; align-items:center; gap:6px; margin:0;"><input type="checkbox" id="pr-featured" style="width:16px;height:16px;">Featured</label>
+      <label style="display:flex; align-items:center; gap:6px; margin:0;"><input type="checkbox" id="pr-bestseller" style="width:16px;height:16px;">Bestseller</label>
+      <label style="display:flex; align-items:center; gap:6px; margin:0;"><input type="checkbox" id="pr-hidden" style="width:16px;height:16px;">Hidden from store</label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" onclick="NexusApp.closeModal('modal-product')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save product</button>
+    </div>
+  </form>
 </div>
 
 <!-- SAVE SESSION MODAL -->

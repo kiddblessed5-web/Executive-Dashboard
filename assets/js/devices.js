@@ -182,7 +182,7 @@ async function startCameraScan(){
     document.getElementById('startCameraBtn').style.display = 'none';
     document.getElementById('stopCameraBtn').style.display = 'inline-flex';
 
-    const detector = new window.BarcodeDetector({ formats:['ean_13','code_128','upc_a','qr_code'] });
+    const detector = new window.BarcodeDetector({ formats:['data_matrix','qr_code','ean_13','code_128','upc_a'] });
     cameraDetectLoop = setInterval(async () => {
       try{
         const codes = await detector.detect(video);
